@@ -1,0 +1,47 @@
+<resources>
+    <!-- App Name -->
+    <string name="app_name">Traceur SCI</string>
+
+    <!-- Navigation -->
+    <string name="nav_dashboard">Tableau de bord</string>
+    <string name="nav_food">Alimentation</string>
+    <string name="nav_symptoms">Symptômes</string>
+    <string name="nav_settings">Paramètres</string>
+
+    <!-- Dashboard Screen -->
+    <string name="dashboard_welcome">Bienvenue sur Traceur SCI</string>
+    <string name="dashboard_summary">Vous trouverez ici un résumé de vos journaux alimentaires et de symptômes récents.</string>
+
+    <!-- Food Screen -->
+    <string name="food_title">Enregistrer un aliment ou une boisson</string>
+    <string name="food_name_label">Aliment ou boisson</string>
+    <string name="food_quantity_label">Quantité</string>
+    <string name="button_save">Enregistrer</string>
+
+    <!-- Symptoms Screen -->
+    <string name="symptoms_title">Enregistrer un symptôme</string>
+    <string name="symptom_bloating">Ballonnements</string>
+    <string name="symptom_abdominal_pain">Douleur abdominale</string>
+    <string name="symptom_diarrhea">Diarrhée</string>
+    <string name="symptom_constipation">Constipation</string>
+    <string name="symptom_other">Autre</string>
+    <string name="symptom_label">Symptôme</string>
+    <string name="symptom_selected">Symptôme : %s</string>
+    <string name="intensity_label">Intensité : %d</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Paramètres</string>
+    <string name="settings_language">Langue</string>
+    <string name="settings_units">Unités</string>
+    <string name="settings_current">Paramètres actuels</string>
+    <string name="settings_language_current">Langue : %s</string>
+    <string name="settings_units_current">Unités : %s</string>
+
+    <!-- Units -->
+    <string name="units_metric">Métriques (kg, cm)</string>
+    <string name="units_imperial">Impériales (lb, po)</string>
+
+    <!-- Languages -->
+    <string name="language_english">English</string>
+    <string name="language_french">Français</string>
+</resources>

@@ -4,13 +4,24 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tiarkaerell.ibstracker.data.model.FoodItem
 import com.tiarkaerell.ibstracker.data.repository.DataRepository
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.Date
 
 class FoodViewModel(private val dataRepository: DataRepository) : ViewModel() {
-    fun saveFoodItem(name: String, quantity: String) {
+
+    val foodItems: StateFlow<List<FoodItem>> = dataRepository.getAllFoodItems()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    fun saveFoodItem(name: String, quantity: String, date: Date = Date()) {
         viewModelScope.launch {
-            dataRepository.insertFoodItem(FoodItem(name = name, quantity = quantity, date = Date()))
+            dataRepository.insertFoodItem(FoodItem(name = name, quantity = quantity, date = date))
         }
     }
 }

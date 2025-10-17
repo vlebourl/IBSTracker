@@ -1,6 +1,47 @@
 <resources>
+    <!-- App Name -->
     <string name="app_name">IBS Tracker</string>
-    <string name="dashboard">Dashboard</string>
-    <string name="food">Food</string>
-    <string name="symptoms">Symptoms</string>
+
+    <!-- Navigation -->
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_food">Food</string>
+    <string name="nav_symptoms">Symptoms</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Dashboard Screen -->
+    <string name="dashboard_welcome">Welcome to IBS Tracker</string>
+    <string name="dashboard_summary">Here you will see a summary of your recent food and symptom logs.</string>
+
+    <!-- Food Screen -->
+    <string name="food_title">Log Food or Drink</string>
+    <string name="food_name_label">Food or Drink</string>
+    <string name="food_quantity_label">Quantity</string>
+    <string name="button_save">Save</string>
+
+    <!-- Symptoms Screen -->
+    <string name="symptoms_title">Log a Symptom</string>
+    <string name="symptom_bloating">Bloating</string>
+    <string name="symptom_abdominal_pain">Abdominal Pain</string>
+    <string name="symptom_diarrhea">Diarrhea</string>
+    <string name="symptom_constipation">Constipation</string>
+    <string name="symptom_other">Other</string>
+    <string name="symptom_label">Symptom</string>
+    <string name="symptom_selected">Symptom: %s</string>
+    <string name="intensity_label">Intensity: %d</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_units">Units</string>
+    <string name="settings_current">Current Settings</string>
+    <string name="settings_language_current">Language: %s</string>
+    <string name="settings_units_current">Units: %s</string>
+
+    <!-- Units -->
+    <string name="units_metric">Metric (kg, cm)</string>
+    <string name="units_imperial">Imperial (lb, in)</string>
+
+    <!-- Languages -->
+    <string name="language_english">English</string>
+    <string name="language_french">Français</string>
 </resources>
