@@ -2,30 +2,42 @@ package com.tiarkaerell.ibstracker.ui.screens
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.tiarkaerell.ibstracker.R
+import com.tiarkaerell.ibstracker.data.model.Symptom
 import com.tiarkaerell.ibstracker.ui.viewmodel.SymptomsViewModel
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.roundToInt
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun SymptomsScreen(symptomsViewModel: SymptomsViewModel) {
     var selectedSymptom by remember { mutableStateOf<String?>(null) }
     var customSymptom by remember { mutableStateOf("") }
     var intensity by remember { mutableStateOf(0f) }
     var selectedDateTime by remember { mutableStateOf(Calendar.getInstance()) }
+    var editingItem by remember { mutableStateOf<Symptom?>(null) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var itemToDelete by remember { mutableStateOf<Symptom?>(null) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    
     val loggedSymptoms by symptomsViewModel.symptoms.collectAsState()
     val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault()) }
     val context = LocalContext.current
@@ -37,6 +49,155 @@ fun SymptomsScreen(symptomsViewModel: SymptomsViewModel) {
         stringResource(R.string.symptom_constipation)
     )
     val otherText = stringResource(R.string.symptom_other)
+
+    // Delete confirmation dialog
+    if (showDeleteDialog && itemToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { 
+                showDeleteDialog = false
+                itemToDelete = null
+            },
+            title = { Text("Delete Symptom") },
+            text = { Text("Are you sure you want to delete '${itemToDelete!!.name}'?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        symptomsViewModel.deleteSymptom(itemToDelete!!)
+                        showDeleteDialog = false
+                        itemToDelete = null
+                    }
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        itemToDelete = null
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Edit dialog
+    if (showEditDialog && editingItem != null) {
+        var editName by remember { mutableStateOf(editingItem!!.name) }
+        var editIntensity by remember { mutableStateOf(editingItem!!.intensity.toFloat()) }
+        var editDateTime by remember { 
+            mutableStateOf(Calendar.getInstance().apply { time = editingItem!!.date })
+        }
+
+        AlertDialog(
+            onDismissRequest = { 
+                showEditDialog = false
+                editingItem = null
+            },
+            title = { Text("Edit Symptom") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = editName,
+                        onValueChange = { editName = it },
+                        label = { Text("Symptom Name") },
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                    )
+                    
+                    Text(
+                        text = "Intensity: ${editIntensity.roundToInt()}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                    Slider(
+                        value = editIntensity,
+                        onValueChange = { editIntensity = it },
+                        valueRange = 0f..10f,
+                        steps = 9,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                    )
+                    
+                    OutlinedCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                DatePickerDialog(
+                                    context,
+                                    { _, year, month, dayOfMonth ->
+                                        val newCalendar = Calendar.getInstance().apply {
+                                            set(year, month, dayOfMonth, 
+                                                editDateTime.get(Calendar.HOUR_OF_DAY), 
+                                                editDateTime.get(Calendar.MINUTE))
+                                        }
+                                        editDateTime = newCalendar
+                                        
+                                        TimePickerDialog(
+                                            context,
+                                            { _, hourOfDay, minute ->
+                                                val finalCalendar = Calendar.getInstance().apply {
+                                                    set(year, month, dayOfMonth, hourOfDay, minute)
+                                                }
+                                                editDateTime = finalCalendar
+                                            },
+                                            editDateTime.get(Calendar.HOUR_OF_DAY),
+                                            editDateTime.get(Calendar.MINUTE),
+                                            true
+                                        ).show()
+                                    },
+                                    editDateTime.get(Calendar.YEAR),
+                                    editDateTime.get(Calendar.MONTH),
+                                    editDateTime.get(Calendar.DAY_OF_MONTH)
+                                ).show()
+                            }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = dateFormat.format(editDateTime.time),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Icon(
+                                imageVector = Icons.Default.CalendarToday,
+                                contentDescription = "Select date",
+                                modifier = Modifier.padding(start = 8.dp)
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val updatedItem = editingItem!!.copy(
+                            name = editName,
+                            intensity = editIntensity.roundToInt(),
+                            date = editDateTime.time
+                        )
+                        symptomsViewModel.updateSymptom(updatedItem)
+                        showEditDialog = false
+                        editingItem = null
+                    }
+                ) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showEditDialog = false
+                        editingItem = null
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -52,124 +213,142 @@ fun SymptomsScreen(symptomsViewModel: SymptomsViewModel) {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             symptoms.forEach { symptom ->
-                Button(
-                    onClick = { selectedSymptom = symptom },
-                ) {
-                    Text(symptom)
-                }
+                FilterChip(
+                    selected = selectedSymptom == symptom,
+                    onClick = { 
+                        selectedSymptom = if (selectedSymptom == symptom) null else symptom
+                        customSymptom = ""
+                    },
+                    label = { Text(symptom) }
+                )
             }
-            Button(
-                onClick = { selectedSymptom = otherText },
+            FilterChip(
+                selected = selectedSymptom == otherText,
+                onClick = { 
+                    selectedSymptom = if (selectedSymptom == otherText) null else otherText
+                    customSymptom = ""
+                },
+                label = { Text(otherText) }
+            )
+        }
+
+        if (selectedSymptom == otherText) {
+            OutlinedTextField(
+                value = customSymptom,
+                onValueChange = { customSymptom = it },
+                label = { Text(stringResource(R.string.symptom_custom_label)) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp, bottom = 16.dp)
+            )
+        } else {
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        Text(
+            text = stringResource(R.string.symptom_intensity_label) + ": ${intensity.roundToInt()}",
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+        Slider(
+            value = intensity,
+            onValueChange = { intensity = it },
+            valueRange = 0f..10f,
+            steps = 9,
+            modifier = Modifier.fillMaxWidth()
+        )
+        
+        // Date/Time Picker
+        OutlinedCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp, bottom = 16.dp)
+                .clickable {
+                    val calendar = selectedDateTime
+                    DatePickerDialog(
+                        context,
+                        { _, year, month, dayOfMonth ->
+                            val newCalendar = Calendar.getInstance().apply {
+                                set(year, month, dayOfMonth, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE))
+                            }
+                            selectedDateTime = newCalendar
+
+                            // After date is selected, show time picker
+                            TimePickerDialog(
+                                context,
+                                { _, hourOfDay, minute ->
+                                    val finalCalendar = Calendar.getInstance().apply {
+                                        set(year, month, dayOfMonth, hourOfDay, minute)
+                                    }
+                                    selectedDateTime = finalCalendar
+                                },
+                                calendar.get(Calendar.HOUR_OF_DAY),
+                                calendar.get(Calendar.MINUTE),
+                                true
+                            ).show()
+                        },
+                        calendar.get(Calendar.YEAR),
+                        calendar.get(Calendar.MONTH),
+                        calendar.get(Calendar.DAY_OF_MONTH)
+                    ).show()
+                }
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(otherText)
+                Column {
+                    Text(
+                        text = "Date & Time",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = dateFormat.format(selectedDateTime.time),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+                Icon(
+                    imageVector = Icons.Default.CalendarToday,
+                    contentDescription = "Select date and time",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
 
-        if (selectedSymptom != null) {
-            val symptomToSave = if (selectedSymptom == otherText) customSymptom else selectedSymptom
-
-            if (selectedSymptom == otherText) {
-                OutlinedTextField(
-                    value = customSymptom,
-                    onValueChange = { customSymptom = it },
-                    label = { Text(stringResource(R.string.symptom_label)) },
-                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
-                )
-            } else {
-                Text(text = stringResource(R.string.symptom_selected, selectedSymptom!!), modifier = Modifier.padding(top = 16.dp))
-            }
-
-            Text(text = stringResource(R.string.intensity_label, intensity.toInt()), modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
-            Slider(
-                value = intensity,
-                onValueChange = { intensity = it },
-                valueRange = 0f..10f,
-                steps = 9,
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-            )
-
-            // Date/Time Picker
-            OutlinedCard(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp)
-                    .clickable {
-                        val calendar = selectedDateTime
-                        DatePickerDialog(
-                            context,
-                            { _, year, month, dayOfMonth ->
-                                val newCalendar = Calendar.getInstance().apply {
-                                    set(year, month, dayOfMonth, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE))
-                                }
-                                selectedDateTime = newCalendar
-
-                                // After date is selected, show time picker
-                                TimePickerDialog(
-                                    context,
-                                    { _, hourOfDay, minute ->
-                                        val finalCalendar = Calendar.getInstance().apply {
-                                            set(year, month, dayOfMonth, hourOfDay, minute)
-                                        }
-                                        selectedDateTime = finalCalendar
-                                    },
-                                    calendar.get(Calendar.HOUR_OF_DAY),
-                                    calendar.get(Calendar.MINUTE),
-                                    true
-                                ).show()
-                            },
-                            calendar.get(Calendar.YEAR),
-                            calendar.get(Calendar.MONTH),
-                            calendar.get(Calendar.DAY_OF_MONTH)
-                        ).show()
-                    }
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
-                        Text(
-                            text = "Date & Time",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = dateFormat.format(selectedDateTime.time),
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                    }
-                    Icon(
-                        imageVector = Icons.Default.CalendarToday,
-                        contentDescription = "Select date and time",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+        Button(
+            onClick = {
+                val symptomName = when {
+                    selectedSymptom == otherText && customSymptom.isNotBlank() -> customSymptom
+                    selectedSymptom != null && selectedSymptom != otherText -> selectedSymptom!!
+                    else -> null
                 }
-            }
 
-            Button(
-                onClick = {
-                    if (symptomToSave != null && symptomToSave.isNotBlank()) {
-                        symptomsViewModel.saveSymptom(symptomToSave, intensity.toInt(), selectedDateTime.time)
-                        selectedSymptom = null
-                        customSymptom = ""
-                        intensity = 0f
-                        selectedDateTime = Calendar.getInstance()
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(stringResource(R.string.button_save))
-            }
+                if (symptomName != null) {
+                    symptomsViewModel.saveSymptom(
+                        symptomName,
+                        intensity.roundToInt(),
+                        selectedDateTime.time
+                    )
+                    selectedSymptom = null
+                    customSymptom = ""
+                    intensity = 0f
+                    selectedDateTime = Calendar.getInstance()
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(stringResource(R.string.button_save))
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // List of symptoms
+        // List of logged symptoms
         if (loggedSymptoms.isNotEmpty()) {
             Text(
-                text = "Recent Entries",
+                text = "Recent Symptoms",
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
@@ -177,27 +356,72 @@ fun SymptomsScreen(symptomsViewModel: SymptomsViewModel) {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(loggedSymptoms.sortedByDescending { it.date }) { symptom ->
+                    var showOptions by remember { mutableStateOf(false) }
+                    
                     Card(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .combinedClickable(
+                                onClick = { },
+                                onLongClick = { showOptions = true }
+                            ),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant
                         )
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = symptom.name,
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Text(
-                                text = "Intensity: ${symptom.intensity}/10",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = dateFormat.format(symptom.date),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = symptom.name,
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
+                                    Text(
+                                        text = "Intensity: ${symptom.intensity}/10",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = dateFormat.format(symptom.date),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                
+                                if (showOptions) {
+                                    Row {
+                                        IconButton(
+                                            onClick = {
+                                                editingItem = symptom
+                                                showEditDialog = true
+                                                showOptions = false
+                                            }
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Edit,
+                                                contentDescription = "Edit",
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                        IconButton(
+                                            onClick = {
+                                                itemToDelete = symptom
+                                                showDeleteDialog = true
+                                                showOptions = false
+                                            }
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Delete,
+                                                contentDescription = "Delete",
+                                                tint = MaterialTheme.colorScheme.error
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

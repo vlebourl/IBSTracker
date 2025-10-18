@@ -24,4 +24,16 @@ class SymptomsViewModel(private val dataRepository: DataRepository) : ViewModel(
             dataRepository.insertSymptom(Symptom(name = name, intensity = intensity, date = date))
         }
     }
+
+    fun updateSymptom(symptom: Symptom) {
+        viewModelScope.launch {
+            dataRepository.updateSymptom(symptom)
+        }
+    }
+
+    fun deleteSymptom(symptom: Symptom) {
+        viewModelScope.launch {
+            dataRepository.deleteSymptom(symptom)
+        }
+    }
 }

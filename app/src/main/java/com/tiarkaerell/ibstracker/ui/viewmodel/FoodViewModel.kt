@@ -24,4 +24,16 @@ class FoodViewModel(private val dataRepository: DataRepository) : ViewModel() {
             dataRepository.insertFoodItem(FoodItem(name = name, quantity = quantity, date = date))
         }
     }
+
+    fun updateFoodItem(foodItem: FoodItem) {
+        viewModelScope.launch {
+            dataRepository.updateFoodItem(foodItem)
+        }
+    }
+
+    fun deleteFoodItem(foodItem: FoodItem) {
+        viewModelScope.launch {
+            dataRepository.deleteFoodItem(foodItem)
+        }
+    }
 }

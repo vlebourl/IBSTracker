@@ -27,6 +27,8 @@
     <string name="symptom_other">Other</string>
     <string name="symptom_label">Symptom</string>
     <string name="symptom_selected">Symptom: %s</string>
+    <string name="symptom_custom_label">Specify symptom</string>
+    <string name="symptom_intensity_label">Intensity</string>
     <string name="intensity_label">Intensity: %d</string>
 
     <!-- Settings Screen -->
