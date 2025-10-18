@@ -16,9 +16,25 @@ class DataRepository(
         foodItemDao.insert(foodItem)
     }
 
+    suspend fun updateFoodItem(foodItem: FoodItem) {
+        foodItemDao.update(foodItem)
+    }
+
+    suspend fun deleteFoodItem(foodItem: FoodItem) {
+        foodItemDao.delete(foodItem)
+    }
+
     fun getAllSymptoms(): Flow<List<Symptom>> = symptomDao.getAll()
 
     suspend fun insertSymptom(symptom: Symptom) {
         symptomDao.insert(symptom)
+    }
+
+    suspend fun updateSymptom(symptom: Symptom) {
+        symptomDao.update(symptom)
+    }
+
+    suspend fun deleteSymptom(symptom: Symptom) {
+        symptomDao.delete(symptom)
     }
 }

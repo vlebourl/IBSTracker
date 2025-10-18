@@ -1,15 +1,24 @@
 package com.tiarkaerell.ibstracker.ui.screens
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Fastfood
 import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.tiarkaerell.ibstracker.R
@@ -19,6 +28,7 @@ import com.tiarkaerell.ibstracker.ui.viewmodel.FoodViewModel
 import com.tiarkaerell.ibstracker.ui.viewmodel.SymptomsViewModel
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.roundToInt
 
 // Sealed class to represent timeline entries
 sealed class TimelineEntry(val date: Date) {
@@ -78,6 +88,7 @@ private fun Date.startOfDay(): Date {
     return calendar.time
 }
 
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     foodViewModel: FoodViewModel,
@@ -86,7 +97,288 @@ fun DashboardScreen(
     val foodItems by foodViewModel.foodItems.collectAsState()
     val symptoms by symptomsViewModel.symptoms.collectAsState()
     val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
+    val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault()) }
     val locale = Locale.getDefault()
+    val context = LocalContext.current
+
+    // Dialog states
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var itemToDelete by remember { mutableStateOf<Any?>(null) }
+    var showEditFoodDialog by remember { mutableStateOf(false) }
+    var showEditSymptomDialog by remember { mutableStateOf(false) }
+    var editingFoodItem by remember { mutableStateOf<FoodItem?>(null) }
+    var editingSymptom by remember { mutableStateOf<Symptom?>(null) }
+
+    // Delete confirmation dialog
+    if (showDeleteDialog && itemToDelete != null) {
+        val currentItem = itemToDelete
+        val itemName = when (currentItem) {
+            is FoodItem -> currentItem.name
+            is Symptom -> currentItem.name
+            else -> "item"
+        }
+        
+        AlertDialog(
+            onDismissRequest = { 
+                showDeleteDialog = false
+                itemToDelete = null
+            },
+            title = { Text("Delete Entry") },
+            text = { Text("Are you sure you want to delete '$itemName'?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        when (currentItem) {
+                            is FoodItem -> foodViewModel.deleteFoodItem(currentItem)
+                            is Symptom -> symptomsViewModel.deleteSymptom(currentItem)
+                        }
+                        showDeleteDialog = false
+                        itemToDelete = null
+                    }
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        itemToDelete = null
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Edit Food dialog
+    if (showEditFoodDialog && editingFoodItem != null) {
+        var editName by remember { mutableStateOf(editingFoodItem!!.name) }
+        var editQuantity by remember { mutableStateOf(editingFoodItem!!.quantity) }
+        var editDateTime by remember { 
+            mutableStateOf(Calendar.getInstance().apply { time = editingFoodItem!!.date })
+        }
+
+        AlertDialog(
+            onDismissRequest = { 
+                showEditFoodDialog = false
+                editingFoodItem = null
+            },
+            title = { Text("Edit Food Entry") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = editName,
+                        onValueChange = { editName = it },
+                        label = { Text("Food Name") },
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                    )
+                    OutlinedTextField(
+                        value = editQuantity,
+                        onValueChange = { editQuantity = it },
+                        label = { Text("Quantity") },
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                    )
+                    OutlinedCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .combinedClickable(
+                                onClick = {
+                                    DatePickerDialog(
+                                        context,
+                                        { _, year, month, dayOfMonth ->
+                                            val newCalendar = Calendar.getInstance().apply {
+                                                set(year, month, dayOfMonth, 
+                                                    editDateTime.get(Calendar.HOUR_OF_DAY), 
+                                                    editDateTime.get(Calendar.MINUTE))
+                                            }
+                                            editDateTime = newCalendar
+                                            
+                                            TimePickerDialog(
+                                                context,
+                                                { _, hourOfDay, minute ->
+                                                    val finalCalendar = Calendar.getInstance().apply {
+                                                        set(year, month, dayOfMonth, hourOfDay, minute)
+                                                    }
+                                                    editDateTime = finalCalendar
+                                                },
+                                                editDateTime.get(Calendar.HOUR_OF_DAY),
+                                                editDateTime.get(Calendar.MINUTE),
+                                                true
+                                            ).show()
+                                        },
+                                        editDateTime.get(Calendar.YEAR),
+                                        editDateTime.get(Calendar.MONTH),
+                                        editDateTime.get(Calendar.DAY_OF_MONTH)
+                                    ).show()
+                                }
+                            )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = dateFormat.format(editDateTime.time),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Icon(
+                                imageVector = Icons.Default.CalendarToday,
+                                contentDescription = "Select date",
+                                modifier = Modifier.padding(start = 8.dp)
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val updatedItem = editingFoodItem!!.copy(
+                            name = editName,
+                            quantity = editQuantity,
+                            date = editDateTime.time
+                        )
+                        foodViewModel.updateFoodItem(updatedItem)
+                        showEditFoodDialog = false
+                        editingFoodItem = null
+                    }
+                ) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showEditFoodDialog = false
+                        editingFoodItem = null
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Edit Symptom dialog
+    if (showEditSymptomDialog && editingSymptom != null) {
+        var editName by remember { mutableStateOf(editingSymptom!!.name) }
+        var editIntensity by remember { mutableStateOf(editingSymptom!!.intensity.toFloat()) }
+        var editDateTime by remember { 
+            mutableStateOf(Calendar.getInstance().apply { time = editingSymptom!!.date })
+        }
+
+        AlertDialog(
+            onDismissRequest = { 
+                showEditSymptomDialog = false
+                editingSymptom = null
+            },
+            title = { Text("Edit Symptom") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = editName,
+                        onValueChange = { editName = it },
+                        label = { Text("Symptom Name") },
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                    )
+                    
+                    Text(
+                        text = "Intensity: ${editIntensity.roundToInt()}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                    Slider(
+                        value = editIntensity,
+                        onValueChange = { editIntensity = it },
+                        valueRange = 0f..10f,
+                        steps = 9,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                    )
+                    
+                    OutlinedCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .combinedClickable(
+                                onClick = {
+                                    DatePickerDialog(
+                                        context,
+                                        { _, year, month, dayOfMonth ->
+                                            val newCalendar = Calendar.getInstance().apply {
+                                                set(year, month, dayOfMonth, 
+                                                    editDateTime.get(Calendar.HOUR_OF_DAY), 
+                                                    editDateTime.get(Calendar.MINUTE))
+                                            }
+                                            editDateTime = newCalendar
+                                            
+                                            TimePickerDialog(
+                                                context,
+                                                { _, hourOfDay, minute ->
+                                                    val finalCalendar = Calendar.getInstance().apply {
+                                                        set(year, month, dayOfMonth, hourOfDay, minute)
+                                                    }
+                                                    editDateTime = finalCalendar
+                                                },
+                                                editDateTime.get(Calendar.HOUR_OF_DAY),
+                                                editDateTime.get(Calendar.MINUTE),
+                                                true
+                                            ).show()
+                                        },
+                                        editDateTime.get(Calendar.YEAR),
+                                        editDateTime.get(Calendar.MONTH),
+                                        editDateTime.get(Calendar.DAY_OF_MONTH)
+                                    ).show()
+                                }
+                            )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = dateFormat.format(editDateTime.time),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Icon(
+                                imageVector = Icons.Default.CalendarToday,
+                                contentDescription = "Select date",
+                                modifier = Modifier.padding(start = 8.dp)
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val updatedItem = editingSymptom!!.copy(
+                            name = editName,
+                            intensity = editIntensity.roundToInt(),
+                            date = editDateTime.time
+                        )
+                        symptomsViewModel.updateSymptom(updatedItem)
+                        showEditSymptomDialog = false
+                        editingSymptom = null
+                    }
+                ) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showEditSymptomDialog = false
+                        editingSymptom = null
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     // Combine, sort, and group entries by day
     val groupedEntries = remember(foodItems, symptoms) {
@@ -176,8 +468,15 @@ fun DashboardScreen(
                 when (entry) {
                     is TimelineEntry.FoodEntry -> {
                         val item = entry.foodItem
+                        var showOptions by remember { mutableStateOf(false) }
+                        
                         Card(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .combinedClickable(
+                                    onClick = { },
+                                    onLongClick = { showOptions = true }
+                                ),
                             colors = CardDefaults.cardColors(
                                 containerColor = Color(0xFF88B06D).copy(alpha = 0.15f)
                             )
@@ -215,13 +514,52 @@ fun DashboardScreen(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
+                                
+                                // Edit/Delete buttons (only visible after long press)
+                                if (showOptions) {
+                                    Row {
+                                        IconButton(
+                                            onClick = {
+                                                editingFoodItem = item
+                                                showEditFoodDialog = true
+                                                showOptions = false
+                                            }
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Edit,
+                                                contentDescription = "Edit",
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                        IconButton(
+                                            onClick = {
+                                                itemToDelete = item
+                                                showDeleteDialog = true
+                                                showOptions = false
+                                            }
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Delete,
+                                                contentDescription = "Delete",
+                                                tint = MaterialTheme.colorScheme.error
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                     is TimelineEntry.SymptomEntry -> {
                         val symptom = entry.symptom
+                        var showOptions by remember { mutableStateOf(false) }
+                        
                         Card(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .combinedClickable(
+                                    onClick = { },
+                                    onLongClick = { showOptions = true }
+                                ),
                             colors = CardDefaults.cardColors(
                                 containerColor = Color(0xFFFF6B6B).copy(alpha = 0.15f)
                             )
@@ -258,6 +596,38 @@ fun DashboardScreen(
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
+                                }
+                                
+                                // Edit/Delete buttons (only visible after long press)
+                                if (showOptions) {
+                                    Row {
+                                        IconButton(
+                                            onClick = {
+                                                editingSymptom = symptom
+                                                showEditSymptomDialog = true
+                                                showOptions = false
+                                            }
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Edit,
+                                                contentDescription = "Edit",
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                        IconButton(
+                                            onClick = {
+                                                itemToDelete = symptom
+                                                showDeleteDialog = true
+                                                showOptions = false
+                                            }
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Delete,
+                                                contentDescription = "Delete",
+                                                tint = MaterialTheme.colorScheme.error
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }

@@ -1,8 +1,10 @@
 package com.tiarkaerell.ibstracker.data.database.dao
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 import com.tiarkaerell.ibstracker.data.model.FoodItem
 import kotlinx.coroutines.flow.Flow
 
@@ -10,6 +12,12 @@ import kotlinx.coroutines.flow.Flow
 interface FoodItemDao {
     @Insert
     suspend fun insert(foodItem: FoodItem)
+
+    @Update
+    suspend fun update(foodItem: FoodItem)
+
+    @Delete
+    suspend fun delete(foodItem: FoodItem)
 
     @Query("SELECT * FROM food_items ORDER BY date DESC")
     fun getAll(): Flow<List<FoodItem>>

@@ -8,6 +8,15 @@ android {
     namespace = "com.tiarkaerell.ibstracker"
     compileSdk = 34
 
+    signingConfigs {
+        create("release") {
+            keyAlias = "release-key"
+            keyPassword = "android123"
+            storeFile = file("release-keystore.jks")
+            storePassword = "android123"
+        }
+    }
+
     defaultConfig {
         applicationId = "com.tiarkaerell.ibstracker"
         minSdk = 24
@@ -28,6 +37,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
+        }
+        debug {
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
