@@ -6,11 +6,13 @@
     <string name="nav_dashboard">Tableau de bord</string>
     <string name="nav_food">Alimentation</string>
     <string name="nav_symptoms">Symptômes</string>
+    <string name="nav_analytics">Analyses</string>
     <string name="nav_settings">Paramètres</string>
 
     <!-- Dashboard Screen -->
     <string name="dashboard_welcome">Bienvenue sur Traceur SCI</string>
     <string name="dashboard_summary">Vous trouverez ici un résumé de vos journaux alimentaires et de symptômes récents.</string>
+    <string name="dashboard_recent_activity">Activité récente</string>
 
     <!-- Food Screen -->
     <string name="food_title">Enregistrer un aliment ou une boisson</string>

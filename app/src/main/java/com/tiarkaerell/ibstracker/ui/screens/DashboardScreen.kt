@@ -459,7 +459,7 @@ fun DashboardScreen(
         // Timeline section header
         item {
             Text(
-                text = "Recent Activity",
+                text = stringResource(R.string.dashboard_recent_activity),
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
