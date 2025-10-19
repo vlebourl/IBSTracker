@@ -16,8 +16,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.tiarkaerell.ibstracker.R
+import com.tiarkaerell.ibstracker.data.model.FoodCategoryHelper
 import com.tiarkaerell.ibstracker.data.model.InsightSummary
 import com.tiarkaerell.ibstracker.data.model.TriggerAnalysis
 import com.tiarkaerell.ibstracker.data.model.CategoryInsight
@@ -43,7 +47,7 @@ fun AnalyticsScreen(analyticsViewModel: AnalyticsViewModel) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Insights & Analytics",
+                text = stringResource(R.string.analytics_title),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -54,7 +58,7 @@ fun AnalyticsScreen(analyticsViewModel: AnalyticsViewModel) {
             ) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
-                    contentDescription = "Refresh insights"
+                    contentDescription = stringResource(R.string.refresh_insights)
                 )
             }
         }
@@ -129,7 +133,7 @@ private fun OverallStatsCard(insights: InsightSummary) {
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Your Tracking Summary",
+                text = stringResource(R.string.tracking_summary_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -143,17 +147,17 @@ private fun OverallStatsCard(insights: InsightSummary) {
             ) {
                 StatItem(
                     value = insights.totalFoodEntries.toString(),
-                    label = "Foods Logged",
+                    label = stringResource(R.string.foods_logged_label),
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
                 StatItem(
                     value = insights.totalSymptoms.toString(),
-                    label = "Symptoms",
+                    label = stringResource(R.string.symptoms_label),
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
                 StatItem(
                     value = String.format("%.1f", insights.averageSymptomIntensity),
-                    label = "Avg Intensity",
+                    label = stringResource(R.string.avg_intensity_label),
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
@@ -182,6 +186,7 @@ private fun StatItem(value: String, label: String, color: Color) {
 
 @Composable
 private fun TriggerAnalysisCard(triggers: List<TriggerAnalysis>) {
+    val context = LocalContext.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -201,7 +206,7 @@ private fun TriggerAnalysisCard(triggers: List<TriggerAnalysis>) {
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Potential Triggers",
+                    text = stringResource(R.string.potential_triggers_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -218,7 +223,7 @@ private fun TriggerAnalysisCard(triggers: List<TriggerAnalysis>) {
             
             if (triggers.isEmpty()) {
                 Text(
-                    text = "No clear triggers identified yet. Keep logging to see patterns!",
+                    text = stringResource(R.string.no_triggers_found),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -229,6 +234,7 @@ private fun TriggerAnalysisCard(triggers: List<TriggerAnalysis>) {
 
 @Composable
 private fun TriggerItem(trigger: TriggerAnalysis) {
+    val context = LocalContext.current
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -246,12 +252,12 @@ private fun TriggerItem(trigger: TriggerAnalysis) {
             Spacer(modifier = Modifier.width(8.dp))
             Column {
                 Text(
-                    text = trigger.category.displayName,
+                    text = FoodCategoryHelper.getDisplayName(context, trigger.category),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium
                 )
                 Text(
-                    text = "${trigger.symptomsTriggered}/${trigger.occurrences} times",
+                    text = stringResource(R.string.trigger_times_format, trigger.symptomsTriggered, trigger.occurrences),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -259,7 +265,7 @@ private fun TriggerItem(trigger: TriggerAnalysis) {
         }
         
         Text(
-            text = "${(trigger.triggerScore * 100).toInt()}%",
+            text = stringResource(R.string.trigger_percentage_format, (trigger.triggerScore * 100).toInt()),
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.error
@@ -269,6 +275,7 @@ private fun TriggerItem(trigger: TriggerAnalysis) {
 
 @Composable
 private fun SafeCategoriesCard(categories: List<CategoryInsight>) {
+    val context = LocalContext.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -279,7 +286,7 @@ private fun SafeCategoriesCard(categories: List<CategoryInsight>) {
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Safest Food Categories",
+                text = stringResource(R.string.safest_categories_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF2E7D32)
@@ -299,6 +306,7 @@ private fun SafeCategoriesCard(categories: List<CategoryInsight>) {
 
 @Composable
 private fun SafeCategoryItem(category: CategoryInsight) {
+    val context = LocalContext.current
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -316,12 +324,12 @@ private fun SafeCategoryItem(category: CategoryInsight) {
             Spacer(modifier = Modifier.width(8.dp))
             Column {
                 Text(
-                    text = category.category.displayName,
+                    text = FoodCategoryHelper.getDisplayName(context, category.category),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium
                 )
                 Text(
-                    text = "${category.totalEntries} entries logged",
+                    text = context.resources.getQuantityString(R.plurals.entries_logged, category.totalEntries, category.totalEntries),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -329,7 +337,7 @@ private fun SafeCategoryItem(category: CategoryInsight) {
         }
         
         Text(
-            text = "${(category.safetyScore * 100).toInt()}% safe",
+            text = stringResource(R.string.safety_percentage_format, (category.safetyScore * 100).toInt()),
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF2E7D32)
@@ -346,14 +354,22 @@ private fun WeeklyPatternsCard(patterns: List<com.tiarkaerell.ibstracker.data.mo
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Weekly Symptom Patterns",
+                text = stringResource(R.string.weekly_patterns_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
             
             Spacer(modifier = Modifier.height(12.dp))
             
-            val dayNames = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+            val dayNames = listOf(
+                stringResource(R.string.day_sun),
+                stringResource(R.string.day_mon),
+                stringResource(R.string.day_tue),
+                stringResource(R.string.day_wed),
+                stringResource(R.string.day_thu),
+                stringResource(R.string.day_fri),
+                stringResource(R.string.day_sat)
+            )
             val maxSymptoms = patterns.maxOfOrNull { it.symptomCount } ?: 1
             
             patterns.forEachIndexed { index, pattern ->
@@ -416,7 +432,7 @@ private fun TrendAnalysisCard(improvementTrend: Float, daysSinceLastSymptom: Int
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Health Trends",
+                text = stringResource(R.string.health_trends_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -428,11 +444,11 @@ private fun TrendAnalysisCard(improvementTrend: Float, daysSinceLastSymptom: Int
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Days since last symptom: ",
+                    text = stringResource(R.string.days_since_symptom_label),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Text(
-                    text = if (daysSinceLastSymptom == Int.MAX_VALUE) "No symptoms yet" else "$daysSinceLastSymptom",
+                    text = if (daysSinceLastSymptom == Int.MAX_VALUE) stringResource(R.string.no_symptoms_yet) else "$daysSinceLastSymptom",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = if (daysSinceLastSymptom > 7) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onSurface
@@ -452,9 +468,9 @@ private fun TrendAnalysisCard(improvementTrend: Float, daysSinceLastSymptom: Int
                 }
                 
                 val trendText = when {
-                    improvementTrend > 0.1f -> "Symptoms improving"
-                    improvementTrend < -0.1f -> "Symptoms worsening"
-                    else -> "Symptoms stable"
+                    improvementTrend > 0.1f -> stringResource(R.string.symptoms_improving)
+                    improvementTrend < -0.1f -> stringResource(R.string.symptoms_worsening)
+                    else -> stringResource(R.string.symptoms_stable)
                 }
                 
                 val trendColor = when {
@@ -491,13 +507,13 @@ private fun EmptyInsightsState() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Not enough data yet",
+            text = stringResource(R.string.not_enough_data),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Log more foods and symptoms to see insights and patterns",
+            text = stringResource(R.string.log_more_data_message),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

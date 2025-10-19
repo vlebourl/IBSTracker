@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.tiarkaerell.ibstracker.R
+import com.tiarkaerell.ibstracker.data.model.FoodCategoryHelper
 import com.tiarkaerell.ibstracker.data.model.FoodItem
 import com.tiarkaerell.ibstracker.data.model.Symptom
 import com.tiarkaerell.ibstracker.ui.viewmodel.FoodViewModel
@@ -40,7 +41,7 @@ sealed class TimelineEntry(val date: Date) {
 }
 
 // Helper function to get relative date label
-private fun getRelativeDateLabel(date: Date, locale: Locale): String {
+private fun getRelativeDateLabel(date: Date, context: android.content.Context): String {
     val calendar = Calendar.getInstance()
     val today = calendar.clone() as Calendar
     today.set(Calendar.HOUR_OF_DAY, 0)
@@ -60,20 +61,20 @@ private fun getRelativeDateLabel(date: Date, locale: Locale): String {
 
     return when {
         entryCalendar.timeInMillis == today.timeInMillis -> {
-            if (locale.language == "fr") "Aujourd'hui" else "Today"
+            context.getString(R.string.today)
         }
         entryCalendar.timeInMillis == yesterday.timeInMillis -> {
-            if (locale.language == "fr") "Hier" else "Yesterday"
+            context.getString(R.string.yesterday)
         }
         else -> {
             // For dates within the last 7 days, show day name
             val daysDiff = ((today.timeInMillis - entryCalendar.timeInMillis) / (1000 * 60 * 60 * 24)).toInt()
             if (daysDiff < 7) {
-                val dayFormat = SimpleDateFormat("EEEE", locale)
+                val dayFormat = SimpleDateFormat("EEEE", Locale.getDefault())
                 dayFormat.format(date)
             } else {
                 // For older dates, show full date
-                val dateFormat = SimpleDateFormat("MMMM dd, yyyy", locale)
+                val dateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault())
                 dateFormat.format(date)
             }
         }
@@ -101,7 +102,6 @@ fun DashboardScreen(
     val symptoms by symptomsViewModel.symptoms.collectAsState()
     val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
     val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault()) }
-    val locale = Locale.getDefault()
     val context = LocalContext.current
 
     // Dialog states
@@ -118,7 +118,7 @@ fun DashboardScreen(
         val itemName = when (currentItem) {
             is FoodItem -> currentItem.name
             is Symptom -> currentItem.name
-            else -> "item"
+            else -> stringResource(R.string.item_generic)
         }
         
         AlertDialog(
@@ -126,8 +126,8 @@ fun DashboardScreen(
                 showDeleteDialog = false
                 itemToDelete = null
             },
-            title = { Text("Delete Entry") },
-            text = { Text("Are you sure you want to delete '$itemName'?") },
+            title = { Text(stringResource(R.string.delete_entry_title)) },
+            text = { Text(stringResource(R.string.delete_entry_message, itemName)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -139,7 +139,7 @@ fun DashboardScreen(
                         itemToDelete = null
                     }
                 ) {
-                    Text("Delete")
+                    Text(stringResource(R.string.button_delete))
                 }
             },
             dismissButton = {
@@ -149,7 +149,7 @@ fun DashboardScreen(
                         itemToDelete = null
                     }
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.button_cancel))
                 }
             }
         )
@@ -170,19 +170,19 @@ fun DashboardScreen(
                 showEditFoodDialog = false
                 editingFoodItem = null
             },
-            title = { Text("Edit Food Entry") },
+            title = { Text(stringResource(R.string.edit_food_entry_title)) },
             text = {
                 Column {
                     OutlinedTextField(
                         value = editName,
                         onValueChange = { editName = it },
-                        label = { Text("Food Name") },
+                        label = { Text(stringResource(R.string.food_name_edit_label)) },
                         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
                     )
                     OutlinedTextField(
                         value = editQuantity,
                         onValueChange = { editQuantity = it },
-                        label = { Text("Quantity") },
+                        label = { Text(stringResource(R.string.food_quantity_label)) },
                         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
                     )
                     
@@ -193,10 +193,10 @@ fun DashboardScreen(
                         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
                     ) {
                         OutlinedTextField(
-                            value = editCategory.displayName,
+                            value = FoodCategoryHelper.getDisplayName(context, editCategory),
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("Category") },
+                            label = { Text(stringResource(R.string.category_title)) },
                             trailingIcon = {
                                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = showEditCategoryDropdown)
                             },
@@ -225,7 +225,7 @@ fun DashboardScreen(
                                                     .background(category.color)
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
-                                            Text(category.displayName)
+                                            Text(FoodCategoryHelper.getDisplayName(context, category))
                                         }
                                     },
                                     onClick = {
@@ -282,7 +282,7 @@ fun DashboardScreen(
                             )
                             Icon(
                                 imageVector = Icons.Default.CalendarToday,
-                                contentDescription = "Select date",
+                                contentDescription = stringResource(R.string.cd_select_date),
                                 modifier = Modifier.padding(start = 8.dp)
                             )
                         }
@@ -303,7 +303,7 @@ fun DashboardScreen(
                         editingFoodItem = null
                     }
                 ) {
-                    Text("Save")
+                    Text(stringResource(R.string.button_save))
                 }
             },
             dismissButton = {
@@ -313,7 +313,7 @@ fun DashboardScreen(
                         editingFoodItem = null
                     }
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.button_cancel))
                 }
             }
         )
@@ -332,18 +332,18 @@ fun DashboardScreen(
                 showEditSymptomDialog = false
                 editingSymptom = null
             },
-            title = { Text("Edit Symptom") },
+            title = { Text(stringResource(R.string.edit_symptom_title)) },
             text = {
                 Column {
                     OutlinedTextField(
                         value = editName,
                         onValueChange = { editName = it },
-                        label = { Text("Symptom Name") },
+                        label = { Text(stringResource(R.string.symptom_name_label)) },
                         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
                     )
                     
                     Text(
-                        text = "Intensity: ${editIntensity.roundToInt()}",
+                        text = stringResource(R.string.intensity_format, editIntensity.roundToInt()),
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(bottom = 4.dp)
                     )
@@ -401,7 +401,7 @@ fun DashboardScreen(
                             )
                             Icon(
                                 imageVector = Icons.Default.CalendarToday,
-                                contentDescription = "Select date",
+                                contentDescription = stringResource(R.string.cd_select_date),
                                 modifier = Modifier.padding(start = 8.dp)
                             )
                         }
@@ -421,7 +421,7 @@ fun DashboardScreen(
                         editingSymptom = null
                     }
                 ) {
-                    Text("Save")
+                    Text(stringResource(R.string.button_save))
                 }
             },
             dismissButton = {
@@ -431,7 +431,7 @@ fun DashboardScreen(
                         editingSymptom = null
                     }
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.button_cancel))
                 }
             }
         )
@@ -479,13 +479,13 @@ fun DashboardScreen(
                         horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "No entries yet",
+                            text = stringResource(R.string.no_entries_yet),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Start tracking your food and symptoms",
+                            text = stringResource(R.string.start_tracking_message),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -508,7 +508,7 @@ fun DashboardScreen(
                             color = MaterialTheme.colorScheme.outlineVariant
                         )
                         Text(
-                            text = getRelativeDateLabel(dayDate, locale),
+                            text = getRelativeDateLabel(dayDate, context),
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(horizontal = 16.dp)
@@ -548,7 +548,7 @@ fun DashboardScreen(
                                 Box {
                                     Icon(
                                         imageVector = Icons.Default.Fastfood,
-                                        contentDescription = "Food",
+                                        contentDescription = stringResource(R.string.food_label),
                                         tint = item.category.color,
                                         modifier = Modifier.size(32.dp)
                                     )
@@ -579,12 +579,12 @@ fun DashboardScreen(
                                         )
                                     }
                                     Text(
-                                        text = "Quantity: ${item.quantity}",
+                                        text = stringResource(R.string.quantity_format, item.quantity),
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                     Text(
-                                        text = item.category.displayName,
+                                        text = FoodCategoryHelper.getDisplayName(context, item.category),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = item.category.color
                                     )
@@ -607,7 +607,7 @@ fun DashboardScreen(
                                         ) {
                                             Icon(
                                                 Icons.Default.Edit,
-                                                contentDescription = "Edit",
+                                                contentDescription = stringResource(R.string.cd_edit),
                                                 tint = MaterialTheme.colorScheme.primary
                                             )
                                         }
@@ -620,7 +620,7 @@ fun DashboardScreen(
                                         ) {
                                             Icon(
                                                 Icons.Default.Delete,
-                                                contentDescription = "Delete",
+                                                contentDescription = stringResource(R.string.cd_delete),
                                                 tint = MaterialTheme.colorScheme.error
                                             )
                                         }
@@ -653,7 +653,7 @@ fun DashboardScreen(
                                 // Icon
                                 Icon(
                                     imageVector = Icons.Default.HealthAndSafety,
-                                    contentDescription = "Symptom",
+                                    contentDescription = stringResource(R.string.symptom_label_short),
                                     tint = Color(0xFFFF6B6B),
                                     modifier = Modifier.size(32.dp)
                                 )
@@ -666,7 +666,7 @@ fun DashboardScreen(
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
-                                        text = "Intensity: ${symptom.intensity}/10",
+                                        text = stringResource(R.string.intensity_scale_format, symptom.intensity),
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -690,7 +690,7 @@ fun DashboardScreen(
                                         ) {
                                             Icon(
                                                 Icons.Default.Edit,
-                                                contentDescription = "Edit",
+                                                contentDescription = stringResource(R.string.cd_edit),
                                                 tint = MaterialTheme.colorScheme.primary
                                             )
                                         }
@@ -703,7 +703,7 @@ fun DashboardScreen(
                                         ) {
                                             Icon(
                                                 Icons.Default.Delete,
-                                                contentDescription = "Delete",
+                                                contentDescription = stringResource(R.string.cd_delete),
                                                 tint = MaterialTheme.colorScheme.error
                                             )
                                         }

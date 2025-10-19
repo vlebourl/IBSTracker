@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- App Name -->
     <string name="app_name">Traceur SCI</string>
@@ -19,6 +20,27 @@
     <string name="food_name_label">Aliment ou boisson</string>
     <string name="food_quantity_label">Quantité</string>
     <string name="button_save">Enregistrer</string>
+    <string name="button_cancel">Annuler</string>
+    <string name="button_delete">Supprimer</string>
+    <string name="delete_food_title">Supprimer l\'entrée alimentaire</string>
+    <string name="delete_food_message">Êtes-vous sûr de vouloir supprimer \"%1$s\" ?</string>
+    <string name="edit_food_title">Modifier l\'entrée alimentaire</string>
+    <string name="food_name_edit_label">Nom de l\'aliment</string>
+    <string name="category_label">Catégorie</string>
+    <string name="select_date_time">Sélectionner la date et l\'heure</string>
+    <string name="search_placeholder">Rechercher des aliments...</string>
+    <string name="search_food_or_select">Rechercher un aliment ou sélectionner une catégorie</string>
+    <string name="search_results">Résultats de recherche</string>
+    <string name="choose_food_or_custom">Choisir un aliment ou saisir personnalisé</string>
+    <string name="enter_food_name">Saisir le nom de l\'aliment</string>
+    <string name="enter_custom">Saisir personnalisé</string>
+    <string name="food_name_input_label">Nom de l\'aliment</string>
+    <string name="back_to_suggestions">Retour aux suggestions</string>
+    <string name="no_foods_found">Aucun aliment trouvé pour \"%1$s\"</string>
+    <string name="add_as_other">Ajouter \"%1$s\" comme Autre</string>
+    <string name="recent_entries">Entrées récentes</string>
+    <string name="all_categories">Tout</string>
+    <string name="no_food_entries">Aucune entrée alimentaire pour le moment. Commencez à suivre vos repas ci-dessus !</string>
 
     <!-- Symptoms Screen -->
     <string name="symptoms_title">Enregistrer un symptôme</string>
@@ -29,6 +51,8 @@
     <string name="symptom_other">Autre</string>
     <string name="symptom_label">Symptôme</string>
     <string name="symptom_selected">Symptôme : %s</string>
+    <string name="symptom_custom_label">Spécifier le symptôme</string>
+    <string name="symptom_intensity_label">Intensité</string>
     <string name="intensity_label">Intensité : %d</string>
 
     <!-- Settings Screen -->
@@ -46,4 +70,222 @@
     <!-- Languages -->
     <string name="language_english">English</string>
     <string name="language_french">Français</string>
+
+    <!-- Food Categories -->
+    <string name="food_category_dairy">Produits laitiers</string>
+    <string name="food_category_gluten">Gluten</string>
+    <string name="food_category_high_fodmap">FODMAP élevé</string>
+    <string name="food_category_spicy">Épicé</string>
+    <string name="food_category_processed_fatty">Transformé/Gras</string>
+    <string name="food_category_beverages">Boissons</string>
+    <string name="food_category_fruits">Fruits</string>
+    <string name="food_category_vegetables">Légumes</string>
+    <string name="food_category_other">Autres</string>
+
+    <!-- Food Category Descriptions -->
+    <string name="food_category_dairy_desc">Lait, fromage, yaourt, crème glacée</string>
+    <string name="food_category_gluten_desc">Pain, pâtes, produits à base de blé</string>
+    <string name="food_category_high_fodmap_desc">Oignons, ail, haricots, certains fruits</string>
+    <string name="food_category_spicy_desc">Piments forts, assaisonnements épicés</string>
+    <string name="food_category_processed_fatty_desc">Aliments frits, repas transformés, riches en graisses</string>
+    <string name="food_category_beverages_desc">Café, thé, alcool, sodas, boissons énergisantes</string>
+    <string name="food_category_fruits_desc">Fruits frais, jus de fruits</string>
+    <string name="food_category_vegetables_desc">Légumes frais, salades</string>
+    <string name="food_category_other_desc">Aliments non classés</string>
+
+    <!-- Common Foods Arrays -->
+    <string-array name="foods_dairy">
+        <item>Lait</item>
+        <item>Fromage</item>
+        <item>Yaourt</item>
+        <item>Crème glacée</item>
+        <item>Beurre</item>
+        <item>Crème</item>
+        <item>Fromage blanc</item>
+        <item>Crème fraîche</item>
+    </string-array>
+    
+    <string-array name="foods_gluten">
+        <item>Pain</item>
+        <item>Pâtes</item>
+        <item>Pizza</item>
+        <item>Céréales</item>
+        <item>Crackers</item>
+        <item>Bière</item>
+        <item>Biscuits</item>
+        <item>Gâteau</item>
+    </string-array>
+    
+    <string-array name="foods_high_fodmap">
+        <item>Ail</item>
+        <item>Oignons</item>
+        <item>Pommes</item>
+        <item>Haricots</item>
+        <item>Blé</item>
+        <item>Miel</item>
+        <item>Champignons</item>
+        <item>Chou-fleur</item>
+    </string-array>
+    
+    <string-array name="foods_spicy">
+        <item>Sauce piquante</item>
+        <item>Piment</item>
+        <item>Curry</item>
+        <item>Piment de Cayenne</item>
+        <item>Salsa</item>
+        <item>Wasabi</item>
+        <item>Ailes piquantes</item>
+        <item>Piment en flocons</item>
+    </string-array>
+    
+    <string-array name="foods_processed_fatty">
+        <item>Frites</item>
+        <item>Poulet frit</item>
+        <item>Chips</item>
+        <item>Bacon</item>
+        <item>Saucisses</item>
+        <item>Chocolat</item>
+        <item>Beignets</item>
+        <item>Burger fast-food</item>
+    </string-array>
+    
+    <string-array name="foods_beverages">
+        <item>Café</item>
+        <item>Thé</item>
+        <item>Bière</item>
+        <item>Vin</item>
+        <item>Soda</item>
+        <item>Boisson énergisante</item>
+        <item>Jus</item>
+        <item>Eau gazeuse</item>
+    </string-array>
+    
+    <string-array name="foods_fruits">
+        <item>Pomme</item>
+        <item>Banane</item>
+        <item>Orange</item>
+        <item>Fraises</item>
+        <item>Raisins</item>
+        <item>Pastèque</item>
+        <item>Myrtilles</item>
+        <item>Ananas</item>
+    </string-array>
+    
+    <string-array name="foods_vegetables">
+        <item>Salade</item>
+        <item>Carottes</item>
+        <item>Brocoli</item>
+        <item>Épinards</item>
+        <item>Tomates</item>
+        <item>Concombre</item>
+        <item>Poivrons</item>
+        <item>Courgette</item>
+    </string-array>
+    
+    <string-array name="foods_other">
+        <item>Riz</item>
+        <item>Poulet</item>
+        <item>Poisson</item>
+        <item>Oeufs</item>
+        <item>Noix</item>
+        <item>Flocons d\'avoine</item>
+        <item>Soupe</item>
+        <item>Sandwich</item>
+    </string-array>
+
+    <!-- Analytics Screen -->
+    <string name="analytics_title">Analyses et aperçus</string>
+    <string name="refresh_insights">Actualiser les analyses</string>
+    <string name="tracking_summary_title">Résumé de votre suivi</string>
+    <string name="foods_logged_label">Aliments enregistrés</string>
+    <string name="symptoms_label">Symptômes</string>
+    <string name="avg_intensity_label">Intensité moy.</string>
+    <string name="potential_triggers_title">Déclencheurs potentiels</string>
+    <string name="no_triggers_found">Aucun déclencheur clair identifié pour l\'instant. Continuez à enregistrer pour voir les tendances !</string>
+    <string name="trigger_times_format">%1$d/%2$d fois</string>
+    <string name="trigger_percentage_format">%d%%</string>
+    <string name="safest_categories_title">Catégories d\'aliments les plus sûres</string>
+    <string name="entries_logged_format">%d entrées enregistrées</string>
+    <string name="safety_percentage_format">%d%% sûr</string>
+    <string name="weekly_patterns_title">Tendances hebdomadaires des symptômes</string>
+    <string name="health_trends_title">Tendances de santé</string>
+    <string name="days_since_symptom_label">Jours depuis le dernier symptôme : </string>
+    <string name="no_symptoms_yet">Aucun symptôme encore</string>
+    <string name="symptoms_improving">Symptômes en amélioration</string>
+    <string name="symptoms_worsening">Symptômes qui s\'aggravent</string>
+    <string name="symptoms_stable">Symptômes stables</string>
+    <string name="not_enough_data">Pas encore assez de données</string>
+    <string name="log_more_data_message">Enregistrez plus d\'aliments et de symptômes pour voir les analyses et tendances</string>
+
+    <!-- Day names for weekly patterns -->
+    <string name="day_sun">Dim</string>
+    <string name="day_mon">Lun</string>
+    <string name="day_tue">Mar</string>
+    <string name="day_wed">Mer</string>
+    <string name="day_thu">Jeu</string>
+    <string name="day_fri">Ven</string>
+    <string name="day_sat">Sam</string>
+
+    <!-- General UI -->
+    <string name="intensity_format">Intensité : %d</string>
+    <string name="intensity_scale_format">Intensité : %d/10</string>
+    <string name="quantity_format">Quantité : %s</string>
+    <string name="date_time_label">Date et heure</string>
+    <string name="recent_symptoms_title">Symptômes récents</string>
+    <string name="no_entries_yet">Aucune entrée encore</string>
+    <string name="start_tracking_message">Commencez à suivre votre alimentation et vos symptômes</string>
+    <string name="category_title">Catégorie</string>
+
+    <!-- Content Descriptions -->
+    <string name="cd_select_date_time">Sélectionner la date et l\'heure</string>
+    <string name="cd_search">Rechercher</string>
+    <string name="cd_clear">Effacer</string>
+    <string name="cd_edit">Modifier</string>
+    <string name="cd_delete">Supprimer</string>
+    <string name="cd_select_date">Sélectionner la date</string>
+    <string name="cd_food_icon">Aliment</string>
+    <string name="cd_symptom_icon">Symptôme</string>
+    <string name="cd_select_date_time_short">Sélectionner la date et l\'heure</string>
+
+    <!-- Additional Missing Strings -->
+    <string name="search_food_or_select_category">Rechercher un aliment ou sélectionner une catégorie</string>
+    <string name="choose_food_or_enter_custom">Choisir un aliment ou saisir personnalisé</string>
+    <string name="enter_food_name_prompt">Saisir le nom de l\'aliment</string>
+    <string name="add_as_other_format">Ajouter \"%1$s\" comme Autre</string>
+    <string name="enter_custom_button">Saisir personnalisé</string>
+    <string name="food_name_input">Nom de l\'aliment</string>
+    <string name="back_to_suggestions_button">Retour aux suggestions</string>
+    <string name="all_filter">Tout</string>
+    
+    <!-- Dashboard Strings -->
+    <string name="today">Aujourd\'hui</string>
+    <string name="yesterday">Hier</string>
+    <string name="delete_entry_title">Supprimer l\'entrée</string>
+    <string name="delete_entry_message">Êtes-vous sûr de vouloir supprimer \'%1$s\' ?</string>
+    <string name="edit_food_entry_title">Modifier l\'entrée alimentaire</string>
+    <string name="edit_symptom_title">Modifier le symptôme</string>
+    <string name="symptom_name_label">Nom du symptôme</string>
+    <string name="item_generic">élément</string>
+    
+    <!-- Symptoms Screen -->
+    <string name="delete_symptom_title">Supprimer le symptôme</string>
+    <string name="delete_symptom_message">Êtes-vous sûr de vouloir supprimer \'%1$s\' ?</string>
+    <string name="edit_symptom_entry_title">Modifier l\'entrée de symptôme</string>
+    
+    <!-- Missing Dashboard/Symptoms strings -->
+    <string name="food_label">Aliment</string>
+    <string name="symptom_label_short">Symptôme</string>
+    
+    <!-- Plurals for proper localization -->
+    <plurals name="entries_logged">
+        <item quantity="zero">Aucune entrée enregistrée</item>
+        <item quantity="one">%d entrée enregistrée</item>
+        <item quantity="other">%d entrées enregistrées</item>
+    </plurals>
+    
+    <plurals name="days_since_symptom">
+        <item quantity="zero">Aucun jour depuis le dernier symptôme</item>
+        <item quantity="one">%d jour depuis le dernier symptôme</item>
+        <item quantity="other">%d jours depuis le dernier symptôme</item>
+    </plurals>
 </resources>
