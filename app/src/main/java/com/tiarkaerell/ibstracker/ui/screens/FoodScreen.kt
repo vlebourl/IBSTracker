@@ -48,6 +48,8 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
     var itemToDelete by remember { mutableStateOf<FoodItem?>(null) }
     var showEditDialog by remember { mutableStateOf(false) }
     var filterCategory by remember { mutableStateOf<FoodCategory?>(null) }
+    var searchQuery by remember { mutableStateOf("") }
+    var searchResults by remember { mutableStateOf<List<CommonFoods.FoodSearchResult>>(emptyList()) }
     
     val foodItems by foodViewModel.foodItems.collectAsState()
     val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault()) }
@@ -237,8 +239,10 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        text = if (selectedCategory == null) 
-                            "Select a category" 
+                        text = if (selectedCategory == null && searchQuery.isEmpty()) 
+                            "Search food or select category" 
+                        else if (selectedCategory == null && searchQuery.isNotEmpty())
+                            "Search results"
                         else if (!showCustomInput) 
                             "Choose a food or enter custom"
                         else 
@@ -247,14 +251,133 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                         fontWeight = FontWeight.Bold
                     )
 
-                    // Step 1: Category Selection Grid
+                    // Search Bar
                     if (selectedCategory == null) {
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(3),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.height(280.dp)
-                        ) {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { query ->
+                                searchQuery = query
+                                searchResults = CommonFoods.searchFoods(query)
+                            },
+                            label = { Text("Search foods...") },
+                            leadingIcon = {
+                                Icon(Icons.Default.Search, contentDescription = "Search")
+                            },
+                            trailingIcon = {
+                                if (searchQuery.isNotEmpty()) {
+                                    IconButton(onClick = { 
+                                        searchQuery = ""
+                                        searchResults = emptyList()
+                                    }) {
+                                        Icon(Icons.Default.Clear, contentDescription = "Clear")
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                    }
+
+                    // Search Results or Category Selection Grid
+                    if (selectedCategory == null) {
+                        if (searchQuery.isNotEmpty() && searchResults.isNotEmpty()) {
+                            // Show search results
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(2),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.height(200.dp)
+                            ) {
+                                items(searchResults) { result ->
+                                    Card(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                foodViewModel.saveFoodItem(
+                                                    name = result.foodName,
+                                                    category = result.category,
+                                                    date = selectedDateTime.time
+                                                )
+                                                searchQuery = ""
+                                                searchResults = emptyList()
+                                                selectedDateTime = Calendar.getInstance()
+                                            },
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = result.category.color.copy(alpha = 0.2f)
+                                        ),
+                                        border = BorderStroke(1.dp, result.category.color)
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(12.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(8.dp)
+                                                        .clip(RoundedCornerShape(2.dp))
+                                                        .background(result.category.color)
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text(
+                                                    text = result.category.displayName,
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = result.foodName,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                textAlign = TextAlign.Center,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        } else if (searchQuery.isNotEmpty() && searchResults.isEmpty()) {
+                            // No search results found
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                )
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(16.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = "No foods found for \"$searchQuery\"",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        textAlign = TextAlign.Center
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Button(
+                                        onClick = {
+                                            customFoodName = searchQuery
+                                            selectedCategory = FoodCategory.OTHER
+                                            showCustomInput = true
+                                            searchQuery = ""
+                                            searchResults = emptyList()
+                                        }
+                                    ) {
+                                        Text("Add \"$searchQuery\" as Other")
+                                    }
+                                }
+                            }
+                        } else {
+                            // Show category grid when no search
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(3),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.height(280.dp)
+                            ) {
                             items(FoodCategory.getAllCategories()) { category ->
                                 Card(
                                     modifier = Modifier
@@ -288,6 +411,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                         )
                                     }
                                 }
+                            }
                             }
                         }
                     }

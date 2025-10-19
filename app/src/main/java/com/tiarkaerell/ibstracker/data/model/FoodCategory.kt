@@ -27,20 +27,15 @@ enum class FoodCategory(
         color = Color(0xFFFF4500), // Orange red
         description = "Hot peppers, spicy seasonings"
     ),
-    FRIED_FATTY(
-        displayName = "Fried/Fatty",
+    PROCESSED_FATTY(
+        displayName = "Processed/Fatty",
         color = Color(0xFFFFD700), // Gold
-        description = "Fried foods, high-fat meals"
+        description = "Fried foods, processed meals, high-fat items"
     ),
-    CAFFEINE(
-        displayName = "Caffeine",
+    BEVERAGES(
+        displayName = "Beverages",
         color = Color(0xFF8B4513), // Saddle brown
-        description = "Coffee, tea, energy drinks"
-    ),
-    ALCOHOL(
-        displayName = "Alcohol",
-        color = Color(0xFF9370DB), // Medium purple
-        description = "Beer, wine, spirits"
+        description = "Coffee, tea, alcohol, sodas, energy drinks"
     ),
     FRUITS(
         displayName = "Fruits",
@@ -51,11 +46,6 @@ enum class FoodCategory(
         displayName = "Vegetables",
         color = Color(0xFF228B22), // Forest green
         description = "Fresh vegetables, salads"
-    ),
-    PROCESSED(
-        displayName = "Processed",
-        color = Color(0xFF696969), // Dim gray
-        description = "Packaged foods, preservatives"
     ),
     OTHER(
         displayName = "Other",
@@ -73,7 +63,7 @@ enum class FoodCategory(
         }
         
         fun getCommonTriggers(): List<FoodCategory> {
-            return listOf(DAIRY, GLUTEN, HIGH_FODMAP, SPICY, FRIED_FATTY, CAFFEINE)
+            return listOf(DAIRY, GLUTEN, HIGH_FODMAP, SPICY, PROCESSED_FATTY, BEVERAGES)
         }
     }
 }
