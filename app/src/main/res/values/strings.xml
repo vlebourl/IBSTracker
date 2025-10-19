@@ -12,6 +12,7 @@
     <!-- Dashboard Screen -->
     <string name="dashboard_welcome">Welcome to IBS Tracker</string>
     <string name="dashboard_summary">Here you will see a summary of your recent food and symptom logs.</string>
+    <string name="dashboard_recent_activity">Recent Activity</string>
 
     <!-- Food Screen -->
     <string name="food_title">Log Food or Drink</string>
