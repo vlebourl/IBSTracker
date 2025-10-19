@@ -3,10 +3,12 @@ package com.tiarkaerell.ibstracker.ui.screens
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Delete
@@ -17,6 +19,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -156,6 +159,8 @@ fun DashboardScreen(
     if (showEditFoodDialog && editingFoodItem != null) {
         var editName by remember { mutableStateOf(editingFoodItem!!.name) }
         var editQuantity by remember { mutableStateOf(editingFoodItem!!.quantity) }
+        var editCategory by remember { mutableStateOf(editingFoodItem!!.category) }
+        var showEditCategoryDropdown by remember { mutableStateOf(false) }
         var editDateTime by remember { 
             mutableStateOf(Calendar.getInstance().apply { time = editingFoodItem!!.date })
         }
@@ -180,6 +185,57 @@ fun DashboardScreen(
                         label = { Text("Quantity") },
                         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
                     )
+                    
+                    // Category dropdown for edit
+                    ExposedDropdownMenuBox(
+                        expanded = showEditCategoryDropdown,
+                        onExpandedChange = { showEditCategoryDropdown = !showEditCategoryDropdown },
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = editCategory.displayName,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Category") },
+                            trailingIcon = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = showEditCategoryDropdown)
+                            },
+                            leadingIcon = {
+                                Box(
+                                    modifier = Modifier
+                                        .size(16.dp)
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(editCategory.color)
+                                )
+                            },
+                            modifier = Modifier.menuAnchor()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = showEditCategoryDropdown,
+                            onDismissRequest = { showEditCategoryDropdown = false }
+                        ) {
+                            com.tiarkaerell.ibstracker.data.model.FoodCategory.getAllCategories().forEach { category ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(16.dp)
+                                                    .clip(RoundedCornerShape(4.dp))
+                                                    .background(category.color)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(category.displayName)
+                                        }
+                                    },
+                                    onClick = {
+                                        editCategory = category
+                                        showEditCategoryDropdown = false
+                                    }
+                                )
+                            }
+                        }
+                    }
                     OutlinedCard(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -239,6 +295,7 @@ fun DashboardScreen(
                         val updatedItem = editingFoodItem!!.copy(
                             name = editName,
                             quantity = editQuantity,
+                            category = editCategory,
                             date = editDateTime.time
                         )
                         foodViewModel.updateFoodItem(updatedItem)
@@ -478,7 +535,7 @@ fun DashboardScreen(
                                     onLongClick = { showOptions = true }
                                 ),
                             colors = CardDefaults.cardColors(
-                                containerColor = Color(0xFF88B06D).copy(alpha = 0.15f)
+                                containerColor = item.category.color.copy(alpha = 0.15f)
                             )
                         ) {
                             Row(
@@ -487,27 +544,50 @@ fun DashboardScreen(
                                     .padding(16.dp),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                // Icon
-                                Icon(
-                                    imageVector = Icons.Default.Fastfood,
-                                    contentDescription = "Food",
-                                    tint = Color(0xFF88B06D),
-                                    modifier = Modifier.size(32.dp)
-                                )
+                                // Icon with category color
+                                Box {
+                                    Icon(
+                                        imageVector = Icons.Default.Fastfood,
+                                        contentDescription = "Food",
+                                        tint = item.category.color,
+                                        modifier = Modifier.size(32.dp)
+                                    )
+                                    // Category color indicator
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(item.category.color)
+                                            .align(Alignment.BottomEnd)
+                                    )
+                                }
 
                                 // Content
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = item.name,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = item.name,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Box(
+                                            modifier = Modifier
+                                                .size(12.dp)
+                                                .clip(RoundedCornerShape(3.dp))
+                                                .background(item.category.color)
+                                        )
+                                    }
                                     Text(
                                         text = "Quantity: ${item.quantity}",
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
-                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = item.category.displayName,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = item.category.color
+                                    )
                                     Text(
                                         text = timeFormat.format(item.date),
                                         style = MaterialTheme.typography.bodySmall,

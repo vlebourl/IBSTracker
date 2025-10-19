@@ -9,5 +9,6 @@ data class FoodItem(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val name: String,
     val quantity: String,
-    val date: Date
+    val date: Date,
+    val category: FoodCategory = FoodCategory.OTHER
 )
