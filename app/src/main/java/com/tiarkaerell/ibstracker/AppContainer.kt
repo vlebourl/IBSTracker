@@ -12,7 +12,8 @@ class AppContainer(private val context: Context) {
             context.applicationContext,
             AppDatabase::class.java,
             "ibs-tracker-database"
-        ).build()
+        ).addMigrations(AppDatabase.MIGRATION_1_2)
+        .build()
     }
 
     val dataRepository: DataRepository by lazy {

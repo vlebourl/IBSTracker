@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Fastfood
 import androidx.compose.material.icons.filled.Medication
@@ -22,11 +23,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.tiarkaerell.ibstracker.ui.screens.AnalyticsScreen
 import com.tiarkaerell.ibstracker.ui.screens.DashboardScreen
 import com.tiarkaerell.ibstracker.ui.screens.FoodScreen
 import com.tiarkaerell.ibstracker.ui.screens.SettingsScreen
 import com.tiarkaerell.ibstracker.ui.screens.SymptomsScreen
 import com.tiarkaerell.ibstracker.ui.theme.IBSTrackerTheme
+import com.tiarkaerell.ibstracker.ui.viewmodel.AnalyticsViewModel
 import com.tiarkaerell.ibstracker.ui.viewmodel.FoodViewModel
 import com.tiarkaerell.ibstracker.ui.viewmodel.SettingsViewModel
 import com.tiarkaerell.ibstracker.ui.viewmodel.SymptomsViewModel
@@ -41,6 +44,7 @@ sealed class Screen(val route: String, val titleRes: Int, val icon: androidx.com
     object Dashboard : Screen("dashboard", R.string.nav_dashboard, Icons.Filled.Dashboard)
     object Food : Screen("food", R.string.nav_food, Icons.Filled.Fastfood)
     object Symptoms : Screen("symptoms", R.string.nav_symptoms, Icons.Filled.Medication)
+    object Analytics : Screen("analytics", R.string.nav_analytics, Icons.Filled.Analytics)
     object Settings : Screen("settings", R.string.nav_settings, Icons.Filled.Settings)
 }
 
@@ -74,14 +78,27 @@ fun MainScreen(viewModelFactory: ViewModelFactory) {
         Screen.Dashboard,
         Screen.Food,
         Screen.Symptoms,
+        Screen.Analytics,
         Screen.Settings
     )
 
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = navBackStackEntry?.destination
+    val currentScreen = items.find { it.route == currentDestination?.route }
+    
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.app_name)) },
+                title = { 
+                    Text(
+                        if (currentScreen != null) {
+                            stringResource(currentScreen.titleRes)
+                        } else {
+                            stringResource(R.string.app_name)
+                        }
+                    )
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -90,13 +107,9 @@ fun MainScreen(viewModelFactory: ViewModelFactory) {
         },
         bottomBar = {
             NavigationBar {
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentDestination = navBackStackEntry?.destination
-
                 items.forEach { screen ->
                     NavigationBarItem(
                         icon = { Icon(screen.icon, contentDescription = stringResource(screen.titleRes)) },
-                        label = { Text(stringResource(screen.titleRes)) },
                         selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                         onClick = {
                             navController.navigate(screen.route) {
@@ -129,6 +142,10 @@ fun MainScreen(viewModelFactory: ViewModelFactory) {
             composable(Screen.Symptoms.route) {
                 val symptomsViewModel: SymptomsViewModel = viewModel(factory = viewModelFactory)
                 SymptomsScreen(symptomsViewModel = symptomsViewModel)
+            }
+            composable(Screen.Analytics.route) {
+                val analyticsViewModel: AnalyticsViewModel = viewModel(factory = viewModelFactory)
+                AnalyticsScreen(analyticsViewModel = analyticsViewModel)
             }
             composable(Screen.Settings.route) {
                 val settingsViewModel: SettingsViewModel = viewModel(factory = viewModelFactory)

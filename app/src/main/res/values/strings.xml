@@ -6,6 +6,7 @@
     <string name="nav_dashboard">Dashboard</string>
     <string name="nav_food">Food</string>
     <string name="nav_symptoms">Symptoms</string>
+    <string name="nav_analytics">Analytics</string>
     <string name="nav_settings">Settings</string>
 
     <!-- Dashboard Screen -->

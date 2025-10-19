@@ -2,6 +2,7 @@ package com.tiarkaerell.ibstracker.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.tiarkaerell.ibstracker.data.model.FoodCategory
 import com.tiarkaerell.ibstracker.data.model.FoodItem
 import com.tiarkaerell.ibstracker.data.repository.DataRepository
 import kotlinx.coroutines.flow.SharingStarted
@@ -19,9 +20,9 @@ class FoodViewModel(private val dataRepository: DataRepository) : ViewModel() {
             initialValue = emptyList()
         )
 
-    fun saveFoodItem(name: String, quantity: String, date: Date = Date()) {
+    fun saveFoodItem(name: String, quantity: String, category: FoodCategory = FoodCategory.OTHER, date: Date = Date()) {
         viewModelScope.launch {
-            dataRepository.insertFoodItem(FoodItem(name = name, quantity = quantity, date = date))
+            dataRepository.insertFoodItem(FoodItem(name = name, quantity = quantity, date = date, category = category))
         }
     }
 
