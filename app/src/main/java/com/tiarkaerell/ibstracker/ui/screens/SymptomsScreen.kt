@@ -57,8 +57,8 @@ fun SymptomsScreen(symptomsViewModel: SymptomsViewModel) {
                 showDeleteDialog = false
                 itemToDelete = null
             },
-            title = { Text("Delete Symptom") },
-            text = { Text("Are you sure you want to delete '${itemToDelete!!.name}'?") },
+            title = { Text(stringResource(R.string.delete_symptom_title)) },
+            text = { Text(stringResource(R.string.delete_symptom_message, itemToDelete!!.name)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -67,7 +67,7 @@ fun SymptomsScreen(symptomsViewModel: SymptomsViewModel) {
                         itemToDelete = null
                     }
                 ) {
-                    Text("Delete")
+                    Text(stringResource(R.string.button_delete))
                 }
             },
             dismissButton = {
@@ -77,7 +77,7 @@ fun SymptomsScreen(symptomsViewModel: SymptomsViewModel) {
                         itemToDelete = null
                     }
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.button_cancel))
                 }
             }
         )
@@ -96,18 +96,18 @@ fun SymptomsScreen(symptomsViewModel: SymptomsViewModel) {
                 showEditDialog = false
                 editingItem = null
             },
-            title = { Text("Edit Symptom") },
+            title = { Text(stringResource(R.string.edit_symptom_entry_title)) },
             text = {
                 Column {
                     OutlinedTextField(
                         value = editName,
                         onValueChange = { editName = it },
-                        label = { Text("Symptom Name") },
+                        label = { Text(stringResource(R.string.symptom_name_label)) },
                         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
                     )
                     
                     Text(
-                        text = "Intensity: ${editIntensity.roundToInt()}",
+                        text = stringResource(R.string.intensity_format, editIntensity.roundToInt()),
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(bottom = 4.dp)
                     )
@@ -163,7 +163,7 @@ fun SymptomsScreen(symptomsViewModel: SymptomsViewModel) {
                             )
                             Icon(
                                 imageVector = Icons.Default.CalendarToday,
-                                contentDescription = "Select date",
+                                contentDescription = stringResource(R.string.cd_select_date),
                                 modifier = Modifier.padding(start = 8.dp)
                             )
                         }
@@ -183,7 +183,7 @@ fun SymptomsScreen(symptomsViewModel: SymptomsViewModel) {
                         editingItem = null
                     }
                 ) {
-                    Text("Save")
+                    Text(stringResource(R.string.button_save))
                 }
             },
             dismissButton = {
@@ -193,7 +193,7 @@ fun SymptomsScreen(symptomsViewModel: SymptomsViewModel) {
                         editingItem = null
                     }
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.button_cancel))
                 }
             }
         )
@@ -301,7 +301,7 @@ fun SymptomsScreen(symptomsViewModel: SymptomsViewModel) {
             ) {
                 Column {
                     Text(
-                        text = "Date & Time",
+                        text = stringResource(R.string.date_time_label),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -312,7 +312,7 @@ fun SymptomsScreen(symptomsViewModel: SymptomsViewModel) {
                 }
                 Icon(
                     imageVector = Icons.Default.CalendarToday,
-                    contentDescription = "Select date and time",
+                    contentDescription = stringResource(R.string.cd_select_date_time_short),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -348,7 +348,7 @@ fun SymptomsScreen(symptomsViewModel: SymptomsViewModel) {
         // List of logged symptoms
         if (loggedSymptoms.isNotEmpty()) {
             Text(
-                text = "Recent Symptoms",
+                text = stringResource(R.string.recent_symptoms_title),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
@@ -380,7 +380,7 @@ fun SymptomsScreen(symptomsViewModel: SymptomsViewModel) {
                                         style = MaterialTheme.typography.titleMedium
                                     )
                                     Text(
-                                        text = "Intensity: ${symptom.intensity}/10",
+                                        text = stringResource(R.string.intensity_scale_format, symptom.intensity),
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -402,7 +402,7 @@ fun SymptomsScreen(symptomsViewModel: SymptomsViewModel) {
                                         ) {
                                             Icon(
                                                 Icons.Default.Edit,
-                                                contentDescription = "Edit",
+                                                contentDescription = stringResource(R.string.cd_edit),
                                                 tint = MaterialTheme.colorScheme.primary
                                             )
                                         }
@@ -415,7 +415,7 @@ fun SymptomsScreen(symptomsViewModel: SymptomsViewModel) {
                                         ) {
                                             Icon(
                                                 Icons.Default.Delete,
-                                                contentDescription = "Delete",
+                                                contentDescription = stringResource(R.string.cd_delete),
                                                 tint = MaterialTheme.colorScheme.error
                                             )
                                         }

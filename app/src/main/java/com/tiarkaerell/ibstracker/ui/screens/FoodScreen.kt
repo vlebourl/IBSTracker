@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.tiarkaerell.ibstracker.R
 import com.tiarkaerell.ibstracker.data.model.CommonFoods
 import com.tiarkaerell.ibstracker.data.model.FoodCategory
+import com.tiarkaerell.ibstracker.data.model.FoodCategoryHelper
 import com.tiarkaerell.ibstracker.data.model.FoodItem
 import com.tiarkaerell.ibstracker.ui.viewmodel.FoodViewModel
 import java.text.SimpleDateFormat
@@ -62,8 +63,8 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                 showDeleteDialog = false
                 itemToDelete = null
             },
-            title = { Text("Delete Food Entry") },
-            text = { Text("Are you sure you want to delete \"${itemToDelete!!.name}\"?") },
+            title = { Text(stringResource(R.string.delete_food_title)) },
+            text = { Text(stringResource(R.string.delete_food_message, itemToDelete!!.name)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -72,7 +73,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                         itemToDelete = null
                     }
                 ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.button_delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
@@ -82,7 +83,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                         itemToDelete = null
                     }
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.button_cancel))
                 }
             }
         )
@@ -101,19 +102,19 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                 showEditDialog = false
                 editingItem = null
             },
-            title = { Text("Edit Food Entry") },
+            title = { Text(stringResource(R.string.edit_food_title)) },
             text = {
                 Column {
                     OutlinedTextField(
                         value = editName,
                         onValueChange = { editName = it },
-                        label = { Text("Food Name") },
+                        label = { Text(stringResource(R.string.food_name_edit_label)) },
                         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
                     )
 
                     // Category selection for edit
                     Text(
-                        text = "Category",
+                        text = stringResource(R.string.category_title),
                         style = MaterialTheme.typography.labelMedium,
                         modifier = Modifier.padding(vertical = 4.dp)
                     )
@@ -137,7 +138,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Text(
-                                            category.displayName,
+                                            FoodCategoryHelper.getDisplayName(context, category),
                                             style = MaterialTheme.typography.labelSmall
                                         )
                                     }
@@ -183,7 +184,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                         ) {
                             Icon(
                                 Icons.Default.CalendarToday,
-                                contentDescription = "Select Date and Time"
+                                contentDescription = stringResource(R.string.cd_select_date_time)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(dateFormat.format(editDateTime.time))
@@ -204,7 +205,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                         editingItem = null
                     }
                 ) {
-                    Text("Save")
+                    Text(stringResource(R.string.button_save))
                 }
             },
             dismissButton = {
@@ -214,7 +215,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                         editingItem = null
                     }
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.button_cancel))
                 }
             }
         )
@@ -240,13 +241,13 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                 ) {
                     Text(
                         text = if (selectedCategory == null && searchQuery.isEmpty()) 
-                            "Search food or select category" 
+                            stringResource(R.string.search_food_or_select_category) 
                         else if (selectedCategory == null && searchQuery.isNotEmpty())
-                            "Search results"
+                            stringResource(R.string.search_results)
                         else if (!showCustomInput) 
-                            "Choose a food or enter custom"
+                            stringResource(R.string.choose_food_or_enter_custom)
                         else 
-                            "Enter food name",
+                            stringResource(R.string.enter_food_name_prompt),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -257,11 +258,11 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                             value = searchQuery,
                             onValueChange = { query ->
                                 searchQuery = query
-                                searchResults = CommonFoods.searchFoods(query)
+                                searchResults = CommonFoods.searchFoods(context, query)
                             },
-                            label = { Text("Search foods...") },
+                            label = { Text(stringResource(R.string.search_placeholder)) },
                             leadingIcon = {
-                                Icon(Icons.Default.Search, contentDescription = "Search")
+                                Icon(Icons.Default.Search, contentDescription = stringResource(R.string.cd_search))
                             },
                             trailingIcon = {
                                 if (searchQuery.isNotEmpty()) {
@@ -269,7 +270,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                         searchQuery = ""
                                         searchResults = emptyList()
                                     }) {
-                                        Icon(Icons.Default.Clear, contentDescription = "Clear")
+                                        Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.cd_clear))
                                     }
                                 }
                             },
@@ -323,7 +324,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                                 )
                                                 Spacer(modifier = Modifier.width(6.dp))
                                                 Text(
-                                                    text = result.category.displayName,
+                                                    text = FoodCategoryHelper.getDisplayName(context, result.category),
                                                     style = MaterialTheme.typography.labelSmall,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
@@ -352,7 +353,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
                                     Text(
-                                        text = "No foods found for \"$searchQuery\"",
+                                        text = stringResource(R.string.no_foods_found, searchQuery),
                                         style = MaterialTheme.typography.bodyMedium,
                                         textAlign = TextAlign.Center
                                     )
@@ -366,7 +367,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                             searchResults = emptyList()
                                         }
                                     ) {
-                                        Text("Add \"$searchQuery\" as Other")
+                                        Text(stringResource(R.string.add_as_other_format, searchQuery))
                                     }
                                 }
                             }
@@ -404,7 +405,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
-                                            text = category.displayName,
+                                            text = FoodCategoryHelper.getDisplayName(context, category),
                                             style = MaterialTheme.typography.labelSmall,
                                             textAlign = TextAlign.Center,
                                             maxLines = 2
@@ -429,7 +430,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Icon(Icons.Default.ArrowBack, contentDescription = null, modifier = Modifier.size(16.dp))
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Text(category.displayName)
+                                        Text(FoodCategoryHelper.getDisplayName(context, category))
                                     }
                                 },
                                 leadingIcon = {
@@ -444,14 +445,14 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                             
                             if (!showCustomInput) {
                                 TextButton(onClick = { showCustomInput = true }) {
-                                    Text("Enter Custom")
+                                    Text(stringResource(R.string.enter_custom_button))
                                 }
                             }
                         }
 
                         if (!showCustomInput) {
                             // Show common foods grid
-                            val commonFoods = CommonFoods.getCommonFoods(category)
+                            val commonFoods = CommonFoods.getCommonFoods(context, category)
                             LazyVerticalGrid(
                                 columns = GridCells.Fixed(2),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -489,13 +490,13 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                             OutlinedTextField(
                                 value = customFoodName,
                                 onValueChange = { customFoodName = it },
-                                label = { Text("Food name") },
+                                label = { Text(stringResource(R.string.food_name_input)) },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
                                 trailingIcon = {
                                     if (customFoodName.isNotEmpty()) {
                                         IconButton(onClick = { customFoodName = "" }) {
-                                            Icon(Icons.Default.Clear, contentDescription = "Clear")
+                                            Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.cd_clear))
                                         }
                                     }
                                 }
@@ -509,7 +510,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                     onClick = { showCustomInput = false; customFoodName = "" },
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    Text("Back to suggestions")
+                                    Text(stringResource(R.string.back_to_suggestions_button))
                                 }
                                 
                                 Button(
@@ -529,7 +530,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                     enabled = customFoodName.isNotBlank(),
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    Text("Save")
+                                    Text(stringResource(R.string.button_save))
                                 }
                             }
                         }
@@ -570,7 +571,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                         ) {
                             Icon(
                                 Icons.Default.AccessTime,
-                                contentDescription = "Select Date and Time",
+                                contentDescription = stringResource(R.string.cd_select_date_time),
                                 tint = MaterialTheme.colorScheme.primary
                             )
                             Spacer(modifier = Modifier.width(8.dp))
@@ -592,7 +593,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Recent Entries",
+                    text = stringResource(R.string.recent_entries),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
@@ -607,7 +608,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                     FilterChip(
                         selected = filterCategory == null,
                         onClick = { filterCategory = null },
-                        label = { Text("All") }
+                        label = { Text(stringResource(R.string.all_filter)) }
                     )
                 }
                 items(FoodCategory.getAllCategories()) { category ->
@@ -625,7 +626,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                         .background(category.color)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text(category.displayName)
+                                Text(FoodCategoryHelper.getDisplayName(context, category))
                             }
                         }
                     )
@@ -673,7 +674,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                 )
                             }
                             Text(
-                                text = item.category.displayName,
+                                text = FoodCategoryHelper.getDisplayName(context, item.category),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -695,7 +696,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                 ) {
                                     Icon(
                                         Icons.Default.Edit,
-                                        contentDescription = "Edit",
+                                        contentDescription = stringResource(R.string.cd_edit),
                                         tint = MaterialTheme.colorScheme.primary
                                     )
                                 }
@@ -708,7 +709,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                 ) {
                                     Icon(
                                         Icons.Default.Delete,
-                                        contentDescription = "Delete",
+                                        contentDescription = stringResource(R.string.cd_delete),
                                         tint = MaterialTheme.colorScheme.error
                                     )
                                 }
@@ -728,7 +729,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                     )
                 ) {
                     Text(
-                        text = "No food entries yet. Start tracking your meals above!",
+                        text = stringResource(R.string.no_food_entries),
                         modifier = Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center

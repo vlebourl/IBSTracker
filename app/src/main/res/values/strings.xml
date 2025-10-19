@@ -19,6 +19,27 @@
     <string name="food_name_label">Food or Drink</string>
     <string name="food_quantity_label">Quantity</string>
     <string name="button_save">Save</string>
+    <string name="button_cancel">Cancel</string>
+    <string name="button_delete">Delete</string>
+    <string name="delete_food_title">Delete Food Entry</string>
+    <string name="delete_food_message">Are you sure you want to delete \"%1$s\"?</string>
+    <string name="edit_food_title">Edit Food Entry</string>
+    <string name="food_name_edit_label">Food Name</string>
+    <string name="category_label">Category</string>
+    <string name="select_date_time">Select Date and Time</string>
+    <string name="search_placeholder">Search foods...</string>
+    <string name="search_food_or_select">Search food or select category</string>
+    <string name="search_results">Search results</string>
+    <string name="choose_food_or_custom">Choose a food or enter custom</string>
+    <string name="enter_food_name">Enter food name</string>
+    <string name="enter_custom">Enter Custom</string>
+    <string name="food_name_input_label">Food name</string>
+    <string name="back_to_suggestions">Back to suggestions</string>
+    <string name="no_foods_found">No foods found for \"%1$s\"</string>
+    <string name="add_as_other">Add \"%1$s\" as Other</string>
+    <string name="recent_entries">Recent Entries</string>
+    <string name="all_categories">All</string>
+    <string name="no_food_entries">No food entries yet. Start tracking your meals above!</string>
 
     <!-- Symptoms Screen -->
     <string name="symptoms_title">Log a Symptom</string>
@@ -48,4 +69,223 @@
     <!-- Languages -->
     <string name="language_english">English</string>
     <string name="language_french">Français</string>
+
+    <!-- Food Categories -->
+    <string name="food_category_dairy">Dairy</string>
+    <string name="food_category_gluten">Gluten</string>
+    <string name="food_category_high_fodmap">High FODMAP</string>
+    <string name="food_category_spicy">Spicy</string>
+    <string name="food_category_processed_fatty">Processed/Fatty</string>
+    <string name="food_category_beverages">Beverages</string>
+    <string name="food_category_fruits">Fruits</string>
+    <string name="food_category_vegetables">Vegetables</string>
+    <string name="food_category_other">Other</string>
+
+    <!-- Food Category Descriptions -->
+    <string name="food_category_dairy_desc">Milk, cheese, yogurt, ice cream</string>
+    <string name="food_category_gluten_desc">Bread, pasta, wheat products</string>
+    <string name="food_category_high_fodmap_desc">Onions, garlic, beans, certain fruits</string>
+    <string name="food_category_spicy_desc">Hot peppers, spicy seasonings</string>
+    <string name="food_category_processed_fatty_desc">Fried foods, processed meals, high-fat items</string>
+    <string name="food_category_beverages_desc">Coffee, tea, alcohol, sodas, energy drinks</string>
+    <string name="food_category_fruits_desc">Fresh fruits, fruit juices</string>
+    <string name="food_category_vegetables_desc">Fresh vegetables, salads</string>
+    <string name="food_category_other_desc">Uncategorized foods</string>
+
+    <!-- Common Foods Arrays -->
+    <string-array name="foods_dairy">
+        <item>Milk</item>
+        <item>Cheese</item>
+        <item>Yogurt</item>
+        <item>Ice Cream</item>
+        <item>Butter</item>
+        <item>Cream</item>
+        <item>Cottage Cheese</item>
+        <item>Sour Cream</item>
+    </string-array>
+    
+    <string-array name="foods_gluten">
+        <item>Bread</item>
+        <item>Pasta</item>
+        <item>Pizza</item>
+        <item>Cereal</item>
+        <item>Crackers</item>
+        <item>Beer</item>
+        <item>Cookies</item>
+        <item>Cake</item>
+    </string-array>
+    
+    <string-array name="foods_high_fodmap">
+        <item>Garlic</item>
+        <item>Onions</item>
+        <item>Apples</item>
+        <item>Beans</item>
+        <item>Wheat</item>
+        <item>Honey</item>
+        <item>Mushrooms</item>
+        <item>Cauliflower</item>
+    </string-array>
+    
+    <string-array name="foods_spicy">
+        <item>Hot Sauce</item>
+        <item>Chili</item>
+        <item>Curry</item>
+        <item>Jalapeños</item>
+        <item>Salsa</item>
+        <item>Wasabi</item>
+        <item>Hot Wings</item>
+        <item>Pepper Flakes</item>
+    </string-array>
+    
+    <string-array name="foods_processed_fatty">
+        <item>French Fries</item>
+        <item>Fried Chicken</item>
+        <item>Chips</item>
+        <item>Bacon</item>
+        <item>Hot Dogs</item>
+        <item>Chocolate</item>
+        <item>Donuts</item>
+        <item>Fast Food Burger</item>
+    </string-array>
+    
+    <string-array name="foods_beverages">
+        <item>Coffee</item>
+        <item>Tea</item>
+        <item>Beer</item>
+        <item>Wine</item>
+        <item>Soda</item>
+        <item>Energy Drink</item>
+        <item>Juice</item>
+        <item>Sparkling Water</item>
+    </string-array>
+    
+    <string-array name="foods_fruits">
+        <item>Apple</item>
+        <item>Banana</item>
+        <item>Orange</item>
+        <item>Strawberries</item>
+        <item>Grapes</item>
+        <item>Watermelon</item>
+        <item>Blueberries</item>
+        <item>Pineapple</item>
+    </string-array>
+    
+    <string-array name="foods_vegetables">
+        <item>Salad</item>
+        <item>Carrots</item>
+        <item>Broccoli</item>
+        <item>Spinach</item>
+        <item>Tomatoes</item>
+        <item>Cucumber</item>
+        <item>Peppers</item>
+        <item>Zucchini</item>
+    </string-array>
+    
+    <string-array name="foods_other">
+        <item>Rice</item>
+        <item>Chicken</item>
+        <item>Fish</item>
+        <item>Eggs</item>
+        <item>Nuts</item>
+        <item>Oatmeal</item>
+        <item>Soup</item>
+        <item>Sandwich</item>
+    </string-array>
+
+    <!-- Analytics Screen -->
+    <string name="analytics_title">Insights &amp; Analytics</string>
+    <string name="refresh_insights">Refresh insights</string>
+    <string name="tracking_summary_title">Your Tracking Summary</string>
+    <string name="foods_logged_label">Foods Logged</string>
+    <string name="symptoms_label">Symptoms</string>
+    <string name="avg_intensity_label">Avg Intensity</string>
+    <string name="potential_triggers_title">Potential Triggers</string>
+    <string name="no_triggers_found">No clear triggers identified yet. Keep logging to see patterns!</string>
+    <string name="trigger_times_format">%1$d/%2$d times</string>
+    <string name="trigger_percentage_format">%d%%</string>
+    <string name="safest_categories_title">Safest Food Categories</string>
+    <!-- Deprecated - use plurals instead -->
+    <string name="entries_logged_format">%d entries logged</string>
+    <string name="safety_percentage_format">%d%% safe</string>
+    <string name="weekly_patterns_title">Weekly Symptom Patterns</string>
+    <string name="health_trends_title">Health Trends</string>
+    <string name="days_since_symptom_label">Days since last symptom: </string>
+    <string name="no_symptoms_yet">No symptoms yet</string>
+    <string name="symptoms_improving">Symptoms improving</string>
+    <string name="symptoms_worsening">Symptoms worsening</string>
+    <string name="symptoms_stable">Symptoms stable</string>
+    <string name="not_enough_data">Not enough data yet</string>
+    <string name="log_more_data_message">Log more foods and symptoms to see insights and patterns</string>
+
+    <!-- Day names for weekly patterns -->
+    <string name="day_sun">Sun</string>
+    <string name="day_mon">Mon</string>
+    <string name="day_tue">Tue</string>
+    <string name="day_wed">Wed</string>
+    <string name="day_thu">Thu</string>
+    <string name="day_fri">Fri</string>
+    <string name="day_sat">Sat</string>
+
+    <!-- General UI -->
+    <string name="intensity_format">Intensity: %d</string>
+    <string name="intensity_scale_format">Intensity: %d/10</string>
+    <string name="quantity_format">Quantity: %s</string>
+    <string name="date_time_label">Date &amp; Time</string>
+    <string name="recent_symptoms_title">Recent Symptoms</string>
+    <string name="no_entries_yet">No entries yet</string>
+    <string name="start_tracking_message">Start tracking your food and symptoms</string>
+    <string name="category_title">Category</string>
+
+    <!-- Content Descriptions -->
+    <string name="cd_select_date_time">Select Date and Time</string>
+    <string name="cd_search">Search</string>
+    <string name="cd_clear">Clear</string>
+    <string name="cd_edit">Edit</string>
+    <string name="cd_delete">Delete</string>
+    <string name="cd_select_date">Select date</string>
+    <string name="cd_food_icon">Food</string>
+    <string name="cd_symptom_icon">Symptom</string>
+    <string name="cd_select_date_time_short">Select date and time</string>
+
+    <!-- Additional Missing Strings -->
+    <string name="search_food_or_select_category">Search food or select category</string>
+    <string name="choose_food_or_enter_custom">Choose a food or enter custom</string>
+    <string name="enter_food_name_prompt">Enter food name</string>
+    <string name="add_as_other_format">Add \"%1$s\" as Other</string>
+    <string name="enter_custom_button">Enter Custom</string>
+    <string name="food_name_input">Food name</string>
+    <string name="back_to_suggestions_button">Back to suggestions</string>
+    <string name="all_filter">All</string>
+    
+    <!-- Dashboard Strings -->
+    <string name="today">Today</string>
+    <string name="yesterday">Yesterday</string>
+    <string name="delete_entry_title">Delete Entry</string>
+    <string name="delete_entry_message">Are you sure you want to delete \'%1$s\'?</string>
+    <string name="edit_food_entry_title">Edit Food Entry</string>
+    <string name="edit_symptom_title">Edit Symptom</string>
+    <string name="symptom_name_label">Symptom Name</string>
+    <string name="item_generic">item</string>
+    
+    <!-- Symptoms Screen -->
+    <string name="delete_symptom_title">Delete Symptom</string>
+    <string name="delete_symptom_message">Are you sure you want to delete \'%1$s\'?</string>
+    <string name="edit_symptom_entry_title">Edit Symptom</string>
+    
+    <!-- Missing Dashboard/Symptoms strings -->
+    <string name="food_label">Food</string>
+    <string name="symptom_label_short">Symptom</string>
+    
+    <!-- Plurals for proper localization -->
+    <plurals name="entries_logged">
+        <item quantity="zero">No entries logged</item>
+        <item quantity="one">%d entry logged</item>
+        <item quantity="other">%d entries logged</item>
+    </plurals>
+    
+    <plurals name="days_since_symptom">
+        <item quantity="zero">No days since last symptom</item>
+        <item quantity="one">%d day since last symptom</item>
+        <item quantity="other">%d days since last symptom</item>
+    </plurals>
 </resources>

@@ -1,101 +1,23 @@
 package com.tiarkaerell.ibstracker.data.model
 
+import android.content.Context
+import com.tiarkaerell.ibstracker.R
+
 object CommonFoods {
-    val foodsByCategory = mapOf(
-        FoodCategory.DAIRY to listOf(
-            "Milk",
-            "Cheese",
-            "Yogurt",
-            "Ice Cream",
-            "Butter",
-            "Cream",
-            "Cottage Cheese",
-            "Sour Cream"
-        ),
-        FoodCategory.GLUTEN to listOf(
-            "Bread",
-            "Pasta",
-            "Pizza",
-            "Cereal",
-            "Crackers",
-            "Beer",
-            "Cookies",
-            "Cake"
-        ),
-        FoodCategory.HIGH_FODMAP to listOf(
-            "Garlic",
-            "Onions",
-            "Apples",
-            "Beans",
-            "Wheat",
-            "Honey",
-            "Mushrooms",
-            "Cauliflower"
-        ),
-        FoodCategory.SPICY to listOf(
-            "Hot Sauce",
-            "Chili",
-            "Curry",
-            "Jalapeños",
-            "Salsa",
-            "Wasabi",
-            "Hot Wings",
-            "Pepper Flakes"
-        ),
-        FoodCategory.PROCESSED_FATTY to listOf(
-            "French Fries",
-            "Fried Chicken", 
-            "Chips",
-            "Bacon",
-            "Hot Dogs",
-            "Chocolate",
-            "Donuts",
-            "Fast Food Burger"
-        ),
-        FoodCategory.BEVERAGES to listOf(
-            "Coffee",
-            "Tea", 
-            "Beer",
-            "Wine",
-            "Soda",
-            "Energy Drink",
-            "Juice",
-            "Sparkling Water"
-        ),
-        FoodCategory.FRUITS to listOf(
-            "Apple",
-            "Banana",
-            "Orange",
-            "Strawberries",
-            "Grapes",
-            "Watermelon",
-            "Blueberries",
-            "Pineapple"
-        ),
-        FoodCategory.VEGETABLES to listOf(
-            "Salad",
-            "Carrots",
-            "Broccoli",
-            "Spinach",
-            "Tomatoes",
-            "Cucumber",
-            "Peppers",
-            "Zucchini"
-        ),
-        FoodCategory.OTHER to listOf(
-            "Rice",
-            "Chicken",
-            "Fish",
-            "Eggs",
-            "Nuts",
-            "Oatmeal",
-            "Soup",
-            "Sandwich"
-        )
-    )
-    
-    fun getCommonFoods(category: FoodCategory): List<String> {
-        return foodsByCategory[category] ?: emptyList()
+    fun getCommonFoods(context: Context, category: FoodCategory): List<String> {
+        val arrayResId = when (category) {
+            FoodCategory.DAIRY -> R.array.foods_dairy
+            FoodCategory.GLUTEN -> R.array.foods_gluten
+            FoodCategory.HIGH_FODMAP -> R.array.foods_high_fodmap
+            FoodCategory.SPICY -> R.array.foods_spicy
+            FoodCategory.PROCESSED_FATTY -> R.array.foods_processed_fatty
+            FoodCategory.BEVERAGES -> R.array.foods_beverages
+            FoodCategory.FRUITS -> R.array.foods_fruits
+            FoodCategory.VEGETABLES -> R.array.foods_vegetables
+            FoodCategory.OTHER -> R.array.foods_other
+        }
+        
+        return context.resources.getStringArray(arrayResId).toList()
     }
     
     data class FoodSearchResult(
@@ -103,13 +25,14 @@ object CommonFoods {
         val category: FoodCategory
     )
     
-    fun searchFoods(query: String): List<FoodSearchResult> {
+    fun searchFoods(context: Context, query: String): List<FoodSearchResult> {
         if (query.isBlank()) return emptyList()
         
         val results = mutableListOf<Pair<FoodSearchResult, Int>>()
         val normalizedQuery = query.lowercase().trim()
         
-        foodsByCategory.forEach { (category, foods) ->
+        FoodCategory.getAllCategories().forEach { category ->
+            val foods = getCommonFoods(context, category)
             foods.forEach { food ->
                 val normalizedFood = food.lowercase()
                 val score = calculateFuzzyScore(normalizedFood, normalizedQuery)
