@@ -20,9 +20,9 @@ class FoodViewModel(private val dataRepository: DataRepository) : ViewModel() {
             initialValue = emptyList()
         )
 
-    fun saveFoodItem(name: String, quantity: String, category: FoodCategory = FoodCategory.OTHER, date: Date = Date()) {
+    fun saveFoodItem(name: String, category: FoodCategory = FoodCategory.OTHER, date: Date = Date()) {
         viewModelScope.launch {
-            dataRepository.insertFoodItem(FoodItem(name = name, quantity = quantity, date = date, category = category))
+            dataRepository.insertFoodItem(FoodItem(name = name, quantity = "", date = date, category = category))
         }
     }
 

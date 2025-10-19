@@ -2,6 +2,7 @@ package com.tiarkaerell.ibstracker.ui.screens
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -9,13 +10,13 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,8 +25,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.tiarkaerell.ibstracker.R
+import com.tiarkaerell.ibstracker.data.model.CommonFoods
 import com.tiarkaerell.ibstracker.data.model.FoodCategory
 import com.tiarkaerell.ibstracker.data.model.FoodItem
 import com.tiarkaerell.ibstracker.ui.viewmodel.FoodViewModel
@@ -35,10 +39,9 @@ import java.util.*
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun FoodScreen(foodViewModel: FoodViewModel) {
-    var foodItem by remember { mutableStateOf("") }
-    var quantity by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf(FoodCategory.OTHER) }
-    var showCategoryDropdown by remember { mutableStateOf(false) }
+    var selectedCategory by remember { mutableStateOf<FoodCategory?>(null) }
+    var customFoodName by remember { mutableStateOf("") }
+    var showCustomInput by remember { mutableStateOf(false) }
     var selectedDateTime by remember { mutableStateOf(Calendar.getInstance()) }
     var editingItem by remember { mutableStateOf<FoodItem?>(null) }
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -57,8 +60,8 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                 showDeleteDialog = false
                 itemToDelete = null
             },
-            title = { Text("Delete Entry") },
-            text = { Text("Are you sure you want to delete '${itemToDelete!!.name}'?") },
+            title = { Text("Delete Food Entry") },
+            text = { Text("Are you sure you want to delete \"${itemToDelete!!.name}\"?") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -67,7 +70,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                         itemToDelete = null
                     }
                 ) {
-                    Text("Delete")
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
@@ -86,19 +89,17 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
     // Edit dialog
     if (showEditDialog && editingItem != null) {
         var editName by remember { mutableStateOf(editingItem!!.name) }
-        var editQuantity by remember { mutableStateOf(editingItem!!.quantity) }
         var editCategory by remember { mutableStateOf(editingItem!!.category) }
-        var editDateTime by remember { 
+        var editDateTime by remember {
             mutableStateOf(Calendar.getInstance().apply { time = editingItem!!.date })
         }
-        var showEditCategoryDropdown by remember { mutableStateOf(false) }
 
         AlertDialog(
-            onDismissRequest = { 
+            onDismissRequest = {
                 showEditDialog = false
                 editingItem = null
             },
-            title = { Text("Edit Entry") },
+            title = { Text("Edit Food Entry") },
             text = {
                 Column {
                     OutlinedTextField(
@@ -107,64 +108,45 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                         label = { Text("Food Name") },
                         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
                     )
-                    OutlinedTextField(
-                        value = editQuantity,
-                        onValueChange = { editQuantity = it },
-                        label = { Text("Quantity") },
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+
+                    // Category selection for edit
+                    Text(
+                        text = "Category",
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.padding(vertical = 4.dp)
                     )
-                    
-                    // Category dropdown for edit
-                    ExposedDropdownMenuBox(
-                        expanded = showEditCategoryDropdown,
-                        onExpandedChange = { showEditCategoryDropdown = !showEditCategoryDropdown },
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(3),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.height(100.dp)
                     ) {
-                        OutlinedTextField(
-                            value = editCategory.displayName,
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("Category") },
-                            trailingIcon = {
-                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = showEditCategoryDropdown)
-                            },
-                            leadingIcon = {
-                                Box(
-                                    modifier = Modifier
-                                        .size(16.dp)
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .background(editCategory.color)
-                                )
-                            },
-                            modifier = Modifier.menuAnchor()
-                        )
-                        ExposedDropdownMenu(
-                            expanded = showEditCategoryDropdown,
-                            onDismissRequest = { showEditCategoryDropdown = false }
-                        ) {
-                            FoodCategory.getAllCategories().forEach { category ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(16.dp)
-                                                    .clip(RoundedCornerShape(4.dp))
-                                                    .background(category.color)
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text(category.displayName)
-                                        }
-                                    },
-                                    onClick = {
-                                        editCategory = category
-                                        showEditCategoryDropdown = false
+                        items(FoodCategory.getAllCategories()) { category ->
+                            FilterChip(
+                                selected = editCategory == category,
+                                onClick = { editCategory = category },
+                                label = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(8.dp)
+                                                .clip(RoundedCornerShape(2.dp))
+                                                .background(category.color)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            category.displayName,
+                                            style = MaterialTheme.typography.labelSmall
+                                        )
                                     }
-                                )
-                            }
+                                },
+                                modifier = Modifier.height(32.dp)
+                            )
                         }
                     }
-                    
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
                     OutlinedCard(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -172,20 +154,15 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                 DatePickerDialog(
                                     context,
                                     { _, year, month, dayOfMonth ->
-                                        val newCalendar = Calendar.getInstance().apply {
-                                            set(year, month, dayOfMonth, 
-                                                editDateTime.get(Calendar.HOUR_OF_DAY), 
-                                                editDateTime.get(Calendar.MINUTE))
-                                        }
-                                        editDateTime = newCalendar
+                                        editDateTime.set(Calendar.YEAR, year)
+                                        editDateTime.set(Calendar.MONTH, month)
+                                        editDateTime.set(Calendar.DAY_OF_MONTH, dayOfMonth)
                                         
                                         TimePickerDialog(
                                             context,
                                             { _, hourOfDay, minute ->
-                                                val finalCalendar = Calendar.getInstance().apply {
-                                                    set(year, month, dayOfMonth, hourOfDay, minute)
-                                                }
-                                                editDateTime = finalCalendar
+                                                editDateTime.set(Calendar.HOUR_OF_DAY, hourOfDay)
+                                                editDateTime.set(Calendar.MINUTE, minute)
                                             },
                                             editDateTime.get(Calendar.HOUR_OF_DAY),
                                             editDateTime.get(Calendar.MINUTE),
@@ -199,19 +176,15 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                             }
                     ) {
                         Row(
-                            modifier = Modifier.padding(12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = dateFormat.format(editDateTime.time),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
                             Icon(
-                                imageVector = Icons.Default.CalendarToday,
-                                contentDescription = "Select date",
-                                modifier = Modifier.padding(start = 8.dp)
+                                Icons.Default.CalendarToday,
+                                contentDescription = "Select Date and Time"
                             )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(dateFormat.format(editDateTime.time))
                         }
                     }
                 }
@@ -221,7 +194,6 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                     onClick = {
                         val updatedItem = editingItem!!.copy(
                             name = editName,
-                            quantity = editQuantity,
                             category = editCategory,
                             date = editDateTime.time
                         )
@@ -246,172 +218,262 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
         )
     }
 
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Input form
-        Text(text = stringResource(R.string.food_title), modifier = Modifier.padding(bottom = 16.dp))
-        OutlinedTextField(
-            value = foodItem,
-            onValueChange = { foodItem = it },
-            label = { Text(stringResource(R.string.food_name_label)) },
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-        )
-        OutlinedTextField(
-            value = quantity,
-            onValueChange = { quantity = it },
-            label = { Text(stringResource(R.string.food_quantity_label)) },
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-        )
-
-        // Category selection dropdown
-        ExposedDropdownMenuBox(
-            expanded = showCategoryDropdown,
-            onExpandedChange = { showCategoryDropdown = !showCategoryDropdown },
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-        ) {
-            OutlinedTextField(
-                value = selectedCategory.displayName,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Category") },
-                trailingIcon = {
-                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = showCategoryDropdown)
-                },
-                leadingIcon = {
-                    Box(
-                        modifier = Modifier
-                            .size(16.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(selectedCategory.color)
-                    )
-                },
-                modifier = Modifier.menuAnchor()
-            )
-            ExposedDropdownMenu(
-                expanded = showCategoryDropdown,
-                onDismissRequest = { showCategoryDropdown = false }
+        // Entry Section
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
             ) {
-                FoodCategory.getAllCategories().forEach { category ->
-                    DropdownMenuItem(
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = if (selectedCategory == null) 
+                            "Select a category" 
+                        else if (!showCustomInput) 
+                            "Choose a food or enter custom"
+                        else 
+                            "Enter food name",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    // Step 1: Category Selection Grid
+                    if (selectedCategory == null) {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(3),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.height(280.dp)
+                        ) {
+                            items(FoodCategory.getAllCategories()) { category ->
+                                Card(
                                     modifier = Modifier
-                                        .size(16.dp)
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .background(category.color)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Column {
-                                    Text(
-                                        text = category.displayName,
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                    Text(
-                                        text = category.description,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                        .fillMaxWidth()
+                                        .height(80.dp)
+                                        .clickable { selectedCategory = category },
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = category.color.copy(alpha = 0.2f)
+                                    ),
+                                    border = BorderStroke(2.dp, category.color)
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(8.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(16.dp)
+                                                .clip(RoundedCornerShape(4.dp))
+                                                .background(category.color)
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = category.displayName,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            textAlign = TextAlign.Center,
+                                            maxLines = 2
+                                        )
+                                    }
                                 }
                             }
-                        },
-                        onClick = {
-                            selectedCategory = category
-                            showCategoryDropdown = false
                         }
-                    )
+                    }
+
+                    // Step 2: Common Foods or Custom Input
+                    selectedCategory?.let { category ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            AssistChip(
+                                onClick = { selectedCategory = null; showCustomInput = false; customFoodName = "" },
+                                label = { 
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.ArrowBack, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(category.displayName)
+                                    }
+                                },
+                                leadingIcon = {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(12.dp)
+                                            .clip(RoundedCornerShape(3.dp))
+                                            .background(category.color)
+                                    )
+                                }
+                            )
+                            
+                            if (!showCustomInput) {
+                                TextButton(onClick = { showCustomInput = true }) {
+                                    Text("Enter Custom")
+                                }
+                            }
+                        }
+
+                        if (!showCustomInput) {
+                            // Show common foods grid
+                            val commonFoods = CommonFoods.getCommonFoods(category)
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(2),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.height(200.dp)
+                            ) {
+                                items(commonFoods) { food ->
+                                    Card(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                foodViewModel.saveFoodItem(
+                                                    name = food,
+                                                    category = category,
+                                                    date = selectedDateTime.time
+                                                )
+                                                selectedCategory = null
+                                                selectedDateTime = Calendar.getInstance()
+                                            },
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                                        )
+                                    ) {
+                                        Text(
+                                            text = food,
+                                            modifier = Modifier.padding(12.dp),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            // Show custom input field
+                            OutlinedTextField(
+                                value = customFoodName,
+                                onValueChange = { customFoodName = it },
+                                label = { Text("Food name") },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                trailingIcon = {
+                                    if (customFoodName.isNotEmpty()) {
+                                        IconButton(onClick = { customFoodName = "" }) {
+                                            Icon(Icons.Default.Clear, contentDescription = "Clear")
+                                        }
+                                    }
+                                }
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = { showCustomInput = false; customFoodName = "" },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Back to suggestions")
+                                }
+                                
+                                Button(
+                                    onClick = {
+                                        if (customFoodName.isNotBlank()) {
+                                            foodViewModel.saveFoodItem(
+                                                name = customFoodName,
+                                                category = category,
+                                                date = selectedDateTime.time
+                                            )
+                                            customFoodName = ""
+                                            selectedCategory = null
+                                            showCustomInput = false
+                                            selectedDateTime = Calendar.getInstance()
+                                        }
+                                    },
+                                    enabled = customFoodName.isNotBlank(),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Save")
+                                }
+                            }
+                        }
+                    }
+
+                    // Date/Time Picker (always visible)
+                    OutlinedCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                DatePickerDialog(
+                                    context,
+                                    { _, year, month, dayOfMonth ->
+                                        selectedDateTime.set(Calendar.YEAR, year)
+                                        selectedDateTime.set(Calendar.MONTH, month)
+                                        selectedDateTime.set(Calendar.DAY_OF_MONTH, dayOfMonth)
+                                        
+                                        TimePickerDialog(
+                                            context,
+                                            { _, hourOfDay, minute ->
+                                                selectedDateTime.set(Calendar.HOUR_OF_DAY, hourOfDay)
+                                                selectedDateTime.set(Calendar.MINUTE, minute)
+                                            },
+                                            selectedDateTime.get(Calendar.HOUR_OF_DAY),
+                                            selectedDateTime.get(Calendar.MINUTE),
+                                            true
+                                        ).show()
+                                    },
+                                    selectedDateTime.get(Calendar.YEAR),
+                                    selectedDateTime.get(Calendar.MONTH),
+                                    selectedDateTime.get(Calendar.DAY_OF_MONTH)
+                                ).show()
+                            }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.AccessTime,
+                                contentDescription = "Select Date and Time",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                dateFormat.format(selectedDateTime.time),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
                 }
             }
         }
 
-        // Date/Time Picker
-        OutlinedCard(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp)
-                .clickable {
-                    val calendar = selectedDateTime
-                    DatePickerDialog(
-                        context,
-                        { _, year, month, dayOfMonth ->
-                            val newCalendar = Calendar.getInstance().apply {
-                                set(year, month, dayOfMonth, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE))
-                            }
-                            selectedDateTime = newCalendar
-
-                            // After date is selected, show time picker
-                            TimePickerDialog(
-                                context,
-                                { _, hourOfDay, minute ->
-                                    val finalCalendar = Calendar.getInstance().apply {
-                                        set(year, month, dayOfMonth, hourOfDay, minute)
-                                    }
-                                    selectedDateTime = finalCalendar
-                                },
-                                calendar.get(Calendar.HOUR_OF_DAY),
-                                calendar.get(Calendar.MINUTE),
-                                true
-                            ).show()
-                        },
-                        calendar.get(Calendar.YEAR),
-                        calendar.get(Calendar.MONTH),
-                        calendar.get(Calendar.DAY_OF_MONTH)
-                    ).show()
-                }
-        ) {
+        // Recent Entries Section
+        item {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Text(
-                        text = "Date & Time",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = dateFormat.format(selectedDateTime.time),
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
-                Icon(
-                    imageVector = Icons.Default.CalendarToday,
-                    contentDescription = "Select date and time",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                Text(
+                    text = "Recent Entries",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(bottom = 8.dp)
                 )
             }
-        }
 
-        Button(
-            onClick = {
-                if (foodItem.isNotBlank() && quantity.isNotBlank()) {
-                    foodViewModel.saveFoodItem(foodItem, quantity, selectedCategory, selectedDateTime.time)
-                    foodItem = ""
-                    quantity = ""
-                    selectedCategory = FoodCategory.OTHER
-                    selectedDateTime = Calendar.getInstance()
-                }
-             },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(stringResource(R.string.button_save))
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // List of food items
-        if (foodItems.isNotEmpty()) {
-            Text(
-                text = "Recent Entries",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            
             // Category filter chips
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -427,8 +489,8 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                 items(FoodCategory.getAllCategories()) { category ->
                     FilterChip(
                         selected = filterCategory == category,
-                        onClick = { 
-                            filterCategory = if (filterCategory == category) null else category 
+                        onClick = {
+                            filterCategory = if (filterCategory == category) null else category
                         },
                         label = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -445,99 +507,108 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                     )
                 }
             }
-            
-            val filteredItems = if (filterCategory == null) {
-                foodItems
-            } else {
-                foodItems.filter { it.category == filterCategory }
-            }
-            
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+        }
+
+        val filteredItems = if (filterCategory == null) {
+            foodItems
+        } else {
+            foodItems.filter { it.category == filterCategory }
+        }
+
+        items(filteredItems.sortedByDescending { it.date }) { item ->
+            var showOptions by remember { mutableStateOf(false) }
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .combinedClickable(
+                        onClick = { },
+                        onLongClick = { showOptions = true }
+                    ),
+                colors = CardDefaults.cardColors(
+                    containerColor = item.category.color.copy(alpha = 0.15f)
+                )
             ) {
-                items(filteredItems.sortedByDescending { it.date }) { item ->
-                    var showOptions by remember { mutableStateOf(false) }
-                    
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .combinedClickable(
-                                onClick = { },
-                                onLongClick = { showOptions = true }
-                            ),
-                        colors = CardDefaults.cardColors(
-                            containerColor = item.category.color.copy(alpha = 0.15f)
-                        )
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(12.dp)
-                                                .clip(RoundedCornerShape(3.dp))
-                                                .background(item.category.color)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            text = item.name,
-                                            style = MaterialTheme.typography.titleMedium
-                                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(12.dp)
+                                        .clip(RoundedCornerShape(3.dp))
+                                        .background(item.category.color)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = item.name,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                            }
+                            Text(
+                                text = item.category.displayName,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = dateFormat.format(item.date),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        
+                        if (showOptions) {
+                            Row {
+                                IconButton(
+                                    onClick = {
+                                        editingItem = item
+                                        showEditDialog = true
+                                        showOptions = false
                                     }
-                                    Text(
-                                        text = "Quantity: ${item.quantity}",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        text = item.category.displayName,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        text = dateFormat.format(item.date),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                ) {
+                                    Icon(
+                                        Icons.Default.Edit,
+                                        contentDescription = "Edit",
+                                        tint = MaterialTheme.colorScheme.primary
                                     )
                                 }
-                                
-                                if (showOptions) {
-                                    Row {
-                                        IconButton(
-                                            onClick = {
-                                                editingItem = item
-                                                showEditDialog = true
-                                                showOptions = false
-                                            }
-                                        ) {
-                                            Icon(
-                                                Icons.Default.Edit,
-                                                contentDescription = "Edit",
-                                                tint = MaterialTheme.colorScheme.primary
-                                            )
-                                        }
-                                        IconButton(
-                                            onClick = {
-                                                itemToDelete = item
-                                                showDeleteDialog = true
-                                                showOptions = false
-                                            }
-                                        ) {
-                                            Icon(
-                                                Icons.Default.Delete,
-                                                contentDescription = "Delete",
-                                                tint = MaterialTheme.colorScheme.error
-                                            )
-                                        }
+                                IconButton(
+                                    onClick = {
+                                        itemToDelete = item
+                                        showDeleteDialog = true
+                                        showOptions = false
                                     }
+                                ) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = "Delete",
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
                                 }
                             }
                         }
                     }
+                }
+            }
+        }
+
+        if (filteredItems.isEmpty()) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Text(
+                        text = "No food entries yet. Start tracking your meals above!",
+                        modifier = Modifier.padding(16.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
         }
