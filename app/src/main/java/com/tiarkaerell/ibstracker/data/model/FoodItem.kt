@@ -12,3 +12,9 @@ data class FoodItem(
     val date: Date,
     val category: FoodCategory = FoodCategory.OTHER
 )
+
+data class FrequentFoodItem(
+    val name: String,
+    val category: FoodCategory,
+    val count: Int
+)

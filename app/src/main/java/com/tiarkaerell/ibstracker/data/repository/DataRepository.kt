@@ -3,6 +3,7 @@ package com.tiarkaerell.ibstracker.data.repository
 import com.tiarkaerell.ibstracker.data.database.dao.FoodItemDao
 import com.tiarkaerell.ibstracker.data.database.dao.SymptomDao
 import com.tiarkaerell.ibstracker.data.model.FoodItem
+import com.tiarkaerell.ibstracker.data.model.FrequentFoodItem
 import com.tiarkaerell.ibstracker.data.model.Symptom
 import kotlinx.coroutines.flow.Flow
 
@@ -11,6 +12,8 @@ class DataRepository(
     private val symptomDao: SymptomDao
 ) {
     fun getAllFoodItems(): Flow<List<FoodItem>> = foodItemDao.getAll()
+
+    fun getFrequentFoodItems(): Flow<List<FrequentFoodItem>> = foodItemDao.getFrequentFoodItems()
 
     suspend fun insertFoodItem(foodItem: FoodItem) {
         foodItemDao.insert(foodItem)

@@ -41,6 +41,11 @@
     <string name="recent_entries">Entrées récentes</string>
     <string name="all_categories">Tout</string>
     <string name="no_food_entries">Aucune entrée alimentaire pour le moment. Commencez à suivre vos repas ci-dessus !</string>
+    <string name="quick_add_title">Ajout rapide</string>
+    <string name="times_added_format">%1$d fois</string>
+    <string name="quick_add_confirm_title">Confirmer l\'ajout rapide</string>
+    <string name="quick_add_confirm_message">Ajouter \"%1$s\" à l\'heure ci-dessous ?</string>
+    <string name="button_add">Ajouter</string>
 
     <!-- Symptoms Screen -->
     <string name="symptoms_title">Enregistrer un symptôme</string>
