@@ -35,7 +35,7 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel) {
     val userProfile by settingsViewModel.userProfile.collectAsState()
     val context = LocalContext.current
     val activity = context as? Activity
-    
+
     val googleAuthManager = rememberGoogleAuthManager()
     val authState by googleAuthManager.authState.collectAsState()
     val coroutineScope = rememberCoroutineScope()
@@ -95,10 +95,15 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel) {
                     DropdownMenuItem(
                         text = { Text(stringResource(lang.displayNameRes)) },
                         onClick = {
-                            settingsViewModel.setLanguage(lang)
                             languageExpanded = false
-                            // Recreate activity to apply new language
-                            activity?.recreate()
+                            // Save language and wait for it to complete before recreating activity
+                            coroutineScope.launch {
+                                settingsViewModel.setLanguage(lang)
+                                // Small delay to ensure DataStore write completes
+                                kotlinx.coroutines.delay(100)
+                                // Recreate activity to apply new language
+                                activity?.recreate()
+                            }
                         },
                         contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
                     )
