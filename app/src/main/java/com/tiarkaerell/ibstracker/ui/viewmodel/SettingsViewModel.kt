@@ -10,6 +10,8 @@ import com.tiarkaerell.ibstracker.data.model.Units
 import com.tiarkaerell.ibstracker.data.model.UserProfile
 import com.tiarkaerell.ibstracker.data.repository.SettingsRepository
 import com.tiarkaerell.ibstracker.data.sync.GoogleDriveBackup
+import com.tiarkaerell.ibstracker.data.sync.PasswordRequiredException
+import com.tiarkaerell.ibstracker.data.sync.IncorrectPasswordException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -120,15 +122,26 @@ class SettingsViewModel(
         }
     }
     
-    fun restoreBackup(fileId: String, mergeStrategy: GoogleDriveBackup.MergeStrategy) {
+    fun restoreBackup(fileId: String, mergeStrategy: GoogleDriveBackup.MergeStrategy, password: String? = null) {
         viewModelScope.launch {
             _backupState.value = BackupState.Loading
             try {
-                val result = googleDriveBackup.restoreWithMerge(fileId, mergeStrategy)
+                val result = googleDriveBackup.restoreWithMerge(fileId, mergeStrategy, password)
                 _backupState.value = if (result.isSuccess) {
                     BackupState.Success(result.getOrNull() ?: "Backup restored successfully")
                 } else {
-                    BackupState.Error(result.exceptionOrNull()?.message ?: "Restore failed")
+                    val exception = result.exceptionOrNull()
+                    when (exception) {
+                        is PasswordRequiredException -> {
+                            BackupState.PasswordRequired(fileId, mergeStrategy)
+                        }
+                        is IncorrectPasswordException -> {
+                            BackupState.PasswordIncorrect(fileId, mergeStrategy)
+                        }
+                        else -> {
+                            BackupState.Error(exception?.message ?: "Restore failed")
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 _backupState.value = BackupState.Error(e.message ?: "Restore failed")
@@ -174,5 +187,7 @@ class SettingsViewModel(
         data class Error(val message: String) : BackupState()
         data class BackupsLoaded(val backups: List<GoogleDriveBackup.DriveFile>) : BackupState()
         data class MetadataLoaded(val metadata: GoogleDriveBackup.BackupMetadata) : BackupState()
+        data class PasswordRequired(val fileId: String, val mergeStrategy: GoogleDriveBackup.MergeStrategy) : BackupState()
+        data class PasswordIncorrect(val fileId: String, val mergeStrategy: GoogleDriveBackup.MergeStrategy) : BackupState()
     }
 }

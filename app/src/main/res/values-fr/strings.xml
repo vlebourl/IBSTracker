@@ -415,4 +415,9 @@
     <string name="verify_password_title">Vérifier le mot de passe</string>
     <string name="verify_password_description">Entrez votre mot de passe actuel pour désactiver la protection.</string>
     <string name="password_incorrect_error">Mot de passe incorrect</string>
+
+    <!-- Restore Password Dialog -->
+    <string name="restore_password_title">Sauvegarde chiffrée</string>
+    <string name="restore_password_description">Cette sauvegarde est chiffrée. Entrez le mot de passe pour la restaurer.</string>
+    <string name="button_restore">Restaurer</string>
 </resources>

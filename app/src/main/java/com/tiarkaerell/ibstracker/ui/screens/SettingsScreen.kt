@@ -229,6 +229,9 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel) {
             onRestoreWithStrategy = { fileId, strategy ->
                 settingsViewModel.restoreBackup(fileId, strategy)
             },
+            onRestoreWithPassword = { fileId, strategy, password ->
+                settingsViewModel.restoreBackup(fileId, strategy, password)
+            },
             onClearState = {
                 settingsViewModel.clearBackupState()
             }
@@ -324,11 +327,17 @@ fun GoogleDriveBackupCard(
     onCreateBackup: () -> Unit,
     onRestoreBackup: () -> Unit,
     onRestoreWithStrategy: (String, com.tiarkaerell.ibstracker.data.sync.GoogleDriveBackup.MergeStrategy) -> Unit,
+    onRestoreWithPassword: (String, com.tiarkaerell.ibstracker.data.sync.GoogleDriveBackup.MergeStrategy, String) -> Unit,
     onClearState: () -> Unit
 ) {
     var showBackupListDialog by remember { mutableStateOf(false) }
     var selectedBackupId by remember { mutableStateOf<String?>(null) }
     var showMergeStrategyDialog by remember { mutableStateOf(false) }
+    var showRestorePasswordDialog by remember { mutableStateOf(false) }
+    var restoreFileId by remember { mutableStateOf<String?>(null) }
+    var restoreMergeStrategy by remember { mutableStateOf<com.tiarkaerell.ibstracker.data.sync.GoogleDriveBackup.MergeStrategy?>(null) }
+    var passwordError by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -421,6 +430,22 @@ fun GoogleDriveBackupCard(
                         showBackupListDialog = true
                     }
                 }
+                is SettingsViewModel.BackupState.PasswordRequired -> {
+                    LaunchedEffect(backupState) {
+                        restoreFileId = backupState.fileId
+                        restoreMergeStrategy = backupState.mergeStrategy
+                        passwordError = false
+                        showRestorePasswordDialog = true
+                    }
+                }
+                is SettingsViewModel.BackupState.PasswordIncorrect -> {
+                    LaunchedEffect(backupState) {
+                        restoreFileId = backupState.fileId
+                        restoreMergeStrategy = backupState.mergeStrategy
+                        passwordError = true
+                        showRestorePasswordDialog = true
+                    }
+                }
                 else -> {
                     if (!isSignedIn) {
                         Text(
@@ -462,6 +487,27 @@ fun GoogleDriveBackupCard(
             onDismiss = {
                 showMergeStrategyDialog = false
                 selectedBackupId = null
+            }
+        )
+    }
+
+    // Restore Password Dialog
+    if (showRestorePasswordDialog && restoreFileId != null && restoreMergeStrategy != null) {
+        RestorePasswordDialog(
+            hasError = passwordError,
+            onPasswordProvided = { password ->
+                showRestorePasswordDialog = false
+                onRestoreWithPassword(restoreFileId!!, restoreMergeStrategy!!, password)
+                restoreFileId = null
+                restoreMergeStrategy = null
+                passwordError = false
+            },
+            onDismiss = {
+                showRestorePasswordDialog = false
+                restoreFileId = null
+                restoreMergeStrategy = null
+                passwordError = false
+                onClearState()
             }
         )
     }
@@ -1163,6 +1209,8 @@ fun PasswordSetupDialog(
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var showError by remember { mutableStateOf(false) }
+    var passwordVisible by remember { mutableStateOf(false) }
+    var confirmPasswordVisible by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1184,11 +1232,19 @@ fun PasswordSetupDialog(
                         showError = false
                     },
                     label = { Text(stringResource(R.string.password_label)) },
-                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    visualTransformation = if (passwordVisible) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation(),
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         keyboardType = androidx.compose.ui.text.input.KeyboardType.Password,
                         autoCorrect = false
                     ),
+                    trailingIcon = {
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                contentDescription = if (passwordVisible) "Hide password" else "Show password"
+                            )
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -1202,11 +1258,19 @@ fun PasswordSetupDialog(
                         showError = false
                     },
                     label = { Text(stringResource(R.string.confirm_password_label)) },
-                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    visualTransformation = if (confirmPasswordVisible) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation(),
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         keyboardType = androidx.compose.ui.text.input.KeyboardType.Password,
                         autoCorrect = false
                     ),
+                    trailingIcon = {
+                        IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
+                            Icon(
+                                imageVector = if (confirmPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                contentDescription = if (confirmPasswordVisible) "Hide password" else "Show password"
+                            )
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     isError = showError
@@ -1262,6 +1326,7 @@ fun PasswordVerifyDialog(
 ) {
     var enteredPassword by remember { mutableStateOf("") }
     var showError by remember { mutableStateOf(false) }
+    var passwordVisible by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1283,11 +1348,19 @@ fun PasswordVerifyDialog(
                         showError = false
                     },
                     label = { Text(stringResource(R.string.password_label)) },
-                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    visualTransformation = if (passwordVisible) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation(),
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         keyboardType = androidx.compose.ui.text.input.KeyboardType.Password,
                         autoCorrect = false
                     ),
+                    trailingIcon = {
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                contentDescription = if (passwordVisible) "Hide password" else "Show password"
+                            )
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     isError = showError
@@ -1322,6 +1395,79 @@ fun PasswordVerifyDialog(
                 }
             ) {
                 Text(stringResource(R.string.button_disable))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.button_cancel))
+            }
+        }
+    )
+}
+
+@Composable
+fun RestorePasswordDialog(
+    hasError: Boolean,
+    onPasswordProvided: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var password by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.restore_password_title)) },
+        text = {
+            Column {
+                Text(
+                    text = stringResource(R.string.restore_password_description),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text(stringResource(R.string.password_label)) },
+                    visualTransformation = if (passwordVisible) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Password,
+                        autoCorrect = false
+                    ),
+                    trailingIcon = {
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                contentDescription = if (passwordVisible) "Hide password" else "Show password"
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    isError = hasError
+                )
+
+                if (hasError) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.password_incorrect_error),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (password.isNotEmpty()) {
+                        onPasswordProvided(password)
+                    }
+                }
+            ) {
+                Text(stringResource(R.string.button_restore))
             }
         },
         dismissButton = {

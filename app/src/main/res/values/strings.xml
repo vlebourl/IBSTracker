@@ -415,4 +415,9 @@
     <string name="verify_password_title">Verify Password</string>
     <string name="verify_password_description">Enter your current password to disable protection.</string>
     <string name="password_incorrect_error">Incorrect password</string>
+
+    <!-- Restore Password Dialog -->
+    <string name="restore_password_title">Encrypted Backup</string>
+    <string name="restore_password_description">This backup is encrypted. Enter the password to restore it.</string>
+    <string name="button_restore">Restore</string>
 </resources>

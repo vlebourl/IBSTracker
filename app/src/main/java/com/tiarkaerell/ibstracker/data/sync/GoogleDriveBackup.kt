@@ -23,6 +23,10 @@ import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
 
+// Custom exceptions for backup/restore errors
+class PasswordRequiredException(message: String) : Exception(message)
+class IncorrectPasswordException(message: String) : Exception(message)
+
 /**
  * Manages optional password-encrypted backups to Google Drive.
  *
@@ -378,7 +382,8 @@ class GoogleDriveBackup(
 
     suspend fun restoreWithMerge(
         fileId: String,
-        mergeStrategy: MergeStrategy
+        mergeStrategy: MergeStrategy,
+        password: String? = null
     ): Result<String> = withContext(Dispatchers.IO) {
         return@withContext try {
             val account = GoogleSignIn.getLastSignedInAccount(context)
@@ -399,14 +404,14 @@ class GoogleDriveBackup(
 
             // Decrypt if file is encrypted (ends with .enc)
             val jsonContent = if (fileMetadata.name.endsWith(".enc")) {
-                val password = settingsRepository.getBackupPassword()
-                if (password.isNullOrEmpty()) {
-                    return@withContext Result.failure(Exception("Backup is encrypted but no password is configured. Set your backup password in Settings."))
+                val decryptPassword = password ?: settingsRepository.getBackupPassword()
+                if (decryptPassword.isNullOrEmpty()) {
+                    return@withContext Result.failure(PasswordRequiredException("Backup is encrypted. Password required."))
                 }
                 try {
-                    encryptionManager.decrypt(fileContent, password)
+                    encryptionManager.decrypt(fileContent, decryptPassword)
                 } catch (e: Exception) {
-                    return@withContext Result.failure(Exception("Failed to decrypt backup. Password may be incorrect."))
+                    return@withContext Result.failure(IncorrectPasswordException("Failed to decrypt backup. Password may be incorrect."))
                 }
             } else {
                 fileContent // Unencrypted backup
