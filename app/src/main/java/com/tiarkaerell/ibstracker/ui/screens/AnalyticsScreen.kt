@@ -25,7 +25,9 @@ import com.tiarkaerell.ibstracker.data.model.FoodCategoryHelper
 import com.tiarkaerell.ibstracker.data.model.InsightSummary
 import com.tiarkaerell.ibstracker.data.model.TriggerAnalysis
 import com.tiarkaerell.ibstracker.data.model.CategoryInsight
+import com.tiarkaerell.ibstracker.data.model.UserProfile
 import com.tiarkaerell.ibstracker.ui.viewmodel.AnalyticsViewModel
+import com.tiarkaerell.ibstracker.IBSTrackerApplication
 import java.text.NumberFormat
 import java.util.concurrent.TimeUnit
 
@@ -34,6 +36,11 @@ import java.util.concurrent.TimeUnit
 fun AnalyticsScreen(analyticsViewModel: AnalyticsViewModel) {
     val insights by analyticsViewModel.insights.collectAsState()
     val isLoading by analyticsViewModel.isLoading.collectAsState()
+    
+    // Access user profile
+    val context = LocalContext.current
+    val application = context.applicationContext as IBSTrackerApplication
+    val userProfile by application.container.settingsRepository.userProfileFlow.collectAsState(initial = UserProfile())
     
     Column(
         modifier = Modifier
@@ -73,7 +80,7 @@ fun AnalyticsScreen(analyticsViewModel: AnalyticsViewModel) {
                 CircularProgressIndicator()
             }
         } else if (insights != null) {
-            InsightsContent(insights = insights!!)
+            InsightsContent(insights = insights!!, userProfile = userProfile)
         } else {
             EmptyInsightsState()
         }
@@ -81,10 +88,17 @@ fun AnalyticsScreen(analyticsViewModel: AnalyticsViewModel) {
 }
 
 @Composable
-private fun InsightsContent(insights: InsightSummary) {
+private fun InsightsContent(insights: InsightSummary, userProfile: UserProfile) {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // User Profile Summary
+        if (userProfile.hasCompleteBasicInfo()) {
+            item {
+                UserProfileSummaryCard(userProfile)
+            }
+        }
+        
         // Overall stats
         item {
             OverallStatsCard(insights)
@@ -516,6 +530,89 @@ private fun EmptyInsightsState() {
             text = stringResource(R.string.log_more_data_message),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun UserProfileSummaryCard(userProfile: UserProfile) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Your Profile Summary",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Left column
+                Column(modifier = Modifier.weight(1f)) {
+                    userProfile.getAge()?.let { age ->
+                        ProfileInfoItem("Age", "$age years")
+                    }
+                    
+                    ProfileInfoItem("Sex", LocalContext.current.getString(userProfile.sex.displayNameRes))
+                    
+                    userProfile.getBMI()?.let { bmi ->
+                        ProfileInfoItem("BMI", "%.1f".format(bmi))
+                    }
+                }
+                
+                // Right column
+                Column(modifier = Modifier.weight(1f)) {
+                    userProfile.heightCm?.let { height ->
+                        ProfileInfoItem("Height", "${height}cm")
+                    }
+                    
+                    userProfile.weightKg?.let { weight ->
+                        ProfileInfoItem("Weight", "%.1fkg".format(weight))
+                    }
+                    
+                    userProfile.getIBSDurationYears()?.let { duration ->
+                        if (duration > 0) {
+                            ProfileInfoItem("IBS Duration", "$duration years")
+                        }
+                    }
+                }
+            }
+            
+            // BMI Category
+            userProfile.getBMI()?.let {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "BMI Category: ${LocalContext.current.getString(userProfile.getBMICategory().displayNameRes)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfileInfoItem(label: String, value: String) {
+    Column(modifier = Modifier.padding(vertical = 2.dp)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
         )
     }
 }

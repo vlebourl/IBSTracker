@@ -21,4 +21,13 @@ interface FoodItemDao {
 
     @Query("SELECT * FROM food_items ORDER BY date DESC")
     fun getAll(): Flow<List<FoodItem>>
+    
+    @Query("SELECT * FROM food_items ORDER BY date DESC")
+    suspend fun getAllFoodItems(): List<FoodItem>
+    
+    @Query("DELETE FROM food_items")
+    suspend fun deleteAllFoodItems()
+    
+    @Insert
+    suspend fun insertFoodItem(foodItem: FoodItem): Long
 }
