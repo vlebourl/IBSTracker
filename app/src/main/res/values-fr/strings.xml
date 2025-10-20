@@ -21,7 +21,7 @@
     <string name="delete_food_message">Êtes-vous sûr de vouloir supprimer \"%1$s\" ?</string>
     <string name="edit_food_title">Modifier l\'entrée alimentaire</string>
     <string name="food_name_edit_label">Nom de l\'aliment</string>
-    <string name="search_placeholder">Rechercher des aliments...</string>
+    <string name="search_placeholder">Rechercher des aliments…</string>
     <string name="search_results">Résultats de recherche</string>
     <string name="no_foods_found">Aucun aliment trouvé pour \"%1$s\"</string>
     <string name="recent_entries">Entrées récentes</string>
@@ -323,9 +323,9 @@
     <!-- Activity levels -->
     <string name="activity_not_specified">Non spécifié</string>
     <string name="activity_sedentary">Sédentaire (peu/pas d\'exercice)</string>
-    <string name="activity_lightly_active">Légèrement actif (1-3 jours/semaine)</string>
-    <string name="activity_moderately_active">Modérément actif (3-5 jours/semaine)</string>
-    <string name="activity_very_active">Très actif (6-7 jours/semaine)</string>
+    <string name="activity_lightly_active">Légèrement actif (1–3 jours/semaine)</string>
+    <string name="activity_moderately_active">Modérément actif (3–5 jours/semaine)</string>
+    <string name="activity_very_active">Très actif (6–7 jours/semaine)</string>
     <string name="activity_extremely_active">Extrêmement actif (2x/jour ou intense)</string>
     
     <!-- IBS information -->
