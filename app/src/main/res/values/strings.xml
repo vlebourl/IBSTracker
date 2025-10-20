@@ -40,6 +40,11 @@
     <string name="recent_entries">Recent Entries</string>
     <string name="all_categories">All</string>
     <string name="no_food_entries">No food entries yet. Start tracking your meals above!</string>
+    <string name="quick_add_title">Quick Add</string>
+    <string name="times_added_format">%1$d times</string>
+    <string name="quick_add_confirm_title">Confirm Quick Add</string>
+    <string name="quick_add_confirm_message">Add \"%1$s\" at the time below?</string>
+    <string name="button_add">Add</string>
 
     <!-- Symptoms Screen -->
     <string name="symptoms_title">Log a Symptom</string>

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tiarkaerell.ibstracker.data.model.FoodCategory
 import com.tiarkaerell.ibstracker.data.model.FoodItem
+import com.tiarkaerell.ibstracker.data.model.FrequentFoodItem
 import com.tiarkaerell.ibstracker.data.repository.DataRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -14,6 +15,13 @@ import java.util.Date
 class FoodViewModel(private val dataRepository: DataRepository) : ViewModel() {
 
     val foodItems: StateFlow<List<FoodItem>> = dataRepository.getAllFoodItems()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    val frequentFoodItems: StateFlow<List<FrequentFoodItem>> = dataRepository.getFrequentFoodItems()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),

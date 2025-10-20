@@ -51,15 +51,110 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
     var filterCategory by remember { mutableStateOf<FoodCategory?>(null) }
     var searchQuery by remember { mutableStateOf("") }
     var searchResults by remember { mutableStateOf<List<CommonFoods.FoodSearchResult>>(emptyList()) }
-    
+    var showQuickAddDialog by remember { mutableStateOf(false) }
+    var quickAddItem by remember { mutableStateOf<Pair<String, FoodCategory>?>(null) }
+    var quickAddDateTime by remember { mutableStateOf(Calendar.getInstance()) }
+
     val foodItems by foodViewModel.foodItems.collectAsState()
+    val frequentFoodItems by foodViewModel.frequentFoodItems.collectAsState()
     val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault()) }
     val context = LocalContext.current
+
+    // Quick Add confirmation dialog
+    if (showQuickAddDialog && quickAddItem != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showQuickAddDialog = false
+                quickAddItem = null
+                quickAddDateTime = Calendar.getInstance()
+                selectedDateTime = Calendar.getInstance()
+            },
+            title = { Text(stringResource(R.string.quick_add_confirm_title)) },
+            text = {
+                Column {
+                    Text(
+                        text = stringResource(R.string.quick_add_confirm_message, quickAddItem!!.first),
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+
+                    OutlinedCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                DatePickerDialog(
+                                    context,
+                                    { _, year, month, dayOfMonth ->
+                                        quickAddDateTime.set(Calendar.YEAR, year)
+                                        quickAddDateTime.set(Calendar.MONTH, month)
+                                        quickAddDateTime.set(Calendar.DAY_OF_MONTH, dayOfMonth)
+
+                                        TimePickerDialog(
+                                            context,
+                                            { _, hourOfDay, minute ->
+                                                quickAddDateTime.set(Calendar.HOUR_OF_DAY, hourOfDay)
+                                                quickAddDateTime.set(Calendar.MINUTE, minute)
+                                            },
+                                            quickAddDateTime.get(Calendar.HOUR_OF_DAY),
+                                            quickAddDateTime.get(Calendar.MINUTE),
+                                            true
+                                        ).show()
+                                    },
+                                    quickAddDateTime.get(Calendar.YEAR),
+                                    quickAddDateTime.get(Calendar.MONTH),
+                                    quickAddDateTime.get(Calendar.DAY_OF_MONTH)
+                                ).show()
+                            }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.CalendarToday,
+                                contentDescription = stringResource(R.string.cd_select_date_time)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(dateFormat.format(quickAddDateTime.time))
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        foodViewModel.saveFoodItem(
+                            name = quickAddItem!!.first,
+                            category = quickAddItem!!.second,
+                            date = quickAddDateTime.time
+                        )
+                        showQuickAddDialog = false
+                        quickAddItem = null
+                        quickAddDateTime = Calendar.getInstance()
+                        selectedDateTime = Calendar.getInstance()
+                    }
+                ) {
+                    Text(stringResource(R.string.button_add))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showQuickAddDialog = false
+                        quickAddItem = null
+                        quickAddDateTime = Calendar.getInstance()
+                        selectedDateTime = Calendar.getInstance()
+                    }
+                ) {
+                    Text(stringResource(R.string.button_cancel))
+                }
+            }
+        )
+    }
 
     // Delete confirmation dialog
     if (showDeleteDialog && itemToDelete != null) {
         AlertDialog(
-            onDismissRequest = { 
+            onDismissRequest = {
                 showDeleteDialog = false
                 itemToDelete = null
             },
@@ -227,6 +322,71 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Quick Add Section
+        if (frequentFoodItems.isNotEmpty()) {
+            item {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.quick_add_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        frequentFoodItems.forEach { frequentItem ->
+                            Card(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable {
+                                        quickAddItem = Pair(frequentItem.name, frequentItem.category)
+                                        quickAddDateTime = Calendar.getInstance()
+                                        showQuickAddDialog = true
+                                    },
+                                colors = CardDefaults.cardColors(
+                                    containerColor = frequentItem.category.color.copy(alpha = 0.2f)
+                                ),
+                                border = BorderStroke(2.dp, frequentItem.category.color)
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(12.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(16.dp)
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(frequentItem.category.color)
+                                    )
+                                    Text(
+                                        text = frequentItem.name,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        textAlign = TextAlign.Center,
+                                        fontWeight = FontWeight.Medium,
+                                        maxLines = 2,
+                                        modifier = Modifier.height(40.dp)
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.times_added_format, frequentItem.count),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // Entry Section
         item {
             Card(
@@ -294,14 +454,11 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clickable {
-                                                foodViewModel.saveFoodItem(
-                                                    name = result.foodName,
-                                                    category = result.category,
-                                                    date = selectedDateTime.time
-                                                )
+                                                quickAddItem = Pair(result.foodName, result.category)
+                                                quickAddDateTime = selectedDateTime
+                                                showQuickAddDialog = true
                                                 searchQuery = ""
                                                 searchResults = emptyList()
-                                                selectedDateTime = Calendar.getInstance()
                                             },
                                         colors = CardDefaults.cardColors(
                                             containerColor = result.category.color.copy(alpha = 0.2f)
@@ -464,13 +621,10 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clickable {
-                                                foodViewModel.saveFoodItem(
-                                                    name = food,
-                                                    category = category,
-                                                    date = selectedDateTime.time
-                                                )
+                                                quickAddItem = Pair(food, category)
+                                                quickAddDateTime = selectedDateTime
+                                                showQuickAddDialog = true
                                                 selectedCategory = null
-                                                selectedDateTime = Calendar.getInstance()
                                             },
                                         colors = CardDefaults.cardColors(
                                             containerColor = MaterialTheme.colorScheme.secondaryContainer
@@ -516,15 +670,12 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                 Button(
                                     onClick = {
                                         if (customFoodName.isNotBlank()) {
-                                            foodViewModel.saveFoodItem(
-                                                name = customFoodName,
-                                                category = category,
-                                                date = selectedDateTime.time
-                                            )
+                                            quickAddItem = Pair(customFoodName, category)
+                                            quickAddDateTime = selectedDateTime
+                                            showQuickAddDialog = true
                                             customFoodName = ""
                                             selectedCategory = null
                                             showCustomInput = false
-                                            selectedDateTime = Calendar.getInstance()
                                         }
                                     },
                                     enabled = customFoodName.isNotBlank(),
