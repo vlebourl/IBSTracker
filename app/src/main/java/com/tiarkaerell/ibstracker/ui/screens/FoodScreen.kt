@@ -332,14 +332,14 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                         fontWeight = FontWeight.Bold
                     )
 
-                    LazyRow(
+                    Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        items(frequentFoodItems) { frequentItem ->
+                        frequentFoodItems.forEach { frequentItem ->
                             Card(
                                 modifier = Modifier
-                                    .width(120.dp)
+                                    .weight(1f)
                                     .clickable {
                                         quickAddItem = Pair(frequentItem.name, frequentItem.category)
                                         quickAddDateTime = Calendar.getInstance()
