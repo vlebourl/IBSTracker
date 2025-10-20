@@ -18,11 +18,11 @@
           "client_type": 1,
           "android_info": {
             "package_name": "com.tiarkaerell.ibstracker",
-            "certificate_hash": "dddaac4fab4673ae56c9fbcd688eef901521b479"
+            "certificate_hash": "c8bbe72dcaf7f6910d6a9e74b21e41ce2d3560af"
           }
         },
         {
-          "client_id": "896856261645-5urcjd1287rrctptp9lri9ju9ieje2r5.apps.googleusercontent.com",
+          "client_id": "896856261645-e2g6l6k1khelsl3kjji7d011oqdh5c34.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
@@ -35,7 +35,7 @@
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "896856261645-5urcjd1287rrctptp9lri9ju9ieje2r5.apps.googleusercontent.com",
+              "client_id": "896856261645-e2g6l6k1khelsl3kjji7d011oqdh5c34.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

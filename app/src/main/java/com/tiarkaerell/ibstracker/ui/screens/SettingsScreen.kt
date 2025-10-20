@@ -226,23 +226,23 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel) {
             onRestoreBackup = {
                 settingsViewModel.getBackupList()
             },
+            onRestoreWithStrategy = { fileId, strategy ->
+                settingsViewModel.restoreBackup(fileId, strategy)
+            },
             onClearState = {
                 settingsViewModel.clearBackupState()
             }
         )
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
-        // Google Fit Integration
-        val healthPermissions by settingsViewModel.healthPermissions.collectAsState()
-        GoogleFitIntegrationCard(
-            isSignedIn = authState is GoogleAuthManager.AuthState.SignedIn,
-            hasPermissions = healthPermissions,
-            onConnect = {
-                settingsViewModel.requestHealthPermissions()
-            },
-            onDisconnect = {
-                // TODO: Implement Google Fit disconnection
+
+        // Backup Password Card
+        val backupPassword by settingsViewModel.backupPassword.collectAsState()
+        BackupPasswordCard(
+            hasPassword = settingsViewModel.hasBackupPassword(),
+            currentPassword = backupPassword,
+            onPasswordChange = { password ->
+                settingsViewModel.setBackupPassword(password)
             }
         )
     }
@@ -323,8 +323,12 @@ fun GoogleDriveBackupCard(
     backupState: SettingsViewModel.BackupState,
     onCreateBackup: () -> Unit,
     onRestoreBackup: () -> Unit,
+    onRestoreWithStrategy: (String, com.tiarkaerell.ibstracker.data.sync.GoogleDriveBackup.MergeStrategy) -> Unit,
     onClearState: () -> Unit
 ) {
+    var showBackupListDialog by remember { mutableStateOf(false) }
+    var selectedBackupId by remember { mutableStateOf<String?>(null) }
+    var showMergeStrategyDialog by remember { mutableStateOf(false) }
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -413,13 +417,9 @@ fun GoogleDriveBackupCard(
                     }
                 }
                 is SettingsViewModel.BackupState.BackupsLoaded -> {
-                    Text(
-                        text = "Found ${backupState.backups.size} backups",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                    // TODO: Show backup list dialog
+                    LaunchedEffect(backupState) {
+                        showBackupListDialog = true
+                    }
                 }
                 else -> {
                     if (!isSignedIn) {
@@ -433,6 +433,37 @@ fun GoogleDriveBackupCard(
                 }
             }
         }
+    }
+
+    // Backup List Dialog
+    if (showBackupListDialog && backupState is SettingsViewModel.BackupState.BackupsLoaded) {
+        BackupListDialog(
+            backups = backupState.backups,
+            onBackupSelected = { backupId ->
+                selectedBackupId = backupId
+                showBackupListDialog = false
+                showMergeStrategyDialog = true
+            },
+            onDismiss = {
+                showBackupListDialog = false
+                onClearState()
+            }
+        )
+    }
+
+    // Merge Strategy Dialog
+    if (showMergeStrategyDialog && selectedBackupId != null) {
+        MergeStrategyDialog(
+            onStrategySelected = { strategy ->
+                showMergeStrategyDialog = false
+                onRestoreWithStrategy(selectedBackupId!!, strategy)
+                selectedBackupId = null
+            },
+            onDismiss = {
+                showMergeStrategyDialog = false
+                selectedBackupId = null
+            }
+        )
     }
 }
 
@@ -848,6 +879,449 @@ fun WeightInputDialog(
                 }
             ) {
                 Text(stringResource(R.string.button_save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.button_cancel))
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BackupListDialog(
+    backups: List<com.tiarkaerell.ibstracker.data.sync.GoogleDriveBackup.DriveFile>,
+    onBackupSelected: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = stringResource(R.string.select_backup))
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                if (backups.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.no_backups_found),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                } else {
+                    backups.forEach { backup ->
+                        val dateFormat = SimpleDateFormat("MMM dd, yyyy 'at' HH:mm", Locale.getDefault())
+                        val backupDate = dateFormat.format(Date(backup.createdTime))
+                        
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            onClick = { onBackupSelected(backup.id) }
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = backup.name,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = backupDate,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = stringResource(R.string.backup_size_kb, backup.size / 1024),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.button_cancel))
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MergeStrategyDialog(
+    onStrategySelected: (com.tiarkaerell.ibstracker.data.sync.GoogleDriveBackup.MergeStrategy) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = stringResource(R.string.restore_strategy_title))
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.restore_strategy_description),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { 
+                        onStrategySelected(com.tiarkaerell.ibstracker.data.sync.GoogleDriveBackup.MergeStrategy.KEEP_LOCAL)
+                        onDismiss()
+                    }
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = stringResource(R.string.merge_keep_local),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
+                        )
+                        Text(
+                            text = stringResource(R.string.merge_keep_local_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { 
+                        onStrategySelected(com.tiarkaerell.ibstracker.data.sync.GoogleDriveBackup.MergeStrategy.KEEP_BACKUP)
+                        onDismiss()
+                    }
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = stringResource(R.string.merge_keep_backup),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
+                        )
+                        Text(
+                            text = stringResource(R.string.merge_keep_backup_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { 
+                        onStrategySelected(com.tiarkaerell.ibstracker.data.sync.GoogleDriveBackup.MergeStrategy.KEEP_BOTH)
+                        onDismiss()
+                    }
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = stringResource(R.string.merge_keep_both),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
+                        )
+                        Text(
+                            text = stringResource(R.string.merge_keep_both_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.button_cancel))
+            }
+        }
+    )
+}
+
+@Composable
+fun BackupPasswordCard(
+    hasPassword: Boolean,
+    currentPassword: String,
+    onPasswordChange: (String) -> Unit
+) {
+    var showPasswordDialog by remember { mutableStateOf(false) }
+    var showDisableDialog by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.backup_password_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.backup_password_description),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Switch(
+                    checked = hasPassword,
+                    onCheckedChange = { enabled ->
+                        if (enabled) {
+                            showPasswordDialog = true
+                        } else {
+                            showDisableDialog = true
+                        }
+                    }
+                )
+            }
+
+            if (hasPassword) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = stringResource(R.string.backup_password_enabled),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.backup_password_warning),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+    }
+
+    // Password setup dialog
+    if (showPasswordDialog) {
+        PasswordSetupDialog(
+            onDismiss = { showPasswordDialog = false },
+            onPasswordSet = { newPassword ->
+                onPasswordChange(newPassword)
+                showPasswordDialog = false
+            }
+        )
+    }
+
+    // Disable password verification dialog
+    if (showDisableDialog) {
+        PasswordVerifyDialog(
+            currentPassword = currentPassword,
+            onDismiss = { showDisableDialog = false },
+            onPasswordVerified = {
+                onPasswordChange("")
+                showDisableDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+fun PasswordSetupDialog(
+    onDismiss: () -> Unit,
+    onPasswordSet: (String) -> Unit
+) {
+    var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var showError by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.setup_password_title)) },
+        text = {
+            Column {
+                Text(
+                    text = stringResource(R.string.setup_password_description),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = {
+                        password = it
+                        showError = false
+                    },
+                    label = { Text(stringResource(R.string.password_label)) },
+                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Password,
+                        autoCorrect = false
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = confirmPassword,
+                    onValueChange = {
+                        confirmPassword = it
+                        showError = false
+                    },
+                    label = { Text(stringResource(R.string.confirm_password_label)) },
+                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Password,
+                        autoCorrect = false
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    isError = showError
+                )
+
+                if (showError) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.password_mismatch_error),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Warning message
+                Text(
+                    text = stringResource(R.string.backup_password_warning),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (password.isEmpty()) {
+                        showError = true
+                    } else if (password != confirmPassword) {
+                        showError = true
+                    } else {
+                        onPasswordSet(password)
+                    }
+                }
+            ) {
+                Text(stringResource(R.string.button_enable))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.button_cancel))
+            }
+        }
+    )
+}
+
+@Composable
+fun PasswordVerifyDialog(
+    currentPassword: String,
+    onDismiss: () -> Unit,
+    onPasswordVerified: () -> Unit
+) {
+    var enteredPassword by remember { mutableStateOf("") }
+    var showError by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.verify_password_title)) },
+        text = {
+            Column {
+                Text(
+                    text = stringResource(R.string.verify_password_description),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = enteredPassword,
+                    onValueChange = {
+                        enteredPassword = it
+                        showError = false
+                    },
+                    label = { Text(stringResource(R.string.password_label)) },
+                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Password,
+                        autoCorrect = false
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    isError = showError
+                )
+
+                if (showError) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.password_incorrect_error),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = stringResource(R.string.disable_password_message),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (enteredPassword == currentPassword) {
+                        onPasswordVerified()
+                    } else {
+                        showError = true
+                    }
+                }
+            ) {
+                Text(stringResource(R.string.button_disable))
             }
         },
         dismissButton = {

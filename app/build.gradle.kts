@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -9,10 +12,10 @@ plugins {
 
 // Load keystore properties from keystore.properties file
 val keystorePropertiesFile = rootProject.file("keystore.properties")
-val keystoreProperties = java.util.Properties()
+val keystoreProperties = Properties()
 
 if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(java.io.FileInputStream(keystorePropertiesFile))
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
 android {
@@ -21,19 +24,30 @@ android {
 
     signingConfigs {
         create("release") {
-            // Load signing configuration from keystore.properties
-            // Falls back to environment variables if file doesn't exist
-            keyAlias = keystoreProperties["keyAlias"]?.toString()
-                ?: System.getenv("KEYSTORE_KEY_ALIAS")
-                ?: "release-key"
-            keyPassword = keystoreProperties["keyPassword"]?.toString()
-                ?: System.getenv("KEYSTORE_KEY_PASSWORD")
+            // Secure password loading: prioritizes environment variables over file
+            // 1st priority: Environment variable
+            // 2nd priority: keystore.properties (if not blank)
+            // 3rd priority: Default/empty
+
+            val propKeyAlias = keystoreProperties.getProperty("keyAlias")?.takeIf { it.isNotBlank() }
+            val propKeyPassword = keystoreProperties.getProperty("keyPassword")?.takeIf { it.isNotBlank() }
+            val propStoreFile = keystoreProperties.getProperty("storeFile")?.takeIf { it.isNotBlank() }
+            val propStorePassword = keystoreProperties.getProperty("storePassword")?.takeIf { it.isNotBlank() }
+
+            keyAlias = System.getenv("IBS_KEYSTORE_ALIAS")
+                ?: propKeyAlias
+                ?: "ibs-tracker-release"
+
+            keyPassword = System.getenv("IBS_KEYSTORE_PASSWORD")
+                ?: propKeyPassword
                 ?: ""
-            storeFile = file(keystoreProperties["storeFile"]?.toString()
-                ?: System.getenv("KEYSTORE_FILE")
-                ?: "release-keystore.jks")
-            storePassword = keystoreProperties["storePassword"]?.toString()
-                ?: System.getenv("KEYSTORE_STORE_PASSWORD")
+
+            storeFile = rootProject.file(System.getenv("IBS_KEYSTORE_FILE")
+                ?: propStoreFile
+                ?: "app/ibs-tracker-production.jks")
+
+            storePassword = System.getenv("IBS_KEYSTORE_PASSWORD")
+                ?: propStorePassword
                 ?: ""
         }
     }
@@ -104,6 +118,9 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+
+    // Security - Encrypted SharedPreferences
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
     implementation(libs.androidx.datastore.preferences)
     
     // Google Services

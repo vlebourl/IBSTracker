@@ -158,7 +158,6 @@ fun DashboardScreen(
     // Edit Food dialog
     if (showEditFoodDialog && editingFoodItem != null) {
         var editName by remember { mutableStateOf(editingFoodItem!!.name) }
-        var editQuantity by remember { mutableStateOf(editingFoodItem!!.quantity) }
         var editCategory by remember { mutableStateOf(editingFoodItem!!.category) }
         var showEditCategoryDropdown by remember { mutableStateOf(false) }
         var editDateTime by remember { 
@@ -179,13 +178,7 @@ fun DashboardScreen(
                         label = { Text(stringResource(R.string.food_name_edit_label)) },
                         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
                     )
-                    OutlinedTextField(
-                        value = editQuantity,
-                        onValueChange = { editQuantity = it },
-                        label = { Text(stringResource(R.string.food_quantity_label)) },
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-                    )
-                    
+
                     // Category dropdown for edit
                     ExposedDropdownMenuBox(
                         expanded = showEditCategoryDropdown,
@@ -294,7 +287,6 @@ fun DashboardScreen(
                     onClick = {
                         val updatedItem = editingFoodItem!!.copy(
                             name = editName,
-                            quantity = editQuantity,
                             category = editCategory,
                             date = editDateTime.time
                         )
@@ -578,11 +570,6 @@ fun DashboardScreen(
                                                 .background(item.category.color)
                                         )
                                     }
-                                    Text(
-                                        text = stringResource(R.string.quantity_format, item.quantity),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
                                     Text(
                                         text = FoodCategoryHelper.getDisplayName(context, item.category),
                                         style = MaterialTheme.typography.bodySmall,

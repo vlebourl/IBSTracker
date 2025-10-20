@@ -45,7 +45,7 @@ class SettingsViewModel(
         )
 
     // Google services
-    private val googleDriveBackup = GoogleDriveBackup(context, database)
+    private val googleDriveBackup = GoogleDriveBackup(context, database, settingsRepository)
     private val googleFitManager = GoogleFitManager(context)
     
     private val _backupState = MutableStateFlow<BackupState>(BackupState.Idle)
@@ -53,6 +53,23 @@ class SettingsViewModel(
     
     private val _healthPermissions = MutableStateFlow(false)
     val healthPermissions: StateFlow<Boolean> = _healthPermissions.asStateFlow()
+
+    private val _backupPassword = MutableStateFlow("")
+    val backupPassword: StateFlow<String> = _backupPassword.asStateFlow()
+
+    init {
+        // Load current backup password
+        _backupPassword.value = settingsRepository.getBackupPassword() ?: ""
+    }
+
+    fun setBackupPassword(password: String) {
+        _backupPassword.value = password
+        settingsRepository.setBackupPassword(password.ifEmpty { null })
+    }
+
+    fun hasBackupPassword(): Boolean {
+        return settingsRepository.hasBackupPassword()
+    }
 
     fun setLanguage(language: Language) {
         viewModelScope.launch {
@@ -103,11 +120,11 @@ class SettingsViewModel(
         }
     }
     
-    fun restoreBackup(fileId: String) {
+    fun restoreBackup(fileId: String, mergeStrategy: GoogleDriveBackup.MergeStrategy) {
         viewModelScope.launch {
             _backupState.value = BackupState.Loading
             try {
-                val result = googleDriveBackup.restoreFromBackup(fileId)
+                val result = googleDriveBackup.restoreWithMerge(fileId, mergeStrategy)
                 _backupState.value = if (result.isSuccess) {
                     BackupState.Success(result.getOrNull() ?: "Backup restored successfully")
                 } else {
@@ -115,6 +132,22 @@ class SettingsViewModel(
                 }
             } catch (e: Exception) {
                 _backupState.value = BackupState.Error(e.message ?: "Restore failed")
+            }
+        }
+    }
+
+    fun getBackupMetadata(fileId: String) {
+        viewModelScope.launch {
+            _backupState.value = BackupState.Loading
+            try {
+                val result = googleDriveBackup.getBackupMetadata(fileId)
+                if (result.isSuccess) {
+                    _backupState.value = BackupState.MetadataLoaded(result.getOrNull()!!)
+                } else {
+                    _backupState.value = BackupState.Error(result.exceptionOrNull()?.message ?: "Failed to load backup details")
+                }
+            } catch (e: Exception) {
+                _backupState.value = BackupState.Error(e.message ?: "Failed to load backup details")
             }
         }
     }
@@ -140,5 +173,6 @@ class SettingsViewModel(
         data class Success(val message: String) : BackupState()
         data class Error(val message: String) : BackupState()
         data class BackupsLoaded(val backups: List<GoogleDriveBackup.DriveFile>) : BackupState()
+        data class MetadataLoaded(val metadata: GoogleDriveBackup.BackupMetadata) : BackupState()
     }
 }

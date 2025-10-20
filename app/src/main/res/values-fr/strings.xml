@@ -303,8 +303,8 @@
     <string name="backup_sync_title">Sauvegarde et synchronisation</string>
     <string name="google_drive_backup">Sauvegarde Google Drive</string>
     <string name="google_drive_backup_description">Sauvegarde automatique de vos données sur Google Drive</string>
-    <string name="create_backup">Créer une sauvegarde</string>
-    <string name="restore_backup">Restaurer depuis une sauvegarde</string>
+    <string name="create_backup">Sauvegarder</string>
+    <string name="restore_backup">Restaurer</string>
     <string name="last_backup">Dernière sauvegarde : %s</string>
     <string name="no_backups">Aucune sauvegarde trouvée</string>
     
@@ -373,4 +373,46 @@
     <string name="allergy_notes_hint">Lister les allergies ou intolérances alimentaires connues</string>
     <string name="medication_notes_label">Médicaments actuels</string>
     <string name="medication_notes_hint">Lister les médicaments pouvant affecter la digestion</string>
+
+    <!-- Backup Restore Dialogs -->
+    <string name="select_backup">Sélectionner une sauvegarde</string>
+    <string name="no_backups_found">Aucune sauvegarde trouvée</string>
+    <string name="restore_strategy_title">Comment souhaitez-vous restaurer ?</string>
+    <string name="restore_strategy_description">Choisissez comment gérer les conflits entre les données locales et la sauvegarde :</string>
+    <string name="merge_keep_local">Conserver les données locales</string>
+    <string name="merge_keep_local_desc">Ajouter les données de sauvegarde uniquement si elles n\'entrent pas en conflit. Conserver vos entrées locales en cas de conflit.</string>
+    <string name="merge_keep_backup">Utiliser les données de sauvegarde</string>
+    <string name="merge_keep_backup_desc">Remplacer les données locales par les données de sauvegarde en cas de conflit. Écraser les entrées conflictuelles.</string>
+    <string name="merge_keep_both">Conserver les deux</string>
+    <string name="merge_keep_both_desc">Conserver toutes les données locales et de sauvegarde. Cela peut créer des entrées en double.</string>
+    <string name="backup_size_kb">Taille : %d Ko</string>
+
+    <!-- Encryption Messages -->
+    <string name="backup_encrypted_info">Les sauvegardes sont chiffrées avec une clé sécurisée stockée sur votre appareil</string>
+    <string name="encryption_key_lost">Impossible de déchiffrer la sauvegarde : clé de chiffrement introuvable. Cela peut se produire après une réinitialisation d\'usine ou un transfert d\'appareil.</string>
+    <string name="legacy_backup_notice">Il s\'agit d\'une sauvegarde non chiffrée d\'une ancienne version de l\'application. Les nouvelles sauvegardes seront chiffrées.</string>
+
+    <!-- Backup Password Settings -->
+    <string name="backup_password_title">Protection par mot de passe</string>
+    <string name="backup_password_description">Chiffrer les sauvegardes avec un mot de passe. Sans protection, les sauvegardes sont stockées en clair.</string>
+    <string name="backup_password_enabled">Sauvegardes chiffrées</string>
+    <string name="backup_password_warning">⚠️ Important : Si vous oubliez ce mot de passe, les sauvegardes chiffrées ne pourront pas être récupérées !</string>
+
+    <!-- Password Setup Dialog -->
+    <string name="setup_password_title">Définir un mot de passe</string>
+    <string name="setup_password_description">Entrez un mot de passe pour chiffrer vos sauvegardes. Vous aurez besoin de ce mot de passe pour restaurer les sauvegardes chiffrées.</string>
+    <string name="password_label">Mot de passe</string>
+    <string name="confirm_password_label">Confirmer le mot de passe</string>
+    <string name="password_mismatch_error">Les mots de passe ne correspondent pas</string>
+    <string name="button_enable">Activer</string>
+
+    <!-- Disable Password Dialog -->
+    <string name="disable_password_title">Désactiver la protection ?</string>
+    <string name="disable_password_message">Les futures sauvegardes seront stockées en clair. Les sauvegardes chiffrées existantes resteront chiffrées.</string>
+    <string name="button_disable">Désactiver</string>
+
+    <!-- Password Verification Dialog -->
+    <string name="verify_password_title">Vérifier le mot de passe</string>
+    <string name="verify_password_description">Entrez votre mot de passe actuel pour désactiver la protection.</string>
+    <string name="password_incorrect_error">Mot de passe incorrect</string>
 </resources>

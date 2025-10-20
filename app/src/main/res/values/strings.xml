@@ -290,7 +290,7 @@
     </plurals>
     
     <!-- Google Services -->
-    <string name="default_web_client_id">896856261645-5urcjd1287rrctptp9lri9ju9ieje2r5.apps.googleusercontent.com</string>
+    <string name="default_web_client_id">896856261645-e2g6l6k1khelsl3kjji7d011oqdh5c34.apps.googleusercontent.com</string>
     
     <!-- Personal Information -->
     <string name="personal_info_title">Personal Information</string>
@@ -357,7 +357,7 @@
     <string name="google_drive_backup">Google Drive Backup</string>
     <string name="google_drive_backup_description">Automatically backup your data to Google Drive</string>
     <string name="create_backup">Create Backup</string>
-    <string name="restore_backup">Restore from Backup</string>
+    <string name="restore_backup">Restore</string>
     <string name="last_backup">Last backup: %s</string>
     <string name="no_backups">No backups found</string>
     
@@ -373,4 +373,46 @@
     <string name="restore_success">Data restored successfully</string>
     <string name="restore_failed">Restore failed: %s</string>
     <string name="sign_in_required">Please sign in to Google first</string>
+
+    <!-- Backup Restore Dialogs -->
+    <string name="select_backup">Select a Backup</string>
+    <string name="no_backups_found">No backups found</string>
+    <string name="restore_strategy_title">How would you like to restore?</string>
+    <string name="restore_strategy_description">Choose how to handle conflicts between local and backup data:</string>
+    <string name="merge_keep_local">Keep Local Data</string>
+    <string name="merge_keep_local_desc">Add backup data only if it doesn\'t conflict. Keep your local entries when there\'s a conflict.</string>
+    <string name="merge_keep_backup">Use Backup Data</string>
+    <string name="merge_keep_backup_desc">Replace local data with backup data when there\'s a conflict. Overwrite conflicting entries.</string>
+    <string name="merge_keep_both">Keep Both</string>
+    <string name="merge_keep_both_desc">Keep all data from both local and backup. This may create duplicate entries.</string>
+    <string name="backup_size_kb">Size: %d KB</string>
+
+    <!-- Encryption Messages -->
+    <string name="backup_encrypted_info">Backups are encrypted with a secure key stored on your device</string>
+    <string name="encryption_key_lost">Cannot decrypt backup: encryption key not found. This may happen after a factory reset or device transfer.</string>
+    <string name="legacy_backup_notice">This is an unencrypted backup from an older app version. New backups will be encrypted.</string>
+
+    <!-- Backup Password Settings -->
+    <string name="backup_password_title">Password Protection</string>
+    <string name="backup_password_description">Encrypt backups with a password. Without password protection, backups are stored as plaintext.</string>
+    <string name="backup_password_enabled">Backups are encrypted</string>
+    <string name="backup_password_warning">⚠️ Important: If you forget this password, encrypted backups cannot be recovered!</string>
+
+    <!-- Password Setup Dialog -->
+    <string name="setup_password_title">Set Backup Password</string>
+    <string name="setup_password_description">Enter a password to encrypt your backups. You will need this password to restore encrypted backups.</string>
+    <string name="password_label">Password</string>
+    <string name="confirm_password_label">Confirm Password</string>
+    <string name="password_mismatch_error">Passwords do not match</string>
+    <string name="button_enable">Enable</string>
+
+    <!-- Disable Password Dialog -->
+    <string name="disable_password_title">Disable Password Protection?</string>
+    <string name="disable_password_message">Future backups will be stored as plaintext. Existing encrypted backups will remain encrypted.</string>
+    <string name="button_disable">Disable</string>
+
+    <!-- Password Verification Dialog -->
+    <string name="verify_password_title">Verify Password</string>
+    <string name="verify_password_description">Enter your current password to disable protection.</string>
+    <string name="password_incorrect_error">Incorrect password</string>
 </resources>
