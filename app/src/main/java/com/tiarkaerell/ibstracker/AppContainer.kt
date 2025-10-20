@@ -7,7 +7,7 @@ import com.tiarkaerell.ibstracker.data.repository.DataRepository
 import com.tiarkaerell.ibstracker.data.repository.SettingsRepository
 
 class AppContainer(private val context: Context) {
-    private val appDatabase: AppDatabase by lazy {
+    val appDatabase: AppDatabase by lazy {
         Room.databaseBuilder(
             context.applicationContext,
             AppDatabase::class.java,
@@ -23,4 +23,6 @@ class AppContainer(private val context: Context) {
     val settingsRepository: SettingsRepository by lazy {
         SettingsRepository(context)
     }
+    
+    val appContext: Context = context.applicationContext
 }
