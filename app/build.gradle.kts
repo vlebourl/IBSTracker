@@ -7,16 +7,34 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+// Load keystore properties from keystore.properties file
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = java.util.Properties()
+
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(java.io.FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "com.tiarkaerell.ibstracker"
     compileSdk = 34
 
     signingConfigs {
         create("release") {
-            keyAlias = "release-key"
-            keyPassword = "android123"
-            storeFile = file("release-keystore.jks")
-            storePassword = "android123"
+            // Load signing configuration from keystore.properties
+            // Falls back to environment variables if file doesn't exist
+            keyAlias = keystoreProperties["keyAlias"]?.toString()
+                ?: System.getenv("KEYSTORE_KEY_ALIAS")
+                ?: "release-key"
+            keyPassword = keystoreProperties["keyPassword"]?.toString()
+                ?: System.getenv("KEYSTORE_KEY_PASSWORD")
+                ?: ""
+            storeFile = file(keystoreProperties["storeFile"]?.toString()
+                ?: System.getenv("KEYSTORE_FILE")
+                ?: "release-keystore.jks")
+            storePassword = keystoreProperties["storePassword"]?.toString()
+                ?: System.getenv("KEYSTORE_STORE_PASSWORD")
+                ?: ""
         }
     }
 

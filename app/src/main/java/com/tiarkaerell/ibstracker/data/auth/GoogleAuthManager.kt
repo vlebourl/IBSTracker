@@ -44,7 +44,7 @@ class GoogleAuthManager(private val context: Context) {
     
     private fun checkExistingSignIn() {
         val account = GoogleSignIn.getLastSignedInAccount(context)
-        if (account != null && !GoogleSignIn.hasPermissions(account, *getRequiredScopes().toTypedArray())) {
+        if (account != null && GoogleSignIn.hasPermissions(account, *getRequiredScopes().toTypedArray())) {
             _authState.value = AuthState.SignedIn(account)
         } else {
             _authState.value = AuthState.NotSignedIn
