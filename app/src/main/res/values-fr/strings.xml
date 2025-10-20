@@ -295,6 +295,7 @@
     
     <!-- Personal Information -->
     <string name="personal_info_title">Informations personnelles</string>
+    <string name="your_profile_summary">Résumé de votre profil</string>
     <string name="date_of_birth_label">Date de naissance</string>
     <string name="sex_label">Sexe</string>
     <string name="height_label">Taille</string>

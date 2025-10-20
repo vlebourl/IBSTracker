@@ -1,5 +1,6 @@
 package com.tiarkaerell.ibstracker
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -49,16 +50,21 @@ sealed class Screen(val route: String, val titleRes: Int, val icon: androidx.com
 }
 
 class MainActivity : ComponentActivity() {
+
+    override fun attachBaseContext(newBase: Context) {
+        // Apply saved language preference BEFORE the activity is created
+        val container = (newBase.applicationContext as IBSTrackerApplication).container
+        val languageCode = runBlocking {
+            container.settingsRepository.languageFlow.first().code
+        }
+        val context = LocaleHelper.setLocale(newBase, languageCode)
+        super.attachBaseContext(context)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         val container = (application as IBSTrackerApplication).container
-
-        // Apply saved language preference
-        runBlocking {
-            val language = container.settingsRepository.languageFlow.first()
-            LocaleHelper.applyLocale(this@MainActivity, language.code)
-        }
 
         val viewModelFactory = ViewModelFactory(
             container.dataRepository, 

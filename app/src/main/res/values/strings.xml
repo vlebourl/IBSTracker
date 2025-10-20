@@ -270,6 +270,7 @@
     
     <!-- Personal Information -->
     <string name="personal_info_title">Personal Information</string>
+    <string name="your_profile_summary">Your Profile Summary</string>
     <string name="date_of_birth_label">Date of Birth</string>
     <string name="sex_label">Sex</string>
     <string name="height_label">Height</string>

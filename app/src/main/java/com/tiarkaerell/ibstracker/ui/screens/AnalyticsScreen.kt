@@ -542,7 +542,7 @@ private fun UserProfileSummaryCard(userProfile: UserProfile) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Your Profile Summary",
+                text = stringResource(R.string.your_profile_summary),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
