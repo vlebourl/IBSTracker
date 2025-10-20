@@ -585,7 +585,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                 onClick = { selectedCategory = null; showCustomInput = false; customFoodName = "" },
                                 label = { 
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(Icons.Default.ArrowBack, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(16.dp))
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Text(FoodCategoryHelper.getDisplayName(context, category))
                                     }

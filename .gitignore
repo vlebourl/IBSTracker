@@ -100,3 +100,5 @@ signing.properties
 # Local signing configuration (contains passwords and keys)
 app/keystore.properties
 app/signing.properties
+.gitignore updated
+AUDIT_REPORT.md

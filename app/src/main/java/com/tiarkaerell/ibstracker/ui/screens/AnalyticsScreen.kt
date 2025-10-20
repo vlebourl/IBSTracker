@@ -200,7 +200,6 @@ private fun StatItem(value: String, label: String, color: Color) {
 
 @Composable
 private fun TriggerAnalysisCard(triggers: List<TriggerAnalysis>) {
-    val context = LocalContext.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -289,7 +288,6 @@ private fun TriggerItem(trigger: TriggerAnalysis) {
 
 @Composable
 private fun SafeCategoriesCard(categories: List<CategoryInsight>) {
-    val context = LocalContext.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -476,8 +474,8 @@ private fun TrendAnalysisCard(improvementTrend: Float, daysSinceLastSymptom: Int
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 val trendIcon = when {
-                    improvementTrend > 0.1f -> Icons.Default.TrendingUp
-                    improvementTrend < -0.1f -> Icons.Default.TrendingDown
+                    improvementTrend > 0.1f -> Icons.AutoMirrored.Filled.TrendingUp
+                    improvementTrend < -0.1f -> Icons.AutoMirrored.Filled.TrendingDown
                     else -> null
                 }
                 
