@@ -21,4 +21,13 @@ interface SymptomDao {
 
     @Query("SELECT * FROM symptoms ORDER BY date DESC")
     fun getAll(): Flow<List<Symptom>>
+    
+    @Query("SELECT * FROM symptoms ORDER BY date DESC")
+    suspend fun getAllSymptoms(): List<Symptom>
+    
+    @Query("DELETE FROM symptoms")
+    suspend fun deleteAllSymptoms()
+    
+    @Insert
+    suspend fun insertSymptom(symptom: Symptom): Long
 }

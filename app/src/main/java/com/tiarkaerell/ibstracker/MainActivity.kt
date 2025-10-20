@@ -60,7 +60,12 @@ class MainActivity : ComponentActivity() {
             LocaleHelper.applyLocale(this@MainActivity, language.code)
         }
 
-        val viewModelFactory = ViewModelFactory(container.dataRepository, container.settingsRepository)
+        val viewModelFactory = ViewModelFactory(
+            container.dataRepository, 
+            container.settingsRepository,
+            container.appContext,
+            container.appDatabase
+        )
 
         setContent {
             IBSTrackerTheme {

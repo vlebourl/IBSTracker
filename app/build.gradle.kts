@@ -1,7 +1,21 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
+    alias(libs.plugins.kotlin.serialization)
+}
+
+// Load keystore properties from keystore.properties file
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties()
+
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
 android {
@@ -10,19 +24,40 @@ android {
 
     signingConfigs {
         create("release") {
-            keyAlias = "release-key"
-            keyPassword = "android123"
-            storeFile = file("release-keystore.jks")
-            storePassword = "android123"
+            // Secure password loading: prioritizes environment variables over file
+            // 1st priority: Environment variable
+            // 2nd priority: keystore.properties (if not blank)
+            // 3rd priority: Default/empty
+
+            val propKeyAlias = keystoreProperties.getProperty("keyAlias")?.takeIf { it.isNotBlank() }
+            val propKeyPassword = keystoreProperties.getProperty("keyPassword")?.takeIf { it.isNotBlank() }
+            val propStoreFile = keystoreProperties.getProperty("storeFile")?.takeIf { it.isNotBlank() }
+            val propStorePassword = keystoreProperties.getProperty("storePassword")?.takeIf { it.isNotBlank() }
+
+            keyAlias = System.getenv("IBS_KEYSTORE_ALIAS")
+                ?: propKeyAlias
+                ?: "ibs-tracker-release"
+
+            keyPassword = System.getenv("IBS_KEYSTORE_PASSWORD")
+                ?: propKeyPassword
+                ?: ""
+
+            storeFile = rootProject.file(System.getenv("IBS_KEYSTORE_FILE")
+                ?: propStoreFile
+                ?: "app/ibs-tracker-production.jks")
+
+            storePassword = System.getenv("IBS_KEYSTORE_PASSWORD")
+                ?: propStorePassword
+                ?: ""
         }
     }
 
     defaultConfig {
         applicationId = "com.tiarkaerell.ibstracker"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 5
+        versionName = "1.5.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -59,6 +94,11 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/DEPENDENCIES"
+            excludes += "/META-INF/LICENSE"
+            excludes += "/META-INF/LICENSE.txt"
+            excludes += "/META-INF/NOTICE"
+            excludes += "/META-INF/NOTICE.txt"
         }
     }
 }
@@ -78,7 +118,23 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+
+    // Security - Encrypted SharedPreferences
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
     implementation(libs.androidx.datastore.preferences)
+    
+    // Google Services
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.play.services.auth)
+    implementation(libs.google.drive.api)
+    implementation(libs.google.api.client.android)
+    implementation(libs.google.http.client.android)
+    implementation(libs.play.services.fitness)
+    implementation(libs.androidx.health.connect)
+    implementation(libs.kotlinx.serialization.json)
+    
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "896856261645",
+    "project_id": "ibs-tracker-475708",
+    "storage_bucket": "ibs-tracker-475708.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:896856261645:android:demo123456789",
+        "android_client_info": {
+          "package_name": "com.tiarkaerell.ibstracker"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "896856261645-5urcjd1287rrctptp9lri9ju9ieje2r5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tiarkaerell.ibstracker",
+            "certificate_hash": "c8bbe72dcaf7f6910d6a9e74b21e41ce2d3560af"
+          }
+        },
+        {
+          "client_id": "896856261645-e2g6l6k1khelsl3kjji7d011oqdh5c34.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDemoKeyForIBSTrackerApp123456789"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "896856261645-e2g6l6k1khelsl3kjji7d011oqdh5c34.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
