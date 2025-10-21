@@ -167,6 +167,7 @@
 ### Usage Tracking
 - [ ] Implement auto-incrementing usage count
 - [ ] Update quick-add based on usage
+- [ ] **Sorting logic:** Usage count DESC, then alphabetically ASC
 - [ ] Cache most-used foods
 - [ ] Periodic cleanup of unused custom foods (optional)
 
@@ -332,7 +333,8 @@
 2. **FODMAP required** with LOW default - most new foods will be low
 3. **Smart attribute hiding** - show beverage-specific only for beverages
 4. **Hybrid approach** - pre-populated + user-added foods
-5. **Usage-based sorting** - quick-add auto-updates by frequency
+5. **Sorting logic** - usage count DESC, then alphabetically ASC (consistent everywhere)
+6. **Usage-based quick-add** - auto-updates by frequency
 
 ---
 

@@ -22,6 +22,7 @@ Intelligent food categorization system that guides users to properly categorize 
 - Simple, guided categorization for new foods
 - Edit existing food attributes via long-press
 - High IBS-impact foods already in database (most new foods = low impact)
+- **Smart sorting:** Foods sorted by usage count (most used first), then alphabetically for equal usage
 
 ## 🏗️ Architecture
 
@@ -100,7 +101,8 @@ Updated in database, continue with food entry
 ```
 Open Food screen
   ↓
-See categorized quick-add shortcuts (sorted by usage)
+See categorized quick-add shortcuts
+  (sorted by usage count DESC, then alphabetically)
   ↓
 Tap "Coffee" → Confirmation dialog → Add
 ```

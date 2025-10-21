@@ -400,9 +400,11 @@ class Converters {
 ```kotlin
 @Dao
 interface CommonFoodDao {
-    @Query("SELECT * FROM common_foods ORDER BY usage_count DESC")
+    // All foods sorted by usage (DESC), then alphabetically (ASC)
+    @Query("SELECT * FROM common_foods ORDER BY usage_count DESC, name ASC")
     fun getAllCommonFoods(): Flow<List<CommonFood>>
 
+    // Foods by category sorted by usage (DESC), then alphabetically (ASC)
     @Query("SELECT * FROM common_foods WHERE category = :category ORDER BY usage_count DESC, name ASC")
     fun getFoodsByCategory(category: FoodCategory): Flow<List<CommonFood>>
 
@@ -433,9 +435,11 @@ interface CommonFoodDao {
 ```kotlin
 @Dao
 interface FoodUsageStatsDao {
-    @Query("SELECT * FROM food_usage_stats ORDER BY totalUses DESC, lastUsed DESC")
+    // All stats sorted by usage (DESC), then alphabetically (ASC)
+    @Query("SELECT * FROM food_usage_stats ORDER BY totalUses DESC, foodName ASC")
     fun getAllStats(): Flow<List<FoodUsageStats>>
 
+    // Top 6 foods by category: usage (DESC), then alphabetically (ASC)
     @Query("""
         SELECT * FROM food_usage_stats
         WHERE category = :category
