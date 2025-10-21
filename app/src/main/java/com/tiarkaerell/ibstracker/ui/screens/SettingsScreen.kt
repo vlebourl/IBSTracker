@@ -45,14 +45,6 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel) {
     // Authorization manager for Google Drive scopes (new API)
     val authorizationManager = remember { AuthorizationManager(context) }
 
-    val signInLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        coroutineScope.launch {
-            googleAuthManager.handleSignInResult(result.data)
-        }
-    }
-
     // Authorization launcher for Google Drive scope consent
     val authorizationLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartIntentSenderForResult()
@@ -260,10 +252,7 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel) {
             authState = authState,
             onSignIn = {
                 coroutineScope.launch {
-                    val result = googleAuthManager.signIn()
-                    if (result.isFailure) {
-                        signInLauncher.launch(googleAuthManager.getSignInIntent())
-                    }
+                    googleAuthManager.signIn()
                 }
             },
             onSignOut = {
@@ -366,7 +355,7 @@ fun GoogleSignInCard(
                     is GoogleAuthManager.AuthState.SignedIn -> {
                         Column(horizontalAlignment = Alignment.End) {
                             Text(
-                                text = stringResource(R.string.signed_in_as, authState.account.email ?: ""),
+                                text = stringResource(R.string.signed_in_as, authState.email),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.primary
                             )
