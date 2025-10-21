@@ -6,9 +6,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.TrendingDown
-import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -200,7 +200,6 @@ private fun StatItem(value: String, label: String, color: Color) {
 
 @Composable
 private fun TriggerAnalysisCard(triggers: List<TriggerAnalysis>) {
-    val context = LocalContext.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -289,7 +288,6 @@ private fun TriggerItem(trigger: TriggerAnalysis) {
 
 @Composable
 private fun SafeCategoriesCard(categories: List<CategoryInsight>) {
-    val context = LocalContext.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -476,8 +474,8 @@ private fun TrendAnalysisCard(improvementTrend: Float, daysSinceLastSymptom: Int
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 val trendIcon = when {
-                    improvementTrend > 0.1f -> Icons.Default.TrendingUp
-                    improvementTrend < -0.1f -> Icons.Default.TrendingDown
+                    improvementTrend > 0.1f -> Icons.AutoMirrored.Filled.TrendingUp
+                    improvementTrend < -0.1f -> Icons.AutoMirrored.Filled.TrendingDown
                     else -> null
                 }
                 
@@ -544,7 +542,7 @@ private fun UserProfileSummaryCard(userProfile: UserProfile) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Your Profile Summary",
+                text = stringResource(R.string.your_profile_summary),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer

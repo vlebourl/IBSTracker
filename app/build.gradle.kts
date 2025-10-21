@@ -4,9 +4,8 @@ import java.io.FileInputStream
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.google.services)
-    alias(libs.plugins.firebase.crashlytics)
     alias(libs.plugins.kotlin.serialization)
 }
 
@@ -20,7 +19,7 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.tiarkaerell.ibstracker"
-    compileSdk = 34
+    compileSdk = 35
 
     signingConfigs {
         create("release") {
@@ -56,8 +55,8 @@ android {
         applicationId = "com.tiarkaerell.ibstracker"
         minSdk = 26
         targetSdk = 34
-        versionCode = 6
-        versionName = "1.6.0"
+        versionCode = 8
+        versionName = "1.8.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -88,9 +87,6 @@ android {
     buildFeatures {
         compose = true
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.4"
-    }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -99,6 +95,7 @@ android {
             excludes += "/META-INF/LICENSE.txt"
             excludes += "/META-INF/NOTICE"
             excludes += "/META-INF/NOTICE.txt"
+            excludes += "/META-INF/INDEX.LIST"
         }
     }
 }
@@ -122,18 +119,23 @@ dependencies {
     // Security - Encrypted SharedPreferences
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
     implementation(libs.androidx.datastore.preferences)
-    
+
     // Google Services
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.analytics)
-    implementation(libs.firebase.crashlytics)
     implementation(libs.play.services.auth)
+    implementation(libs.play.services.basement)
     implementation(libs.google.drive.api)
     implementation(libs.google.api.client.android)
     implementation(libs.google.http.client.android)
-    implementation(libs.play.services.fitness)
-    implementation(libs.androidx.health.connect)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.coroutines.play.services)
+
+    // Google Auth Library for OAuth2 (for Drive API with access tokens)
+    implementation("com.google.auth:google-auth-library-oauth2-http:1.23.0")
+
+    // Credential Manager (for migration from GoogleSignIn)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
     
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
