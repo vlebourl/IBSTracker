@@ -19,10 +19,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.tiarkaerell.ibstracker.R
+import com.tiarkaerell.ibstracker.data.auth.AuthorizationManager
 import com.tiarkaerell.ibstracker.data.auth.GoogleAuthManager
 import com.tiarkaerell.ibstracker.data.auth.rememberGoogleAuthManager
 import com.tiarkaerell.ibstracker.data.model.*
 import com.tiarkaerell.ibstracker.ui.viewmodel.SettingsViewModel
+import com.google.android.gms.auth.api.identity.Identity
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -39,12 +41,65 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel) {
     val googleAuthManager = rememberGoogleAuthManager()
     val authState by googleAuthManager.authState.collectAsState()
     val coroutineScope = rememberCoroutineScope()
-    
+
+    // Authorization manager for Google Drive scopes (new API)
+    val authorizationManager = remember { AuthorizationManager(context) }
+
     val signInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         coroutineScope.launch {
             googleAuthManager.handleSignInResult(result.data)
+        }
+    }
+
+    // Authorization launcher for Google Drive scope consent
+    val authorizationLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        coroutineScope.launch {
+            if (result.resultCode == Activity.RESULT_OK && activity != null) {
+                try {
+                    // Get authorization result and extract access token
+                    val authResult = authorizationManager.getAuthorizationFromIntent(activity, result.data)
+                    val accessToken = authResult.accessToken
+
+                    // Store token in ViewModel
+                    settingsViewModel.handleAuthorizationResult(accessToken)
+                } catch (e: Exception) {
+                    // Authorization failed
+                    settingsViewModel.handleAuthorizationResult(null)
+                }
+            } else {
+                // User cancelled authorization
+                settingsViewModel.handleAuthorizationResult(null)
+            }
+        }
+    }
+
+    // Collect authorization events from ViewModel
+    LaunchedEffect(Unit) {
+        settingsViewModel.authorizationEvents.collect { event ->
+            when (event) {
+                is SettingsViewModel.AuthorizationEvent.RequestDriveAuthorization -> {
+                    if (activity != null) {
+                        try {
+                            val intentSenderRequest = authorizationManager.requestAuthorization(activity)
+                            if (intentSenderRequest != null) {
+                                // Need to show consent UI
+                                authorizationLauncher.launch(intentSenderRequest)
+                            } else {
+                                // Already authorized, get token directly
+                                val accessToken = authorizationManager.getAccessToken(activity)
+                                settingsViewModel.handleAuthorizationResult(accessToken)
+                            }
+                        } catch (e: Exception) {
+                            // Authorization request failed
+                            settingsViewModel.handleAuthorizationResult(null)
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -252,6 +307,19 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel) {
             onPasswordChange = { password ->
                 settingsViewModel.setBackupPassword(password)
             }
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // Version footer
+        Text(
+            text = "Version ${context.packageManager.getPackageInfo(context.packageName, 0).versionName}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
     }
 }

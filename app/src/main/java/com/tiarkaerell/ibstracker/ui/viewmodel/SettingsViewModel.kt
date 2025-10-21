@@ -1,6 +1,7 @@
 package com.tiarkaerell.ibstracker.ui.viewmodel
 
 import android.content.Context
+import androidx.activity.result.IntentSenderRequest
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tiarkaerell.ibstracker.data.database.AppDatabase
@@ -11,9 +12,12 @@ import com.tiarkaerell.ibstracker.data.repository.SettingsRepository
 import com.tiarkaerell.ibstracker.data.sync.GoogleDriveBackup
 import com.tiarkaerell.ibstracker.data.sync.PasswordRequiredException
 import com.tiarkaerell.ibstracker.data.sync.IncorrectPasswordException
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -50,12 +54,19 @@ class SettingsViewModel(
 
     private val _backupState = MutableStateFlow<BackupState>(BackupState.Idle)
     val backupState: StateFlow<BackupState> = _backupState.asStateFlow()
-    
+
     private val _healthPermissions = MutableStateFlow(false)
     val healthPermissions: StateFlow<Boolean> = _healthPermissions.asStateFlow()
 
     private val _backupPassword = MutableStateFlow("")
     val backupPassword: StateFlow<String> = _backupPassword.asStateFlow()
+
+    // Authorization events - emit when Activity is needed for authorization UI
+    private val _authorizationEvents = MutableSharedFlow<AuthorizationEvent>()
+    val authorizationEvents: SharedFlow<AuthorizationEvent> = _authorizationEvents.asSharedFlow()
+
+    // Cached access token from authorization (will be set by UI after authorization completes)
+    private var cachedAccessToken: String? = null
 
     init {
         // Load current backup password
@@ -172,6 +183,32 @@ class SettingsViewModel(
         _backupState.value = BackupState.Idle
     }
 
+    /**
+     * Request Google Drive authorization
+     * This will trigger an authorization event that the UI should handle
+     */
+    fun requestDriveAuthorization() {
+        viewModelScope.launch {
+            _authorizationEvents.emit(AuthorizationEvent.RequestDriveAuthorization)
+        }
+    }
+
+    /**
+     * Handle authorization result from UI
+     * Stores the access token for use by GoogleDriveBackup
+     */
+    fun handleAuthorizationResult(accessToken: String?) {
+        cachedAccessToken = accessToken
+    }
+
+    /**
+     * Get the cached access token for Drive operations
+     * Returns null if not authorized or token expired
+     */
+    fun getCachedAccessToken(): String? {
+        return cachedAccessToken
+    }
+
     sealed class BackupState {
         object Idle : BackupState()
         object Loading : BackupState()
@@ -181,5 +218,17 @@ class SettingsViewModel(
         data class MetadataLoaded(val metadata: GoogleDriveBackup.BackupMetadata) : BackupState()
         data class PasswordRequired(val fileId: String, val mergeStrategy: GoogleDriveBackup.MergeStrategy) : BackupState()
         data class PasswordIncorrect(val fileId: String, val mergeStrategy: GoogleDriveBackup.MergeStrategy) : BackupState()
+    }
+
+    /**
+     * Authorization events that require Activity context
+     * Emitted by ViewModel, collected by UI layer
+     */
+    sealed class AuthorizationEvent {
+        /**
+         * Request Google Drive authorization
+         * UI should launch authorization flow with Activity
+         */
+        object RequestDriveAuthorization : AuthorizationEvent()
     }
 }
