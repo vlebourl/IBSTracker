@@ -56,7 +56,7 @@ android {
         minSdk = 26
         targetSdk = 34
         versionCode = 8
-        versionName = "1.7.5"
+        versionName = "1.7.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -95,6 +95,7 @@ android {
             excludes += "/META-INF/LICENSE.txt"
             excludes += "/META-INF/NOTICE"
             excludes += "/META-INF/NOTICE.txt"
+            excludes += "/META-INF/INDEX.LIST"
         }
     }
 }
@@ -127,6 +128,9 @@ dependencies {
     implementation(libs.google.http.client.android)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.play.services)
+
+    // Google Auth Library for OAuth2 (for Drive API with access tokens)
+    implementation("com.google.auth:google-auth-library-oauth2-http:1.23.0")
 
     // Credential Manager (for migration from GoogleSignIn)
     implementation(libs.androidx.credentials)

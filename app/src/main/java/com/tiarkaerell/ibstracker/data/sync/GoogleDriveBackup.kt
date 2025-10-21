@@ -1,14 +1,14 @@
 package com.tiarkaerell.ibstracker.data.sync
 
 import android.content.Context
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.api.client.extensions.android.http.AndroidHttp
-import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
+import com.google.api.client.http.HttpRequestInitializer
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.drive.Drive
-import com.google.api.services.drive.DriveScopes
 import com.google.api.services.drive.model.File
+import com.google.auth.http.HttpCredentialsAdapter
+import com.google.auth.oauth2.AccessToken
+import com.google.auth.oauth2.GoogleCredentials
 import com.tiarkaerell.ibstracker.data.database.AppDatabase
 import com.tiarkaerell.ibstracker.data.model.FoodItem
 import com.tiarkaerell.ibstracker.data.model.Symptom
@@ -98,12 +98,17 @@ class GoogleDriveBackup(
         val lastUpdated: Long = System.currentTimeMillis()
     )
 
-    suspend fun createBackup(): Result<String> = withContext(Dispatchers.IO) {
+    /**
+     * Creates a backup to Google Drive
+     * @param accessToken OAuth 2.0 access token from AuthorizationClient
+     */
+    suspend fun createBackup(accessToken: String?): Result<String> = withContext(Dispatchers.IO) {
         return@withContext try {
-            val account = GoogleSignIn.getLastSignedInAccount(context)
-                ?: return@withContext Result.failure(Exception("Not signed in to Google"))
-            
-            val driveService = getDriveService(account)
+            if (accessToken == null) {
+                return@withContext Result.failure(Exception("Not authorized. Please sign in to Google Drive."))
+            }
+
+            val driveService = getDriveService(accessToken)
                 ?: return@withContext Result.failure(Exception("Failed to initialize Drive service"))
             
             // Get data from database
@@ -184,12 +189,18 @@ class GoogleDriveBackup(
         }
     }
     
-    suspend fun restoreFromBackup(fileId: String): Result<String> = withContext(Dispatchers.IO) {
+    /**
+     * Restores a backup from Google Drive (replaces all local data)
+     * @param fileId Google Drive file ID
+     * @param accessToken OAuth 2.0 access token from AuthorizationClient
+     */
+    suspend fun restoreFromBackup(fileId: String, accessToken: String?): Result<String> = withContext(Dispatchers.IO) {
         return@withContext try {
-            val account = GoogleSignIn.getLastSignedInAccount(context)
-                ?: return@withContext Result.failure(Exception("Not signed in to Google"))
-            
-            val driveService = getDriveService(account)
+            if (accessToken == null) {
+                return@withContext Result.failure(Exception("Not authorized. Please sign in to Google Drive."))
+            }
+
+            val driveService = getDriveService(accessToken)
                 ?: return@withContext Result.failure(Exception("Failed to initialize Drive service"))
             
             // Download file content
@@ -233,12 +244,17 @@ class GoogleDriveBackup(
         }
     }
     
-    suspend fun listBackups(): Result<List<DriveFile>> = withContext(Dispatchers.IO) {
+    /**
+     * Lists all backups in Google Drive
+     * @param accessToken OAuth 2.0 access token from AuthorizationClient
+     */
+    suspend fun listBackups(accessToken: String?): Result<List<DriveFile>> = withContext(Dispatchers.IO) {
         return@withContext try {
-            val account = GoogleSignIn.getLastSignedInAccount(context)
-                ?: return@withContext Result.failure(Exception("Not signed in to Google"))
-            
-            val driveService = getDriveService(account)
+            if (accessToken == null) {
+                return@withContext Result.failure(Exception("Not authorized. Please sign in to Google Drive."))
+            }
+
+            val driveService = getDriveService(accessToken)
                 ?: return@withContext Result.failure(Exception("Failed to initialize Drive service"))
             
             val folderId = getAppFolderId(driveService)
@@ -263,18 +279,24 @@ class GoogleDriveBackup(
         }
     }
     
-    private fun getDriveService(account: GoogleSignInAccount): Drive? {
+    /**
+     * Creates Drive service using access token from modern authorization flow
+     * @param accessToken OAuth 2.0 access token from AuthorizationClient
+     */
+    private fun getDriveService(accessToken: String): Drive? {
         return try {
-            val credential = GoogleAccountCredential.usingOAuth2(
-                context,
-                setOf(DriveScopes.DRIVE_FILE)
-            )
-            credential.selectedAccount = account.account
-            
+            // Create GoogleCredentials with access token
+            val credentials = GoogleCredentials.newBuilder()
+                .setAccessToken(AccessToken(accessToken, null))
+                .build()
+
+            // Wrap credentials in HttpCredentialsAdapter for Drive API
+            val requestInitializer: HttpRequestInitializer = HttpCredentialsAdapter(credentials)
+
             Drive.Builder(
                 AndroidHttp.newCompatibleTransport(),
                 GsonFactory(),
-                credential
+                requestInitializer
             )
                 .setApplicationName("IBS Tracker")
                 .build()
@@ -332,12 +354,18 @@ class GoogleDriveBackup(
         val symptomCount: Int
     )
 
-    suspend fun getBackupMetadata(fileId: String): Result<BackupMetadata> = withContext(Dispatchers.IO) {
+    /**
+     * Gets metadata for a specific backup
+     * @param fileId Google Drive file ID
+     * @param accessToken OAuth 2.0 access token from AuthorizationClient
+     */
+    suspend fun getBackupMetadata(fileId: String, accessToken: String?): Result<BackupMetadata> = withContext(Dispatchers.IO) {
         return@withContext try {
-            val account = GoogleSignIn.getLastSignedInAccount(context)
-                ?: return@withContext Result.failure(Exception("Not signed in to Google"))
+            if (accessToken == null) {
+                return@withContext Result.failure(Exception("Not authorized. Please sign in to Google Drive."))
+            }
 
-            val driveService = getDriveService(account)
+            val driveService = getDriveService(accessToken)
                 ?: return@withContext Result.failure(Exception("Failed to initialize Drive service"))
 
             // Get file metadata first to check if encrypted
@@ -380,16 +408,25 @@ class GoogleDriveBackup(
         }
     }
 
+    /**
+     * Restores a backup with merge strategy
+     * @param fileId Google Drive file ID
+     * @param mergeStrategy How to handle conflicts with local data
+     * @param password Optional password for encrypted backups
+     * @param accessToken OAuth 2.0 access token from AuthorizationClient
+     */
     suspend fun restoreWithMerge(
         fileId: String,
         mergeStrategy: MergeStrategy,
-        password: String? = null
+        password: String? = null,
+        accessToken: String? = null
     ): Result<String> = withContext(Dispatchers.IO) {
         return@withContext try {
-            val account = GoogleSignIn.getLastSignedInAccount(context)
-                ?: return@withContext Result.failure(Exception("Not signed in to Google"))
+            if (accessToken == null) {
+                return@withContext Result.failure(Exception("Not authorized. Please sign in to Google Drive."))
+            }
 
-            val driveService = getDriveService(account)
+            val driveService = getDriveService(accessToken)
                 ?: return@withContext Result.failure(Exception("Failed to initialize Drive service"))
 
             // Get file metadata to check if encrypted

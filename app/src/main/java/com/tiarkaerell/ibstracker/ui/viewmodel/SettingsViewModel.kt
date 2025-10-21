@@ -104,7 +104,14 @@ class SettingsViewModel(
         viewModelScope.launch {
             _backupState.value = BackupState.Loading
             try {
-                val result = googleDriveBackup.createBackup()
+                // Get or request authorization for Drive access
+                if (cachedAccessToken == null) {
+                    requestDriveAuthorization()
+                    _backupState.value = BackupState.Error("Authorization required. Please grant access to Google Drive.")
+                    return@launch
+                }
+
+                val result = googleDriveBackup.createBackup(cachedAccessToken)
                 _backupState.value = if (result.isSuccess) {
                     BackupState.Success(result.getOrNull() ?: "Backup created successfully")
                 } else {
@@ -119,7 +126,14 @@ class SettingsViewModel(
     fun getBackupList() {
         viewModelScope.launch {
             try {
-                val result = googleDriveBackup.listBackups()
+                // Get or request authorization for Drive access
+                if (cachedAccessToken == null) {
+                    requestDriveAuthorization()
+                    _backupState.value = BackupState.Error("Authorization required. Please grant access to Google Drive.")
+                    return@launch
+                }
+
+                val result = googleDriveBackup.listBackups(cachedAccessToken)
                 if (result.isSuccess) {
                     _backupState.value = BackupState.BackupsLoaded(result.getOrNull() ?: emptyList())
                 } else {
@@ -135,7 +149,14 @@ class SettingsViewModel(
         viewModelScope.launch {
             _backupState.value = BackupState.Loading
             try {
-                val result = googleDriveBackup.restoreWithMerge(fileId, mergeStrategy, password)
+                // Get or request authorization for Drive access
+                if (cachedAccessToken == null) {
+                    requestDriveAuthorization()
+                    _backupState.value = BackupState.Error("Authorization required. Please grant access to Google Drive.")
+                    return@launch
+                }
+
+                val result = googleDriveBackup.restoreWithMerge(fileId, mergeStrategy, password, cachedAccessToken)
                 _backupState.value = if (result.isSuccess) {
                     BackupState.Success(result.getOrNull() ?: "Backup restored successfully")
                 } else {
@@ -162,7 +183,14 @@ class SettingsViewModel(
         viewModelScope.launch {
             _backupState.value = BackupState.Loading
             try {
-                val result = googleDriveBackup.getBackupMetadata(fileId)
+                // Get or request authorization for Drive access
+                if (cachedAccessToken == null) {
+                    requestDriveAuthorization()
+                    _backupState.value = BackupState.Error("Authorization required. Please grant access to Google Drive.")
+                    return@launch
+                }
+
+                val result = googleDriveBackup.getBackupMetadata(fileId, cachedAccessToken)
                 if (result.isSuccess) {
                     _backupState.value = BackupState.MetadataLoaded(result.getOrNull()!!)
                 } else {
