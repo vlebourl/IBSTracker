@@ -15,6 +15,12 @@ import kotlinx.coroutines.flow.asStateFlow
  * MIGRATION COMPLETE ✅:
  * - Authentication: Credential Manager API (who is the user?)
  * - Authorization: Handled separately by AuthorizationManager (Drive permissions)
+ * - Session Persistence: EncryptedSharedPreferences (local storage)
+ *
+ * Following Android best practices:
+ * - Stores session locally for instant state restoration
+ * - Uses Credential Manager for initial authentication
+ * - Eliminates "reconnection" flash on app restart
  *
  * This class handles ONLY authentication (user identity).
  * For Drive access authorization, use AuthorizationManager directly.
@@ -22,6 +28,7 @@ import kotlinx.coroutines.flow.asStateFlow
 class GoogleAuthManager(private val context: Context) {
 
     private val credentialAuth = CredentialManagerAuth(context)
+    private val sessionManager = SessionManager(context)
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.NotSignedIn)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
@@ -30,14 +37,27 @@ class GoogleAuthManager(private val context: Context) {
     private var currentCredential: GoogleIdTokenCredential? = null
 
     init {
-        // Initial state is NotSignedIn
-        // User must sign in explicitly with Credential Manager
-        _authState.value = AuthState.NotSignedIn
+        // Restore signed-in state from local storage instantly (no network call, no UI flash)
+        restoreFromLocalStorage()
+    }
+
+    /**
+     * Restore authentication state from local EncryptedSharedPreferences
+     * This is instant (synchronous) and eliminates the "reconnection" flash
+     */
+    private fun restoreFromLocalStorage() {
+        val savedEmail = sessionManager.getSignedInEmail()
+        if (savedEmail != null) {
+            _authState.value = AuthState.SignedIn(savedEmail)
+        } else {
+            _authState.value = AuthState.NotSignedIn
+        }
     }
 
     /**
      * Sign in with Google using Credential Manager
      * Returns the user's email address on success
+     * Saves session locally for instant restoration on app restart
      */
     suspend fun signIn(): Result<String> {
         return try {
@@ -54,6 +74,9 @@ class GoogleAuthManager(private val context: Context) {
             currentCredential = credentialResult.getOrNull()
             val email = currentCredential?.id ?: return Result.failure(Exception("No email found"))
 
+            // Save session locally for instant restoration on app restart
+            sessionManager.saveSignedInEmail(email)
+
             _authState.value = AuthState.SignedIn(email)
             Result.success(email)
         } catch (e: Exception) {
@@ -64,12 +87,17 @@ class GoogleAuthManager(private val context: Context) {
 
     /**
      * Sign out from authentication
+     * Clears local session and Credential Manager state
      * Note: This does NOT revoke Drive authorization - that's managed by AuthorizationManager
      */
     suspend fun signOut() {
         try {
             credentialAuth.signOut()
             currentCredential = null
+
+            // Clear local session storage
+            sessionManager.clearSession()
+
             _authState.value = AuthState.NotSignedIn
         } catch (e: Exception) {
             _authState.value = AuthState.Error("Sign out failed: ${e.message}")

@@ -357,14 +357,14 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(12.dp),
+                                        .padding(8.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(16.dp)
-                                            .clip(RoundedCornerShape(4.dp))
+                                            .size(14.dp)
+                                            .clip(RoundedCornerShape(3.dp))
                                             .background(frequentItem.category.color)
                                     )
                                     Text(
@@ -372,8 +372,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                         style = MaterialTheme.typography.bodyMedium,
                                         textAlign = TextAlign.Center,
                                         fontWeight = FontWeight.Medium,
-                                        maxLines = 2,
-                                        modifier = Modifier.height(40.dp)
+                                        maxLines = 2
                                     )
                                     Text(
                                         text = stringResource(R.string.times_added_format, frequentItem.count),
@@ -685,52 +684,6 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                     Text(stringResource(R.string.button_save))
                                 }
                             }
-                        }
-                    }
-
-                    // Date/Time Picker (always visible)
-                    OutlinedCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                DatePickerDialog(
-                                    context,
-                                    { _, year, month, dayOfMonth ->
-                                        selectedDateTime.set(Calendar.YEAR, year)
-                                        selectedDateTime.set(Calendar.MONTH, month)
-                                        selectedDateTime.set(Calendar.DAY_OF_MONTH, dayOfMonth)
-                                        
-                                        TimePickerDialog(
-                                            context,
-                                            { _, hourOfDay, minute ->
-                                                selectedDateTime.set(Calendar.HOUR_OF_DAY, hourOfDay)
-                                                selectedDateTime.set(Calendar.MINUTE, minute)
-                                            },
-                                            selectedDateTime.get(Calendar.HOUR_OF_DAY),
-                                            selectedDateTime.get(Calendar.MINUTE),
-                                            true
-                                        ).show()
-                                    },
-                                    selectedDateTime.get(Calendar.YEAR),
-                                    selectedDateTime.get(Calendar.MONTH),
-                                    selectedDateTime.get(Calendar.DAY_OF_MONTH)
-                                ).show()
-                            }
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Default.AccessTime,
-                                contentDescription = stringResource(R.string.cd_select_date_time),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                dateFormat.format(selectedDateTime.time),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
                         }
                     }
                 }

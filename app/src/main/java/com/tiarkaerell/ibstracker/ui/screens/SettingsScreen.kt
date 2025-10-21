@@ -45,6 +45,9 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel) {
     // Authorization manager for Google Drive scopes (new API)
     val authorizationManager = remember { AuthorizationManager(context) }
 
+    // Note: Authentication state is restored instantly in GoogleAuthManager init
+    // from EncryptedSharedPreferences - no need for LaunchedEffect
+
     // Authorization launcher for Google Drive scope consent
     val authorizationLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartIntentSenderForResult()
@@ -70,7 +73,7 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel) {
     }
 
     // Collect authorization events from ViewModel
-    LaunchedEffect(Unit) {
+    LaunchedEffect(settingsViewModel.authorizationEvents) {
         settingsViewModel.authorizationEvents.collect { event ->
             when (event) {
                 is SettingsViewModel.AuthorizationEvent.RequestDriveAuthorization -> {
