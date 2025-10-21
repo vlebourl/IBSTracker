@@ -149,10 +149,27 @@ class GoogleAuthManager(private val context: Context) {
         }
     }
     
+    /**
+     * Get current Google account (OLD method for backward compatibility)
+     * Still using GoogleSignIn - will be replaced with credential-based approach
+     */
     fun getCurrentAccount(): GoogleSignInAccount? {
         return GoogleSignIn.getLastSignedInAccount(context)
     }
-    
+
+    /**
+     * Get current user's email
+     * NEW: Uses credential from Credential Manager if available
+     * FALLBACK: Uses GoogleSignIn account
+     */
+    fun getCurrentUserEmail(): String? {
+        return currentCredential?.id ?: getCurrentAccount()?.email
+    }
+
+    /**
+     * Check if user has required permissions
+     * Still using old GoogleSignIn - will be replaced with AuthorizationManager
+     */
     fun hasPermissions(): Boolean {
         val account = getCurrentAccount()
         return account != null && GoogleSignIn.hasPermissions(account, *getRequiredScopes().toTypedArray())
