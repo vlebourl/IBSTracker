@@ -23,19 +23,23 @@ import kotlinx.coroutines.tasks.await
 /**
  * Hybrid Google authentication and authorization manager
  *
- * Phase 1 Migration (Current):
- * - Uses Credential Manager for authentication (user identity) - NEW
- * - Uses GoogleSignIn for authorization (scopes/permissions) - OLD (deprecated but still works)
+ * Phase 2 - Step 2 (Current):
+ * - Uses Credential Manager for authentication (user identity) - NEW ✅
+ * - Has AuthorizationManager ready for authorization - NEW (not yet active)
+ * - Still uses GoogleSignIn for authorization (scopes/permissions) - OLD (active, deprecated)
  *
- * This allows us to migrate authentication first while keeping authorization working.
- * Next phase will migrate authorization to AuthorizationClient.
+ * This step wires up AuthorizationManager but keeps both old and new systems.
+ * Next step will switch to using AuthorizationManager.
  */
 class GoogleAuthManager(private val context: Context) {
 
-    // NEW: Credential Manager for authentication
+    // NEW: Credential Manager for authentication (already active)
     private val credentialAuth = CredentialManagerAuth(context)
 
-    // OLD: GoogleSignIn for authorization (scopes) - will be migrated later
+    // NEW: AuthorizationManager for Drive scopes (ready, not yet active)
+    private val authorizationManager = AuthorizationManager(context)
+
+    // OLD: GoogleSignIn for authorization (still active, will be removed later)
     private val googleSignInClient: GoogleSignInClient by lazy {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestEmail()
