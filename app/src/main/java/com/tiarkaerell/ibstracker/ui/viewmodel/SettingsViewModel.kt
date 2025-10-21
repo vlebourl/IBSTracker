@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tiarkaerell.ibstracker.data.database.AppDatabase
-import com.tiarkaerell.ibstracker.data.health.GoogleFitManager
 import com.tiarkaerell.ibstracker.data.model.Language
 import com.tiarkaerell.ibstracker.data.model.Units
 import com.tiarkaerell.ibstracker.data.model.UserProfile
@@ -48,8 +47,7 @@ class SettingsViewModel(
 
     // Google services
     private val googleDriveBackup = GoogleDriveBackup(context, database, settingsRepository)
-    private val googleFitManager = GoogleFitManager(context)
-    
+
     private val _backupState = MutableStateFlow<BackupState>(BackupState.Idle)
     val backupState: StateFlow<BackupState> = _backupState.asStateFlow()
     
@@ -166,14 +164,8 @@ class SettingsViewModel(
     }
     
     fun requestHealthPermissions() {
-        viewModelScope.launch {
-            try {
-                val hasPermissions = googleFitManager.requestPermissions()
-                _healthPermissions.value = hasPermissions
-            } catch (e: Exception) {
-                _healthPermissions.value = false
-            }
-        }
+        // Google Fit integration removed - Health Connect API should be used instead
+        _healthPermissions.value = false
     }
     
     fun clearBackupState() {

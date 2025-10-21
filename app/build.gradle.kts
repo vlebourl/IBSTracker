@@ -6,8 +6,6 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.google.services)
-    alias(libs.plugins.firebase.crashlytics)
     alias(libs.plugins.kotlin.serialization)
 }
 
@@ -57,8 +55,8 @@ android {
         applicationId = "com.tiarkaerell.ibstracker"
         minSdk = 26
         targetSdk = 34
-        versionCode = 6
-        versionName = "1.6.0"
+        versionCode = 8
+        versionName = "1.7.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -120,18 +118,20 @@ dependencies {
     // Security - Encrypted SharedPreferences
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
     implementation(libs.androidx.datastore.preferences)
-    
+
     // Google Services
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.analytics)
-    implementation(libs.firebase.crashlytics)
     implementation(libs.play.services.auth)
+    implementation(libs.play.services.basement)
     implementation(libs.google.drive.api)
     implementation(libs.google.api.client.android)
     implementation(libs.google.http.client.android)
-    implementation(libs.play.services.fitness)
-    implementation(libs.androidx.health.connect)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.coroutines.play.services)
+
+    // Credential Manager (for migration from GoogleSignIn)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
     
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
