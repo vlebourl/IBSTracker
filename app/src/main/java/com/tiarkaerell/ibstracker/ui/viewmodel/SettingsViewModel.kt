@@ -68,6 +68,19 @@ class SettingsViewModel(
     // Cached access token from authorization (will be set by UI after authorization completes)
     private var cachedAccessToken: String? = null
 
+    // Track pending operation while waiting for authorization
+    private var pendingOperation: PendingOperation? = null
+
+    /**
+     * Pending operations that are waiting for Drive authorization
+     */
+    private sealed class PendingOperation {
+        object CreateBackup : PendingOperation()
+        object GetBackupList : PendingOperation()
+        data class RestoreBackup(val fileId: String, val mergeStrategy: GoogleDriveBackup.MergeStrategy, val password: String?) : PendingOperation()
+        data class GetBackupMetadata(val fileId: String) : PendingOperation()
+    }
+
     init {
         // Load current backup password
         _backupPassword.value = settingsRepository.getBackupPassword() ?: ""
@@ -106,8 +119,9 @@ class SettingsViewModel(
             try {
                 // Get or request authorization for Drive access
                 if (cachedAccessToken == null) {
+                    pendingOperation = PendingOperation.CreateBackup
                     requestDriveAuthorization()
-                    _backupState.value = BackupState.Error("Authorization required. Please grant access to Google Drive.")
+                    // Keep loading state - operation will continue after authorization
                     return@launch
                 }
 
@@ -125,11 +139,13 @@ class SettingsViewModel(
     
     fun getBackupList() {
         viewModelScope.launch {
+            _backupState.value = BackupState.Loading
             try {
                 // Get or request authorization for Drive access
                 if (cachedAccessToken == null) {
+                    pendingOperation = PendingOperation.GetBackupList
                     requestDriveAuthorization()
-                    _backupState.value = BackupState.Error("Authorization required. Please grant access to Google Drive.")
+                    // Keep loading state - operation will continue after authorization
                     return@launch
                 }
 
@@ -151,8 +167,9 @@ class SettingsViewModel(
             try {
                 // Get or request authorization for Drive access
                 if (cachedAccessToken == null) {
+                    pendingOperation = PendingOperation.RestoreBackup(fileId, mergeStrategy, password)
                     requestDriveAuthorization()
-                    _backupState.value = BackupState.Error("Authorization required. Please grant access to Google Drive.")
+                    // Keep loading state - operation will continue after authorization
                     return@launch
                 }
 
@@ -185,8 +202,9 @@ class SettingsViewModel(
             try {
                 // Get or request authorization for Drive access
                 if (cachedAccessToken == null) {
+                    pendingOperation = PendingOperation.GetBackupMetadata(fileId)
                     requestDriveAuthorization()
-                    _backupState.value = BackupState.Error("Authorization required. Please grant access to Google Drive.")
+                    // Keep loading state - operation will continue after authorization
                     return@launch
                 }
 
@@ -223,10 +241,34 @@ class SettingsViewModel(
 
     /**
      * Handle authorization result from UI
-     * Stores the access token for use by GoogleDriveBackup
+     * Stores the access token and executes any pending operation
      */
     fun handleAuthorizationResult(accessToken: String?) {
         cachedAccessToken = accessToken
+
+        // If authorization succeeded and there's a pending operation, execute it
+        if (accessToken != null && pendingOperation != null) {
+            executePendingOperation()
+        } else if (accessToken == null && pendingOperation != null) {
+            // Authorization failed
+            _backupState.value = BackupState.Error("Authorization failed. Please try again.")
+            pendingOperation = null
+        }
+    }
+
+    /**
+     * Execute the pending operation after authorization completes
+     */
+    private fun executePendingOperation() {
+        val operation = pendingOperation ?: return
+        pendingOperation = null  // Clear before executing to avoid loops
+
+        when (operation) {
+            is PendingOperation.CreateBackup -> createBackup()
+            is PendingOperation.GetBackupList -> getBackupList()
+            is PendingOperation.RestoreBackup -> restoreBackup(operation.fileId, operation.mergeStrategy, operation.password)
+            is PendingOperation.GetBackupMetadata -> getBackupMetadata(operation.fileId)
+        }
     }
 
     /**
