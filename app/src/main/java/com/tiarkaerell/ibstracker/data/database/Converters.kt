@@ -2,6 +2,7 @@ package com.tiarkaerell.ibstracker.data.database
 
 import androidx.room.TypeConverter
 import com.tiarkaerell.ibstracker.data.model.FoodCategory
+import com.tiarkaerell.ibstracker.data.model.IBSImpact
 import java.util.Date
 
 class Converters {
@@ -14,12 +15,12 @@ class Converters {
     fun dateToTimestamp(date: Date?): Long? {
         return date?.time?.toLong()
     }
-    
+
     @TypeConverter
     fun fromFoodCategory(category: FoodCategory): String {
         return category.name
     }
-    
+
     @TypeConverter
     fun toFoodCategory(categoryName: String): FoodCategory {
         return try {
@@ -27,5 +28,31 @@ class Converters {
         } catch (e: IllegalArgumentException) {
             FoodCategory.OTHER
         }
+    }
+
+    @TypeConverter
+    fun fromIBSImpactList(value: List<IBSImpact>): String {
+        return value.joinToString(",") { it.name }
+    }
+
+    @TypeConverter
+    fun toIBSImpactList(value: String): List<IBSImpact> {
+        if (value.isEmpty()) return emptyList()
+        return try {
+            value.split(",").map { IBSImpact.valueOf(it.trim()) }
+        } catch (e: IllegalArgumentException) {
+            emptyList()
+        }
+    }
+
+    @TypeConverter
+    fun fromStringList(value: List<String>): String {
+        return value.joinToString("|")
+    }
+
+    @TypeConverter
+    fun toStringList(value: String): List<String> {
+        if (value.isEmpty()) return emptyList()
+        return value.split("|")
     }
 }

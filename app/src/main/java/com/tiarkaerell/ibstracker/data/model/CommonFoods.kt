@@ -4,20 +4,19 @@ import android.content.Context
 import com.tiarkaerell.ibstracker.R
 
 object CommonFoods {
+    /**
+     * DEPRECATED: This function is obsolete and returns empty lists.
+     * Use CommonFoodDao and PrePopulatedFoods.kt instead for the new
+     * Smart Food Categorization system.
+     */
+    @Deprecated(
+        message = "Use CommonFoodDao.getCommonFoodsByCategory() instead",
+        replaceWith = ReplaceWith("commonFoodDao.getCommonFoodsByCategory(category)")
+    )
     fun getCommonFoods(context: Context, category: FoodCategory): List<String> {
-        val arrayResId = when (category) {
-            FoodCategory.DAIRY -> R.array.foods_dairy
-            FoodCategory.GLUTEN -> R.array.foods_gluten
-            FoodCategory.HIGH_FODMAP -> R.array.foods_high_fodmap
-            FoodCategory.SPICY -> R.array.foods_spicy
-            FoodCategory.PROCESSED_FATTY -> R.array.foods_processed_fatty
-            FoodCategory.BEVERAGES -> R.array.foods_beverages
-            FoodCategory.FRUITS -> R.array.foods_fruits
-            FoodCategory.VEGETABLES -> R.array.foods_vegetables
-            FoodCategory.OTHER -> R.array.foods_other
-        }
-        
-        return context.resources.getStringArray(arrayResId).toList()
+        // Return empty list - legacy function no longer used
+        // All common foods are now in the database via PrePopulatedFoods.kt
+        return emptyList()
     }
     
     data class FoodSearchResult(

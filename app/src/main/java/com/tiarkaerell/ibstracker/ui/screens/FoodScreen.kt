@@ -55,9 +55,9 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
     var showQuickAddDialog by remember { mutableStateOf(false) }
     var quickAddItem by remember { mutableStateOf<Pair<String, FoodCategory>?>(null) }
     var quickAddDateTime by remember { mutableStateOf(Calendar.getInstance()) }
+    var quickAddQuantity by remember { mutableStateOf("1") } // Default quantity for quick-add
 
     val foodItems by foodViewModel.foodItems.collectAsState()
-    val frequentFoodItems by foodViewModel.frequentFoodItems.collectAsState()
     val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault()) }
     val context = LocalContext.current
 
@@ -68,16 +68,27 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                 showQuickAddDialog = false
                 quickAddItem = null
                 quickAddDateTime = Calendar.getInstance()
+                quickAddQuantity = "1"
                 selectedDateTime = Calendar.getInstance()
             },
             title = { Text(stringResource(R.string.quick_add_confirm_title)) },
             text = {
-                Column {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
                         text = stringResource(R.string.quick_add_confirm_message, quickAddItem!!.first),
-                        modifier = Modifier.padding(bottom = 16.dp)
+                        modifier = Modifier.padding(bottom = 4.dp)
                     )
 
+                    // Quantity input
+                    OutlinedTextField(
+                        value = quickAddQuantity,
+                        onValueChange = { quickAddQuantity = it },
+                        label = { Text("Quantity") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // Date/Time picker
                     OutlinedCard(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -126,11 +137,13 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                         foodViewModel.saveFoodItem(
                             name = quickAddItem!!.first,
                             category = quickAddItem!!.second,
-                            date = quickAddDateTime.time
+                            quantity = quickAddQuantity,
+                            timestamp = quickAddDateTime.time
                         )
                         showQuickAddDialog = false
                         quickAddItem = null
                         quickAddDateTime = Calendar.getInstance()
+                        quickAddQuantity = "1"
                         selectedDateTime = Calendar.getInstance()
                     }
                 ) {
@@ -143,6 +156,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                         showQuickAddDialog = false
                         quickAddItem = null
                         quickAddDateTime = Calendar.getInstance()
+                        quickAddQuantity = "1"
                         selectedDateTime = Calendar.getInstance()
                     }
                 ) {
@@ -190,7 +204,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
         var editName by remember { mutableStateOf(editingItem!!.name) }
         var editCategory by remember { mutableStateOf(editingItem!!.category) }
         var editDateTime by remember {
-            mutableStateOf(Calendar.getInstance().apply { time = editingItem!!.date })
+            mutableStateOf(Calendar.getInstance().apply { time = editingItem!!.timestamp })
         }
 
         AlertDialog(
@@ -230,7 +244,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                             modifier = Modifier
                                                 .size(8.dp)
                                                 .clip(RoundedCornerShape(2.dp))
-                                                .background(category.color)
+                                                .background(category.colorLight)
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Text(
@@ -294,7 +308,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                         val updatedItem = editingItem!!.copy(
                             name = editName,
                             category = editCategory,
-                            date = editDateTime.time
+                            timestamp = editDateTime.time
                         )
                         foodViewModel.updateFoodItem(updatedItem)
                         showEditDialog = false
@@ -323,70 +337,6 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Quick Add Section
-        if (frequentFoodItems.isNotEmpty()) {
-            item {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.quick_add_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        frequentFoodItems.forEach { frequentItem ->
-                            Card(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clickable {
-                                        quickAddItem = Pair(frequentItem.name, frequentItem.category)
-                                        quickAddDateTime = Calendar.getInstance()
-                                        showQuickAddDialog = true
-                                    },
-                                colors = CardDefaults.cardColors(
-                                    containerColor = frequentItem.category.color.copy(alpha = 0.2f)
-                                ),
-                                border = BorderStroke(2.dp, frequentItem.category.color)
-                            ) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(8.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(14.dp)
-                                            .clip(RoundedCornerShape(3.dp))
-                                            .background(frequentItem.category.color)
-                                    )
-                                    Text(
-                                        text = frequentItem.name,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        textAlign = TextAlign.Center,
-                                        fontWeight = FontWeight.Medium,
-                                        maxLines = 2
-                                    )
-                                    Text(
-                                        text = stringResource(R.string.times_added_format, frequentItem.count),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
         // Entry Section
         item {
             Card(
@@ -461,9 +411,9 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                                 searchResults = emptyList()
                                             },
                                         colors = CardDefaults.cardColors(
-                                            containerColor = result.category.color.copy(alpha = 0.2f)
+                                            containerColor = result.category.colorLight.copy(alpha = 0.2f)
                                         ),
-                                        border = BorderStroke(1.dp, result.category.color)
+                                        border = BorderStroke(1.dp, result.category.colorLight)
                                     ) {
                                         Column(
                                             modifier = Modifier.padding(12.dp),
@@ -477,7 +427,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                                     modifier = Modifier
                                                         .size(8.dp)
                                                         .clip(RoundedCornerShape(2.dp))
-                                                        .background(result.category.color)
+                                                        .background(result.category.colorLight)
                                                 )
                                                 Spacer(modifier = Modifier.width(6.dp))
                                                 Text(
@@ -529,12 +479,12 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                 }
                             }
                         } else {
-                            // Show category grid when no search
+                            // Show category grid when no search - all 12 categories visible (4 rows × 80dp + 3 gaps × 8dp = 344dp)
                             LazyVerticalGrid(
                                 columns = GridCells.Fixed(3),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.height(280.dp)
+                                modifier = Modifier.height(344.dp)
                             ) {
                             items(FoodCategory.getAllCategories()) { category ->
                                 Card(
@@ -543,9 +493,9 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                         .height(80.dp)
                                         .clickable { selectedCategory = category },
                                     colors = CardDefaults.cardColors(
-                                        containerColor = category.color.copy(alpha = 0.2f)
+                                        containerColor = category.colorLight.copy(alpha = 0.2f)
                                     ),
-                                    border = BorderStroke(2.dp, category.color)
+                                    border = BorderStroke(2.dp, category.colorLight)
                                 ) {
                                     Column(
                                         modifier = Modifier
@@ -558,7 +508,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                             modifier = Modifier
                                                 .size(16.dp)
                                                 .clip(RoundedCornerShape(4.dp))
-                                                .background(category.color)
+                                                .background(category.colorLight)
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
@@ -595,7 +545,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                         modifier = Modifier
                                             .size(12.dp)
                                             .clip(RoundedCornerShape(3.dp))
-                                            .background(category.color)
+                                            .background(category.colorLight)
                                     )
                                 }
                             )
@@ -728,7 +678,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                     modifier = Modifier
                                         .size(8.dp)
                                         .clip(RoundedCornerShape(2.dp))
-                                        .background(category.color)
+                                        .background(category.colorLight)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(FoodCategoryHelper.getDisplayName(context, category))
@@ -745,7 +695,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
             foodItems.filter { it.category == filterCategory }
         }
 
-        items(filteredItems.sortedByDescending { it.date }) { item ->
+        items(filteredItems.sortedByDescending { it.timestamp }) { item ->
             var showOptions by remember { mutableStateOf(false) }
 
             Card(
@@ -756,7 +706,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                         onLongClick = { showOptions = true }
                     ),
                 colors = CardDefaults.cardColors(
-                    containerColor = item.category.color.copy(alpha = 0.15f)
+                    containerColor = item.category.colorLight.copy(alpha = 0.15f)
                 )
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -770,7 +720,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                     modifier = Modifier
                                         .size(12.dp)
                                         .clip(RoundedCornerShape(3.dp))
-                                        .background(item.category.color)
+                                        .background(item.category.colorLight)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
@@ -784,7 +734,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = dateFormat.format(item.date),
+                                text = dateFormat.format(item.timestamp),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

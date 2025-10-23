@@ -1,33 +1,158 @@
 package com.tiarkaerell.ibstracker.data.model
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.tiarkaerell.ibstracker.ui.theme.*
 
+/**
+ * FoodCategory Enum - Smart Food Categorization System (v1.9.0)
+ *
+ * Represents 12 actual food type categories (not IBS-trigger based).
+ * Each category has Material Design 3 colors, icons, and bilingual names.
+ * Used for organizing foods by what they ARE, not by IBS impact.
+ *
+ * Migration: v8→v9 remaps old 9-category system to new 12-category system.
+ */
 enum class FoodCategory(
-    val color: Color
+    val displayName: String,
+    val displayNameFr: String,
+    val colorLight: Color,
+    val colorDark: Color,
+    val icon: ImageVector,
+    val sortOrder: Int,
+    val description: String = ""
 ) {
-    DAIRY(Color(0xFF6495ED)), // Cornflower blue
-    GLUTEN(Color(0xFFDDA0DD)), // Plum
-    HIGH_FODMAP(Color(0xFFFF6347)), // Tomato red
-    SPICY(Color(0xFFFF4500)), // Orange red
-    PROCESSED_FATTY(Color(0xFFFFD700)), // Gold
-    BEVERAGES(Color(0xFF8B4513)), // Saddle brown
-    FRUITS(Color(0xFF32CD32)), // Lime green
-    VEGETABLES(Color(0xFF228B22)), // Forest green
-    OTHER(Color(0xFF708090)); // Slate gray
+    GRAINS(
+        displayName = "Grains",
+        displayNameFr = "Céréales",
+        colorLight = md_theme_light_tertiary,
+        colorDark = md_theme_dark_tertiary,
+        icon = Icons.Default.Grain,
+        sortOrder = 1
+    ),
+    PROTEINS(
+        displayName = "Proteins",
+        displayNameFr = "Protéines",
+        colorLight = md_theme_light_primary,
+        colorDark = md_theme_dark_primary,
+        icon = Icons.Default.Restaurant,
+        sortOrder = 2
+    ),
+    DAIRY(
+        displayName = "Dairy",
+        displayNameFr = "Produits laitiers",
+        colorLight = md_theme_light_secondary,
+        colorDark = md_theme_dark_secondary,
+        icon = Icons.Default.Icecream,
+        sortOrder = 3
+    ),
+    VEGETABLES(
+        displayName = "Vegetables",
+        displayNameFr = "Légumes",
+        colorLight = CategoryGreenLight,
+        colorDark = CategoryGreenDark,
+        icon = Icons.Default.Eco,
+        sortOrder = 4
+    ),
+    FRUITS(
+        displayName = "Fruits",
+        displayNameFr = "Fruits",
+        colorLight = CategoryOrangeLight,
+        colorDark = CategoryOrangeDark,
+        icon = Icons.Default.LocalFlorist,
+        sortOrder = 5
+    ),
+    LEGUMES(
+        displayName = "Legumes",
+        displayNameFr = "Légumineuses",
+        colorLight = CategoryBrownLight,
+        colorDark = CategoryBrownDark,
+        icon = Icons.Default.Spa,
+        sortOrder = 6
+    ),
+    NUTS_SEEDS(
+        displayName = "Nuts & Seeds",
+        displayNameFr = "Noix et graines",
+        colorLight = CategoryAmberLight,
+        colorDark = CategoryAmberDark,
+        icon = Icons.Default.Nature,
+        sortOrder = 7
+    ),
+    BEVERAGES(
+        displayName = "Beverages",
+        displayNameFr = "Boissons",
+        colorLight = CategoryBlueLight,
+        colorDark = CategoryBlueDark,
+        icon = Icons.Default.LocalDrink,
+        sortOrder = 8
+    ),
+    FATS_OILS(
+        displayName = "Fats & Oils",
+        displayNameFr = "Matières grasses",
+        colorLight = CategoryYellowLight,
+        colorDark = CategoryYellowDark,
+        icon = Icons.Default.WaterDrop,
+        sortOrder = 9
+    ),
+    SWEETS(
+        displayName = "Sweets",
+        displayNameFr = "Sucreries",
+        colorLight = CategoryPinkLight,
+        colorDark = CategoryPinkDark,
+        icon = Icons.Default.Cake,
+        sortOrder = 10
+    ),
+    PROCESSED(
+        displayName = "Processed Foods",
+        displayNameFr = "Aliments transformés",
+        colorLight = CategoryRedLight,
+        colorDark = CategoryRedDark,
+        icon = Icons.Default.Fastfood,
+        sortOrder = 11
+    ),
+    OTHER(
+        displayName = "Other",
+        displayNameFr = "Autre",
+        colorLight = CategoryNeutralLight,
+        colorDark = CategoryNeutralDark,
+        icon = Icons.Default.Category,
+        sortOrder = 12
+    );
 
     companion object {
-        fun getByDisplayName(context: android.content.Context, name: String): FoodCategory {
-            return values().find { 
-                FoodCategoryHelper.getDisplayName(context, it) == name 
-            } ?: OTHER
+        /**
+         * Get display name in current locale
+         * @param isFrench true for French, false for English
+         */
+        fun getDisplayName(category: FoodCategory, isFrench: Boolean = false): String {
+            return if (isFrench) category.displayNameFr else category.displayName
         }
-        
+
+        /**
+         * Get all categories in sort order
+         */
         fun getAllCategories(): List<FoodCategory> {
-            return values().toList()
+            return values().sortedBy { it.sortOrder }
         }
-        
-        fun getCommonTriggers(): List<FoodCategory> {
-            return listOf(DAIRY, GLUTEN, HIGH_FODMAP, SPICY, PROCESSED_FATTY, BEVERAGES)
+
+        /**
+         * Find category by display name (supports both EN and FR)
+         */
+        fun findByDisplayName(name: String): FoodCategory? {
+            return values().find {
+                it.displayName.equals(name, ignoreCase = true) ||
+                it.displayNameFr.equals(name, ignoreCase = true)
+            }
+        }
+
+        /**
+         * Get color for category based on theme
+         * @param isLightTheme true for light theme, false for dark theme
+         */
+        fun getColor(category: FoodCategory, isLightTheme: Boolean): Color {
+            return if (isLightTheme) category.colorLight else category.colorDark
         }
     }
 }

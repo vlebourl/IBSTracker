@@ -260,7 +260,7 @@ private fun TriggerItem(trigger: TriggerAnalysis) {
                 modifier = Modifier
                     .size(12.dp)
                     .clip(RoundedCornerShape(3.dp))
-                    .background(trigger.category.color)
+                    .background(trigger.category.colorLight)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Column {
@@ -331,7 +331,7 @@ private fun SafeCategoryItem(category: CategoryInsight) {
                 modifier = Modifier
                     .size(12.dp)
                     .clip(RoundedCornerShape(3.dp))
-                    .background(category.category.color)
+                    .background(category.category.colorLight)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Column {

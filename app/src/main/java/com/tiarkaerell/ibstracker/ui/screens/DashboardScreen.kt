@@ -36,7 +36,7 @@ import kotlin.math.roundToInt
 
 // Sealed class to represent timeline entries
 sealed class TimelineEntry(val date: Date) {
-    data class FoodEntry(val foodItem: FoodItem) : TimelineEntry(foodItem.date)
+    data class FoodEntry(val foodItem: FoodItem) : TimelineEntry(foodItem.timestamp)
     data class SymptomEntry(val symptom: Symptom) : TimelineEntry(symptom.date)
 }
 
@@ -160,8 +160,8 @@ fun DashboardScreen(
         var editName by remember { mutableStateOf(editingFoodItem!!.name) }
         var editCategory by remember { mutableStateOf(editingFoodItem!!.category) }
         var showEditCategoryDropdown by remember { mutableStateOf(false) }
-        var editDateTime by remember { 
-            mutableStateOf(Calendar.getInstance().apply { time = editingFoodItem!!.date })
+        var editDateTime by remember {
+            mutableStateOf(Calendar.getInstance().apply { time = editingFoodItem!!.timestamp })
         }
 
         AlertDialog(
@@ -198,7 +198,7 @@ fun DashboardScreen(
                                     modifier = Modifier
                                         .size(16.dp)
                                         .clip(RoundedCornerShape(4.dp))
-                                        .background(editCategory.color)
+                                        .background(editCategory.colorLight)
                                 )
                             },
                             modifier = Modifier.menuAnchor()
@@ -215,7 +215,7 @@ fun DashboardScreen(
                                                 modifier = Modifier
                                                     .size(16.dp)
                                                     .clip(RoundedCornerShape(4.dp))
-                                                    .background(category.color)
+                                                    .background(category.colorLight)
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
                                             Text(FoodCategoryHelper.getDisplayName(context, category))
@@ -288,7 +288,7 @@ fun DashboardScreen(
                         val updatedItem = editingFoodItem!!.copy(
                             name = editName,
                             category = editCategory,
-                            date = editDateTime.time
+                            timestamp = editDateTime.time
                         )
                         foodViewModel.updateFoodItem(updatedItem)
                         showEditFoodDialog = false
@@ -527,7 +527,7 @@ fun DashboardScreen(
                                     onLongClick = { showOptions = true }
                                 ),
                             colors = CardDefaults.cardColors(
-                                containerColor = item.category.color.copy(alpha = 0.15f)
+                                containerColor = item.category.colorLight.copy(alpha = 0.15f)
                             )
                         ) {
                             Row(
@@ -541,7 +541,7 @@ fun DashboardScreen(
                                     Icon(
                                         imageVector = Icons.Default.Fastfood,
                                         contentDescription = stringResource(R.string.food_label),
-                                        tint = item.category.color,
+                                        tint = item.category.colorLight,
                                         modifier = Modifier.size(32.dp)
                                     )
                                     // Category color indicator
@@ -549,7 +549,7 @@ fun DashboardScreen(
                                         modifier = Modifier
                                             .size(8.dp)
                                             .clip(RoundedCornerShape(4.dp))
-                                            .background(item.category.color)
+                                            .background(item.category.colorLight)
                                             .align(Alignment.BottomEnd)
                                     )
                                 }
@@ -567,16 +567,16 @@ fun DashboardScreen(
                                             modifier = Modifier
                                                 .size(12.dp)
                                                 .clip(RoundedCornerShape(3.dp))
-                                                .background(item.category.color)
+                                                .background(item.category.colorLight)
                                         )
                                     }
                                     Text(
                                         text = FoodCategoryHelper.getDisplayName(context, item.category),
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = item.category.color
+                                        color = item.category.colorLight
                                     )
                                     Text(
-                                        text = timeFormat.format(item.date),
+                                        text = timeFormat.format(item.timestamp),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
