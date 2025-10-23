@@ -2,9 +2,11 @@ package com.tiarkaerell.ibstracker.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.tiarkaerell.ibstracker.data.model.CommonFood
 import com.tiarkaerell.ibstracker.data.model.FoodCategory
 import com.tiarkaerell.ibstracker.data.model.FoodItem
 import com.tiarkaerell.ibstracker.data.repository.DataRepository
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -19,6 +21,10 @@ class FoodViewModel(private val dataRepository: DataRepository) : ViewModel() {
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
+
+    fun getCommonFoodsByCategory(category: FoodCategory): Flow<List<CommonFood>> {
+        return dataRepository.getCommonFoodsByCategory(category)
+    }
 
     fun saveFoodItem(
         name: String,

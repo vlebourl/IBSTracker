@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.tiarkaerell.ibstracker.R
+import com.tiarkaerell.ibstracker.data.model.CommonFood
 import com.tiarkaerell.ibstracker.data.model.CommonFoods
 import com.tiarkaerell.ibstracker.data.model.FoodCategory
 import com.tiarkaerell.ibstracker.data.model.FoodCategoryHelper
@@ -558,20 +559,20 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                         }
 
                         if (!showCustomInput) {
-                            // Show common foods grid
-                            val commonFoods = CommonFoods.getCommonFoods(context, category)
+                            // Show common foods grid from database
+                            val commonFoods by foodViewModel.getCommonFoodsByCategory(category).collectAsState(initial = emptyList())
                             LazyVerticalGrid(
                                 columns = GridCells.Fixed(2),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                                 modifier = Modifier.height(200.dp)
                             ) {
-                                items(commonFoods) { food ->
+                                items(commonFoods) { commonFood ->
                                     Card(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clickable {
-                                                quickAddItem = Pair(food, category)
+                                                quickAddItem = Pair(commonFood.name, category)
                                                 quickAddDateTime = selectedDateTime
                                                 showQuickAddDialog = true
                                                 selectedCategory = null
@@ -581,7 +582,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                         )
                                     ) {
                                         Text(
-                                            text = food,
+                                            text = commonFood.name,
                                             modifier = Modifier.padding(12.dp),
                                             style = MaterialTheme.typography.bodyMedium,
                                             textAlign = TextAlign.Center
