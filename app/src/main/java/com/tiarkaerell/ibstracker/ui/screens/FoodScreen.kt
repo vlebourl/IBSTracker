@@ -56,7 +56,6 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
     var showQuickAddDialog by remember { mutableStateOf(false) }
     var quickAddItem by remember { mutableStateOf<Pair<String, FoodCategory>?>(null) }
     var quickAddDateTime by remember { mutableStateOf(Calendar.getInstance()) }
-    var quickAddQuantity by remember { mutableStateOf("1") } // Default quantity for quick-add
 
     val foodItems by foodViewModel.foodItems.collectAsState()
     val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault()) }
@@ -69,7 +68,6 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                 showQuickAddDialog = false
                 quickAddItem = null
                 quickAddDateTime = Calendar.getInstance()
-                quickAddQuantity = "1"
                 selectedDateTime = Calendar.getInstance()
             },
             title = { Text(stringResource(R.string.quick_add_confirm_title)) },
@@ -80,15 +78,6 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                         modifier = Modifier.padding(bottom = 4.dp)
                     )
 
-                    // Quantity input
-                    OutlinedTextField(
-                        value = quickAddQuantity,
-                        onValueChange = { quickAddQuantity = it },
-                        label = { Text("Quantity") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
                     // Date/Time picker
                     OutlinedCard(
                         modifier = Modifier
@@ -97,18 +86,23 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                 DatePickerDialog(
                                     context,
                                     { _, year, month, dayOfMonth ->
-                                        quickAddDateTime.set(Calendar.YEAR, year)
-                                        quickAddDateTime.set(Calendar.MONTH, month)
-                                        quickAddDateTime.set(Calendar.DAY_OF_MONTH, dayOfMonth)
+                                        val newCalendar = Calendar.getInstance()
+                                        newCalendar.timeInMillis = quickAddDateTime.timeInMillis
+                                        newCalendar.set(Calendar.YEAR, year)
+                                        newCalendar.set(Calendar.MONTH, month)
+                                        newCalendar.set(Calendar.DAY_OF_MONTH, dayOfMonth)
 
                                         TimePickerDialog(
                                             context,
                                             { _, hourOfDay, minute ->
-                                                quickAddDateTime.set(Calendar.HOUR_OF_DAY, hourOfDay)
-                                                quickAddDateTime.set(Calendar.MINUTE, minute)
+                                                val updatedCalendar = Calendar.getInstance()
+                                                updatedCalendar.timeInMillis = newCalendar.timeInMillis
+                                                updatedCalendar.set(Calendar.HOUR_OF_DAY, hourOfDay)
+                                                updatedCalendar.set(Calendar.MINUTE, minute)
+                                                quickAddDateTime = updatedCalendar // Reassign to trigger recomposition
                                             },
-                                            quickAddDateTime.get(Calendar.HOUR_OF_DAY),
-                                            quickAddDateTime.get(Calendar.MINUTE),
+                                            newCalendar.get(Calendar.HOUR_OF_DAY),
+                                            newCalendar.get(Calendar.MINUTE),
                                             true
                                         ).show()
                                     },
@@ -138,13 +132,11 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                         foodViewModel.saveFoodItem(
                             name = quickAddItem!!.first,
                             category = quickAddItem!!.second,
-                            quantity = quickAddQuantity,
                             timestamp = quickAddDateTime.time
                         )
                         showQuickAddDialog = false
                         quickAddItem = null
                         quickAddDateTime = Calendar.getInstance()
-                        quickAddQuantity = "1"
                         selectedDateTime = Calendar.getInstance()
                     }
                 ) {
@@ -157,7 +149,6 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                         showQuickAddDialog = false
                         quickAddItem = null
                         quickAddDateTime = Calendar.getInstance()
-                        quickAddQuantity = "1"
                         selectedDateTime = Calendar.getInstance()
                     }
                 ) {
@@ -505,11 +496,11 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                         horizontalAlignment = Alignment.CenterHorizontally,
                                         verticalArrangement = Arrangement.Center
                                     ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(16.dp)
-                                                .clip(RoundedCornerShape(4.dp))
-                                                .background(category.colorLight)
+                                        Icon(
+                                            imageVector = category.icon,
+                                            contentDescription = FoodCategoryHelper.getDisplayName(context, category),
+                                            tint = category.colorLight,
+                                            modifier = Modifier.size(32.dp)
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(

@@ -211,11 +211,11 @@ fun DashboardScreen(
                                 DropdownMenuItem(
                                     text = {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(16.dp)
-                                                    .clip(RoundedCornerShape(4.dp))
-                                                    .background(category.colorLight)
+                                            Icon(
+                                                imageVector = category.icon,
+                                                contentDescription = FoodCategoryHelper.getDisplayName(context, category),
+                                                tint = category.colorLight,
+                                                modifier = Modifier.size(20.dp)
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
                                             Text(FoodCategoryHelper.getDisplayName(context, category))
@@ -536,40 +536,21 @@ fun DashboardScreen(
                                     .padding(16.dp),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                // Icon with category color
-                                Box {
-                                    Icon(
-                                        imageVector = Icons.Default.Fastfood,
-                                        contentDescription = stringResource(R.string.food_label),
-                                        tint = item.category.colorLight,
-                                        modifier = Modifier.size(32.dp)
-                                    )
-                                    // Category color indicator
-                                    Box(
-                                        modifier = Modifier
-                                            .size(8.dp)
-                                            .clip(RoundedCornerShape(4.dp))
-                                            .background(item.category.colorLight)
-                                            .align(Alignment.BottomEnd)
-                                    )
-                                }
+                                // Category icon
+                                Icon(
+                                    imageVector = item.category.icon,
+                                    contentDescription = FoodCategoryHelper.getDisplayName(context, item.category),
+                                    tint = item.category.colorLight,
+                                    modifier = Modifier.size(32.dp)
+                                )
 
                                 // Content
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            text = item.name,
-                                            style = MaterialTheme.typography.titleMedium,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Box(
-                                            modifier = Modifier
-                                                .size(12.dp)
-                                                .clip(RoundedCornerShape(3.dp))
-                                                .background(item.category.colorLight)
-                                        )
-                                    }
+                                    Text(
+                                        text = item.name,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
                                     Text(
                                         text = FoodCategoryHelper.getDisplayName(context, item.category),
                                         style = MaterialTheme.typography.bodySmall,

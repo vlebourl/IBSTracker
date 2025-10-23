@@ -83,9 +83,9 @@ val CategoryAmberDark = Color(0xFFFF8F00)       // MD3 Amber 800
 val CategoryBlueLight = Color(0xFF2196F3)       // MD3 Blue 500
 val CategoryBlueDark = Color(0xFF1565C0)        // MD3 Blue 800
 
-// FATS_OILS - Yellow
-val CategoryYellowLight = Color(0xFFFFEB3B)     // MD3 Yellow 500
-val CategoryYellowDark = Color(0xFFF57F17)      // MD3 Yellow 800
+// FATS_OILS - Yellow/Gold (darker for better readability)
+val CategoryYellowLight = Color(0xFFFFA726)     // MD3 Orange 400 (gold tone, more readable)
+val CategoryYellowDark = Color(0xFFFF8F00)      // MD3 Amber 800
 
 // SWEETS - Pink
 val CategoryPinkLight = Color(0xFFE91E63)       // MD3 Pink 500
