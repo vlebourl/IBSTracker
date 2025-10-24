@@ -17,6 +17,10 @@ import com.tiarkaerell.ibstracker.data.model.Symptom
 /**
  * IBS Tracker Room Database.
  *
+ * Version 10: Backfill FoodUsageStats for Quick-Add Feature
+ * - Migrates existing food_items data into food_usage_stats
+ * - Ensures quick-add section displays historical food usage
+ *
  * Version 9: Smart Food Categorization System
  * - Added CommonFood entity (~100 pre-populated foods)
  * - Added FoodUsageStats entity (usage tracking for quick-add)
@@ -31,7 +35,7 @@ import com.tiarkaerell.ibstracker.data.model.Symptom
         CommonFood::class,
         FoodUsageStats::class
     ],
-    version = 9,
+    version = 10,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -166,6 +170,37 @@ abstract class AppDatabase : RoomDatabase() {
                         MAX(timestamp) as last_used,
                         ibs_impacts,
                         0 as is_from_common_foods
+                    FROM food_items
+                    GROUP BY name, category
+                    HAVING COUNT(*) > 0
+                """)
+            }
+        }
+
+        /**
+         * Migration from v9 to v10.
+         * Backfills food_usage_stats from existing food_items for users who already had v9.
+         *
+         * Background:
+         * - MIGRATION_2_9 included backfill logic when upgrading from v2→v9
+         * - But users already on v9 never had their historical data backfilled
+         * - This migration ensures all users have usage stats populated from historical food entries
+         */
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Delete existing stats (in case there are partial/incorrect entries)
+                database.execSQL("DELETE FROM food_usage_stats")
+
+                // Backfill from existing food_items
+                database.execSQL("""
+                    INSERT INTO food_usage_stats (food_name, category, usage_count, last_used, ibs_impacts, is_from_common_foods)
+                    SELECT
+                        name as food_name,
+                        category,
+                        COUNT(*) as usage_count,
+                        MAX(timestamp) as last_used,
+                        COALESCE(ibs_impacts, '[]') as ibs_impacts,
+                        CASE WHEN common_food_id IS NOT NULL THEN 1 ELSE 0 END as is_from_common_foods
                     FROM food_items
                     GROUP BY name, category
                     HAVING COUNT(*) > 0
