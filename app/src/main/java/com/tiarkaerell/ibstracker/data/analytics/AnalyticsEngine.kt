@@ -8,21 +8,30 @@ import kotlin.math.max
 class AnalyticsEngine {
 
     companion object {
-        private const val SYMPTOM_WINDOW_HOURS = 6 // Look for symptoms within 6 hours of food
+        private const val SYMPTOM_WINDOW_HOURS = 3 // Look for symptoms within 3 hours of food (clinical standard)
+        private const val MEAL_GROUPING_MINUTES = 30 // Foods within 30 minutes = same meal
         private const val MIN_OCCURRENCES_FOR_ANALYSIS = 3 // Need at least 3 entries to analyze
         private const val RECENT_DAYS = 7
     }
 
     fun generateInsights(foodItems: List<FoodItem>, symptoms: List<Symptom>): InsightSummary {
-        val foodItemTriggers = analyzeFoodItemTriggers(foodItems, symptoms)
+        // Group foods into meals
+        val meals = groupIntoMeals(foodItems)
+
+        // Analyze triggers
+        val mealTriggers = analyzeMealTriggers(meals, symptoms)
+        val foodItemTriggers = analyzeFoodItemTriggers(foodItems, meals, symptoms)
         val attributeTriggers = analyzeAttributeTriggers(foodItems, symptoms)
         val weeklyPatterns = analyzeWeeklyPatterns(symptoms)
         val trends = analyzeTrends(symptoms)
 
         return InsightSummary(
+            topMealTriggers = mealTriggers
+                .sortedByDescending { it.triggerPercentage }
+                .take(10), // Top 10 meal triggers
             topFoodTriggers = foodItemTriggers
                 .sortedByDescending { it.triggerPercentage }
-                .take(10), // Top 10 worst triggers
+                .take(10), // Top 10 food triggers
             topAttributeTriggers = attributeTriggers
                 .sortedByDescending { it.triggerPercentage }
                 .take(10), // Top 10 attribute triggers
@@ -36,32 +45,154 @@ class AnalyticsEngine {
     }
 
     /**
-     * Analyze which specific food items trigger symptoms
-     * Algorithm:
-     * 1. Group food entries by name
-     * 2. For each food entry, check if ANY symptom occurred within 6 hours
-     * 3. Count triggered vs total occurrences
-     * 4. Track which symptoms were triggered
+     * Group food items into meals
+     * Foods eaten within 30 minutes = same meal
      */
-    private fun analyzeFoodItemTriggers(foodItems: List<FoodItem>, symptoms: List<Symptom>): List<FoodItemTrigger> {
+    private fun groupIntoMeals(foodItems: List<FoodItem>): List<Meal> {
+        if (foodItems.isEmpty()) return emptyList()
+
+        val sortedFoods = foodItems.sortedBy { it.timestamp }
+        val meals = mutableListOf<Meal>()
+        var currentMealFoods = mutableListOf<FoodItem>()
+
+        sortedFoods.forEachIndexed { index, food ->
+            if (currentMealFoods.isEmpty()) {
+                // Start new meal
+                currentMealFoods.add(food)
+            } else {
+                // Check if within 30 minutes of last food in current meal
+                val timeDiff = food.timestamp.time - currentMealFoods.last().timestamp.time
+                val minutesDiff = TimeUnit.MILLISECONDS.toMinutes(timeDiff)
+
+                if (minutesDiff <= MEAL_GROUPING_MINUTES) {
+                    // Add to current meal
+                    currentMealFoods.add(food)
+                } else {
+                    // Finish current meal and start new one
+                    if (currentMealFoods.isNotEmpty()) {
+                        meals.add(Meal(currentMealFoods.toList(), currentMealFoods.first().timestamp))
+                    }
+                    currentMealFoods = mutableListOf(food)
+                }
+            }
+
+            // Add last meal
+            if (index == sortedFoods.lastIndex && currentMealFoods.isNotEmpty()) {
+                meals.add(Meal(currentMealFoods.toList(), currentMealFoods.first().timestamp))
+            }
+        }
+
+        return meals
+    }
+
+    /**
+     * Analyze which meals trigger symptoms
+     * PRIMARY analysis - shown first in UI
+     */
+    private fun analyzeMealTriggers(meals: List<Meal>, symptoms: List<Symptom>): List<MealTrigger> {
+        // Group meals by food combination (same foods = same meal type)
+        val mealGroups = meals.groupBy { it.foodNames }
+        val triggers = mutableListOf<MealTrigger>()
+
+        mealGroups.forEach { (mealName, mealsList) ->
+            if (mealsList.size >= MIN_OCCURRENCES_FOR_ANALYSIS) {
+                val symptomCounts = mutableMapOf<String, Int>()
+                var triggeredCount = 0
+
+                // For each meal occurrence, check if it triggered symptoms
+                mealsList.forEach { meal ->
+                    val triggeredSymptoms = symptoms.filter { symptom ->
+                        val timeDiff = symptom.date.time - meal.timestamp.time
+                        timeDiff > 0 && timeDiff <= TimeUnit.HOURS.toMillis(SYMPTOM_WINDOW_HOURS.toLong())
+                    }
+
+                    if (triggeredSymptoms.isNotEmpty()) {
+                        triggeredCount++
+
+                        // Track which symptoms were triggered
+                        triggeredSymptoms.forEach { symptom ->
+                            symptomCounts[symptom.name] = (symptomCounts[symptom.name] ?: 0) + 1
+                        }
+                    }
+                }
+
+                val percentage = if (mealsList.isNotEmpty()) {
+                    (triggeredCount.toFloat() / mealsList.size.toFloat()) * 100f
+                } else 0f
+
+                triggers.add(
+                    MealTrigger(
+                        meal = mealsList.first(), // Use first occurrence as representative
+                        totalOccurrences = mealsList.size,
+                        triggeredOccurrences = triggeredCount,
+                        triggerPercentage = percentage,
+                        symptomBreakdown = symptomCounts,
+                        confidence = calculateConfidence(mealsList.size)
+                    )
+                )
+            }
+        }
+
+        return triggers
+    }
+
+    /**
+     * Analyze which individual food items trigger symptoms
+     * Enhanced with: isolation tracking, co-occurrence, confidence levels
+     */
+    private fun analyzeFoodItemTriggers(
+        foodItems: List<FoodItem>,
+        meals: List<Meal>,
+        symptoms: List<Symptom>
+    ): List<FoodItemTrigger> {
         val foodGroups = foodItems.groupBy { it.name }
         val triggers = mutableListOf<FoodItemTrigger>()
 
         foodGroups.forEach { (foodName, foods) ->
             if (foods.size >= MIN_OCCURRENCES_FOR_ANALYSIS) {
                 val symptomCounts = mutableMapOf<String, Int>()
+                val coOccurrences = mutableMapOf<String, Int>()
                 var triggeredCount = 0
+                var soloOccurrences = 0
+                var soloTriggered = 0
+                var mealOccurrences = 0
+                var mealTriggered = 0
 
-                // For each food entry, check if it triggered any symptom
+                // For each food entry, check if it triggered symptoms
                 foods.forEach { food ->
+                    // Determine if this food was eaten solo or in a meal
+                    val mealContainingFood = meals.find { meal ->
+                        meal.foods.any { it.id == food.id }
+                    }
+
+                    val isEatenSolo = mealContainingFood?.foods?.size == 1
+
+                    if (isEatenSolo) {
+                        soloOccurrences++
+                    } else {
+                        mealOccurrences++
+
+                        // Track co-occurrences (other foods in same meal)
+                        mealContainingFood?.foods?.forEach { otherFood ->
+                            if (otherFood.name != foodName) {
+                                coOccurrences[otherFood.name] = (coOccurrences[otherFood.name] ?: 0) + 1
+                            }
+                        }
+                    }
+
                     val triggeredSymptoms = symptoms.filter { symptom ->
                         val timeDiff = symptom.date.time - food.timestamp.time
                         timeDiff > 0 && timeDiff <= TimeUnit.HOURS.toMillis(SYMPTOM_WINDOW_HOURS.toLong())
                     }
 
-                    // If this food entry triggered at least one symptom, count it
                     if (triggeredSymptoms.isNotEmpty()) {
                         triggeredCount++
+
+                        if (isEatenSolo) {
+                            soloTriggered++
+                        } else {
+                            mealTriggered++
+                        }
 
                         // Track which symptoms were triggered
                         triggeredSymptoms.forEach { symptom ->
@@ -81,7 +212,16 @@ class AnalyticsEngine {
                         totalOccurrences = foods.size,
                         triggeredOccurrences = triggeredCount,
                         triggerPercentage = percentage,
-                        symptomBreakdown = symptomCounts
+                        symptomBreakdown = symptomCounts,
+                        soloOccurrences = soloOccurrences,
+                        soloTriggered = soloTriggered,
+                        mealOccurrences = mealOccurrences,
+                        mealTriggered = mealTriggered,
+                        coOccurrences = coOccurrences.toList()
+                            .sortedByDescending { it.second }
+                            .take(5) // Top 5 co-occurrences
+                            .toMap(),
+                        confidence = calculateConfidence(foods.size)
                     )
                 )
             }
@@ -91,11 +231,20 @@ class AnalyticsEngine {
     }
 
     /**
+     * Calculate confidence level based on occurrence count
+     */
+    private fun calculateConfidence(occurrences: Int): ConfidenceLevel {
+        return when (occurrences) {
+            in 1..2 -> ConfidenceLevel.VERY_LOW
+            in 3..4 -> ConfidenceLevel.LOW
+            in 5..9 -> ConfidenceLevel.MODERATE
+            in 10..14 -> ConfidenceLevel.GOOD
+            else -> ConfidenceLevel.HIGH
+        }
+    }
+
+    /**
      * Analyze which IBS attributes trigger symptoms
-     * Algorithm:
-     * 1. For each food entry, get all its IBS impacts
-     * 2. Group food entries by each attribute
-     * 3. For each attribute, count how many food entries triggered symptoms
      */
     private fun analyzeAttributeTriggers(foodItems: List<FoodItem>, symptoms: List<Symptom>): List<IBSAttributeTrigger> {
         // Create a map of attribute -> list of food items with that attribute

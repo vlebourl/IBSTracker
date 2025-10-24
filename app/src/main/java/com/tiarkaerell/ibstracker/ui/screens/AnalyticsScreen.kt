@@ -1,6 +1,7 @@
 package com.tiarkaerell.ibstracker.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -8,6 +9,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -98,7 +101,14 @@ private fun InsightsContent(insights: InsightSummary, userProfile: UserProfile) 
             OverallStatsCard(insights)
         }
 
-        // Food item triggers
+        // Meal triggers (PRIMARY analysis - shown first)
+        if (insights.topMealTriggers.isNotEmpty()) {
+            item {
+                MealTriggerAnalysisCard(triggers = insights.topMealTriggers)
+            }
+        }
+
+        // Food item triggers (SECONDARY - with isolation data)
         if (insights.topFoodTriggers.isNotEmpty()) {
             item {
                 FoodTriggerAnalysisCard(triggers = insights.topFoodTriggers)
@@ -193,60 +203,88 @@ private fun StatItem(value: String, label: String, color: Color) {
 }
 
 /**
- * Card showing specific food items that trigger symptoms
+ * Card showing meal combinations that trigger symptoms (PRIMARY analysis)
  */
 @Composable
-private fun FoodTriggerAnalysisCard(triggers: List<FoodItemTrigger>) {
+private fun MealTriggerAnalysisCard(triggers: List<MealTrigger>) {
+    var expanded by remember { mutableStateOf(true) }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f)
+            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f)
         )
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
+            // Clickable header
             Row(
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Icon(
-                    imageVector = Icons.Default.Warning,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Food Triggers",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            triggers.forEach { trigger ->
-                FoodTriggerItem(trigger = trigger)
-                if (trigger != triggers.last()) {
-                    Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = "Meal Triggers",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Foods eaten together (High Confidence)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
+
+                Icon(
+                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
-            if (triggers.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.no_triggers_found),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            // Collapsible content
+            if (expanded) {
+                Spacer(modifier = Modifier.height(12.dp))
+
+                triggers.forEach { trigger ->
+                    MealTriggerItem(trigger = trigger)
+                    if (trigger != triggers.last()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                }
+
+                if (triggers.isEmpty()) {
+                    Text(
+                        text = "No meal triggers found yet. Keep tracking!",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
 }
 
 /**
- * Individual food trigger item display
+ * Individual meal trigger item display
  */
 @Composable
-private fun FoodTriggerItem(trigger: FoodItemTrigger) {
+private fun MealTriggerItem(trigger: MealTrigger) {
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -257,22 +295,21 @@ private fun FoodTriggerItem(trigger: FoodItemTrigger) {
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f)
             ) {
-                // Category color indicator
-                Icon(
-                    imageVector = trigger.category.icon,
-                    contentDescription = trigger.category.displayName,
-                    tint = trigger.category.colorLight,
+                // Confidence emoji
+                Text(
+                    text = trigger.confidence.emoji,
+                    style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Column {
                     Text(
-                        text = trigger.foodName,
+                        text = trigger.meal.foodNames,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "${trigger.triggeredOccurrences}/${trigger.totalOccurrences} times",
+                        text = "${trigger.triggeredOccurrences}/${trigger.totalOccurrences} times • ${trigger.confidence.displayName}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -301,10 +338,202 @@ private fun FoodTriggerItem(trigger: FoodItemTrigger) {
 }
 
 /**
+ * Card showing specific food items that trigger symptoms
+ */
+@Composable
+private fun FoodTriggerAnalysisCard(triggers: List<FoodItemTrigger>) {
+    var expanded by remember { mutableStateOf(true) }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            // Clickable header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = "Individual Food Analysis",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Less reliable when foods eaten together",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Icon(
+                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // Collapsible content
+            if (expanded) {
+                Spacer(modifier = Modifier.height(12.dp))
+
+                triggers.forEach { trigger ->
+                    FoodTriggerItem(trigger = trigger)
+                    if (trigger != triggers.last()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                }
+
+                if (triggers.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.no_triggers_found),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Individual food trigger item display (enhanced with isolation tracking)
+ */
+@Composable
+private fun FoodTriggerItem(trigger: FoodItemTrigger) {
+    Column {
+        // Main row: Food name + percentage
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                // Confidence emoji
+                Text(
+                    text = trigger.confidence.emoji,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                // Category color indicator
+                Icon(
+                    imageVector = trigger.category.icon,
+                    contentDescription = trigger.category.displayName,
+                    tint = trigger.category.colorLight,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Column {
+                    Text(
+                        text = trigger.foodName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "${trigger.triggeredOccurrences}/${trigger.totalOccurrences} times • ${trigger.confidence.displayName}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Text(
+                text = "${trigger.triggerPercentage.toInt()}%",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+
+        // Solo vs Meal breakdown
+        if (trigger.soloOccurrences > 0 || trigger.mealOccurrences > 0) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.padding(start = 52.dp)
+            ) {
+                if (trigger.soloOccurrences > 0) {
+                    Text(
+                        text = "Solo: ${trigger.soloTriggered}/${trigger.soloOccurrences}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (trigger.soloOccurrences >= 3) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        fontWeight = if (trigger.soloOccurrences >= 3) FontWeight.Bold else FontWeight.Normal
+                    )
+                }
+                if (trigger.soloOccurrences > 0 && trigger.mealOccurrences > 0) {
+                    Text(
+                        text = " • ",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (trigger.mealOccurrences > 0) {
+                    Text(
+                        text = "In meals: ${trigger.mealTriggered}/${trigger.mealOccurrences}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        // Co-occurrence warning
+        if (trigger.coOccurrences.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "⚠️ Often with: ${trigger.coOccurrences.entries.take(3).joinToString(", ") { "${it.key} (${it.value}x)" }}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.tertiary,
+                modifier = Modifier.padding(start = 52.dp)
+            )
+        }
+
+        // Symptom breakdown
+        if (trigger.symptomBreakdown.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Symptoms: ${trigger.symptomBreakdown.entries.joinToString(", ") { "${it.key} (${it.value}x)" }}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 52.dp)
+            )
+        }
+    }
+}
+
+/**
  * Card showing IBS attributes that trigger symptoms
  */
 @Composable
 private fun AttributeTriggerAnalysisCard(triggers: List<IBSAttributeTrigger>) {
+    var expanded by remember { mutableStateOf(true) }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -314,37 +543,56 @@ private fun AttributeTriggerAnalysisCard(triggers: List<IBSAttributeTrigger>) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
+            // Clickable header
             Row(
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Icon(
-                    imageVector = Icons.Default.Warning,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "IBS Attribute Triggers",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            triggers.forEach { trigger ->
-                AttributeTriggerItem(trigger = trigger)
-                if (trigger != triggers.last()) {
-                    Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "IBS Attribute Triggers",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
+
+                Icon(
+                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
-            if (triggers.isEmpty()) {
-                Text(
-                    text = "No IBS attribute triggers found",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            // Collapsible content
+            if (expanded) {
+                Spacer(modifier = Modifier.height(12.dp))
+
+                triggers.forEach { trigger ->
+                    AttributeTriggerItem(trigger = trigger)
+                    if (trigger != triggers.last()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                }
+
+                if (triggers.isEmpty()) {
+                    Text(
+                        text = "No IBS attribute triggers found",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
