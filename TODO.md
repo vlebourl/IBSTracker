@@ -26,7 +26,21 @@
 
 ### 🔴 Critical / Bugs
 **Priority**: Fix these first
-* None currently - All critical issues resolved in v1.10.0
+* **Error handling in ViewModels** - Users need feedback on failed operations (~3-4 hours)
+  - Add sealed class `UiState<T>` with Loading/Success/Error states
+  - Expose error states from FoodViewModel, SymptomsViewModel
+  - Show error messages in UI (Snackbar or AlertDialog)
+  - Handle database operation failures gracefully
+* **Input validation** - Prevent invalid data entry (~1-2 hours)
+  - Validate food/symptom names (not empty, reasonable length)
+  - Validate symptom intensity (1-10 range)
+  - Validate timestamps (not in future)
+  - Show validation errors before save attempt
+* **Sync status indicator** - Show Google Drive backup state (~2-3 hours)
+  - Add sync status to settings/dashboard
+  - Show last successful backup timestamp
+  - Indicate pending/failed backups with retry option
+  - Visual feedback during backup operations
 
 ### ⚡ Quick Wins
 **Priority**: High-value, low-effort improvements (< 1 day each)
@@ -48,47 +62,120 @@
   - Improve edit/delete workflows
   - Match Food page architecture and UX patterns
   - Better date/time display formatting
+* **Skip quick-add confirmation setting** - Faster logging workflow (~1 hour)
+  - Add settings toggle "Skip confirmation on quick-add"
+  - Show brief toast/snackbar feedback instead of dialog
+  - Significantly speeds up frequent food logging
+* **Loading states throughout app** - Better UX feedback (~2-3 hours)
+  - Add CircularProgressIndicator when fetching data
+  - Show loading during analytics calculations
+  - Show progress during backup/restore operations
+  - Prevent duplicate saves during loading
+* **Reusable DateTimePicker component** - DRY principle (~2 hours)
+  - Extract duplicated date/time picker logic
+  - Create shared composable DateTimePickerDialog
+  - Use consistently across Dashboard, Food, Symptoms screens
+* **Database performance indexes** - Query optimization (~30 minutes)
+  - Add index on Symptom.date column
+  - Add index on FoodItem.timestamp column
+  - Improves analytics query performance with large datasets
+* **Crash reporting setup** - Production debugging (~2 hours)
+  - Integrate Firebase Crashlytics or similar
+  - Capture unhandled exceptions
+  - Track non-fatal errors
+  - Add user context (app version, device info)
 
 ### ⭐ New Features
 **Priority**: Major functionality additions
-* **Add medication tracking** - New tracking category with medication name, dosage, time, and integration with symptom correlation
+* **Add medication tracking** - New tracking category with medication name, dosage, time, and integration with symptom correlation (~3-5 days)
   - Add to "Symptoms" tab or create separate "Medications" section
   - Pre-populate common IBS medications
   - Track medication-symptom correlations
-* **Body weight history** - Track weight changes over time
+* **Body weight history** - Track weight changes over time (~2-3 days)
   - Add weight entry UI
   - Display trend graph in analysis page
   - Correlate with symptom patterns
+* **Bulk operations** - Select multiple entries for batch actions (~4-5 hours)
+  - Multi-select mode with checkboxes
+  - Bulk delete with confirmation
+  - Bulk export functionality
+  - Select all / deselect all actions
+* **Notes field on entries** - Add context to food/symptoms (~3-4 hours + migration)
+  - Add optional "notes" field to FoodItem and Symptom models
+  - Database migration to add column
+  - Show notes in timeline and detail views
+  - Useful for recording context like "ate quickly" or "stressful day"
+* **Export to PDF/CSV** - Share reports with healthcare providers (~5-6 hours)
+  - Export timeline data to CSV format
+  - Generate PDF report with analytics summary
+  - Include charts and trigger analysis
+  - Share via Android share sheet
+* **Reminders & Notifications** - Improve tracking consistency (~4-5 hours)
+  - Customizable meal/symptom logging reminders
+  - Use WorkManager for reliable scheduling
+  - Notification settings (times, frequency)
+  - Snooze functionality
+* **Undo functionality** - Safety net for accidental deletions (~5-6 hours)
+  - Soft delete architecture (mark deleted, keep data)
+  - Snackbar with "Undo" action after delete
+  - Auto-purge soft-deleted items after 30 days
+  - Restore functionality in settings
 
 ### 🎨 UI/UX Polish
 **Priority**: Visual consistency and user experience
-* **Color harmonization** - Ensure consistent color scheme across all screens
+* **Color harmonization** - Ensure consistent color scheme across all screens (~2-3 hours)
   - Fix dairy brightness vs fruits contrast
   - Harmonize food, categories, quick-adds, symptoms, analysis colors
   - Apply Material Design 3 color palette consistently
-* **Global Material Design 3 alignment** - Comprehensive UI audit
+* **Global Material Design 3 alignment** - Comprehensive UI audit (~5-7 days)
   - Analyze current UI against MD3 guidelines
   - Create design system specification
   - Apply consistently across all screens
-* **Category ordering** - Dynamically reorder food categories by usage frequency
-  - Most frequently used categories first
-  - No visible counter (backend sorting only)
+* **Dashboard timeline enhancements** - Better filtering and search (~4-5 hours)
+  - Add filter by entry type (food only / symptoms only / all)
+  - Add search functionality across timeline
+  - Add date range selector (last 7 days / 30 days / custom)
+  - Improve empty state with illustrations
+* **Onboarding tutorial** - Help new users understand features (~5-6 hours)
+  - First-run tutorial explaining key features
+  - Tooltips for analytics concepts (meal grouping, confidence levels)
+  - Optional skip functionality
+  - "What's New" dialog on version updates
+* **Empty state improvements** - More engaging empty screens (~2-3 hours)
+  - Add illustrations or animations for empty states
+  - Actionable buttons (e.g., "Log your first meal")
+  - Brief explanations of features
+* **Dark mode toggle in settings** - User preference override (~2 hours)
+  - Add setting to force dark/light mode
+  - Override system setting if desired
+  - Persist preference
 
 ### 📊 Analytics & Insights (Phase 2+)
 **Priority**: Advanced analytics and statistical validation
-* **Phase 2: Statistical Enhancements** - Add statistical rigor to Phase 1
+* **Date range filters in Analytics** - Flexible time period analysis (~4-5 hours)
+  - Add date range selector (last 7/30/90 days, custom range)
+  - Filter all analytics by selected period
+  - Compare periods (e.g., "This month vs last month")
+  - Show data availability per period
+* **Charts & graphs visualization** - Make analytics more intuitive (~10-12 hours)
+  - Line chart for symptom intensity over time
+  - Bar chart for trigger frequencies
+  - Pie chart for symptom type distribution
+  - Use AndroidX Compose Charts or MPAndroidChart library
+  - Interactive charts with zoom/pan
+* **Phase 2: Statistical Enhancements** - Add statistical rigor to Phase 1 (~3-5 days)
   - Chi-square test for trigger significance (p-value < 0.05)
   - Confidence intervals for trigger percentages
   - Control for confounding variables
   - Bayesian approach for low-data scenarios
   - Multiple hypothesis correction (Bonferroni)
-* **Phase 3: Advanced Pattern Recognition**
+* **Phase 3: Advanced Pattern Recognition** (~7-10 days)
   - Time-of-day analysis (morning vs evening triggers)
   - Dose-response relationships (quantity matters)
   - Temporal patterns (weekday vs weekend)
   - Cumulative effects (multiple meals)
   - Symptom clustering
-* **Phase 4: Personalization & Recommendations**
+* **Phase 4: Personalization & Recommendations** (~15-20 days)
   - Personalized safe food suggestions
   - Meal planning recommendations
   - Trigger avoidance strategies
@@ -96,11 +183,31 @@
 
 ### 🔧 Technical Improvements
 **Priority**: Code quality and consistency
-* **Swipe gestures for edit/delete** - Implement intuitive gestures across all lists
+* **Swipe gestures for edit/delete** - Implement intuitive gestures across all lists (~4-5 hours)
   - Swipe left reveals edit action
   - Swipe right reveals delete with confirmation
   - Apply to food items, symptoms, and future medication lists
   - Follow email app patterns for familiarity
+* **Extract shared composables** - Reduce code duplication (~3-4 hours)
+  - Create shared `EditDeleteActions` component
+  - Reuse dialog layouts across screens
+  - Shared loading state composables
+  - Common empty state components
+* **StateFlow lifecycle awareness audit** - Prevent memory leaks (~2 hours)
+  - Audit all `collectAsState` calls
+  - Ensure proper lifecycle-aware collection
+  - Add lifecycle scoping where missing
+  - Document best practices
+* **Database size management** - Archive old data (~3-4 hours)
+  - Add settings option for auto-archive (e.g., data older than 12 months)
+  - Move archived data to separate table
+  - Ability to view/restore archived data
+  - Export before archive option
+* **Analytics engine optimization** - Improve performance with large datasets (~8-10 hours)
+  - Cache analytics results with timestamp
+  - Incremental updates instead of full recalculation
+  - Background processing with WorkManager
+  - Show cached results while recalculating
 
 ---
 
@@ -140,5 +247,52 @@
 - Analytics Phase 3: Advanced Pattern Recognition
 - Analytics Phase 4: Personalization & Recommendations
 - Body weight history tracking
-- Export/import improvements
-- Healthcare provider reports
+- Photo attachments for meals
+- Accessibility improvements (font scaling, high contrast)
+- Pagination for large lists (Paging3)
+- ML-based predictions and forecasting
+
+---
+
+## 📝 Notes from Comprehensive Codebase Analysis
+
+### Key Findings Summary:
+This TODO.md has been enhanced based on a thorough codebase analysis that identified:
+
+**Critical gaps** (now in 🔴 Critical section):
+- Missing error handling and user feedback
+- No input validation
+- Sync status visibility needed
+
+**Quick wins added** (now in ⚡ Quick Wins section):
+- Skip quick-add confirmation toggle
+- Loading states throughout app
+- Reusable DateTimePicker component
+- Database performance indexes
+- Crash reporting setup
+
+**New feature opportunities** (now in ⭐ New Features section):
+- Bulk operations for batch actions
+- Notes field on entries for context
+- Export to PDF/CSV for healthcare sharing
+- Reminders & notifications for consistency
+- Undo functionality for safety
+
+**UX improvements** (now in 🎨 UI/UX Polish section):
+- Dashboard timeline enhancements (filters, search)
+- Onboarding tutorial for new users
+- Empty state improvements
+- Dark mode toggle
+
+**Analytics enhancements** (now in 📊 Analytics section):
+- Date range filters
+- Charts & graphs visualization
+- Time estimates added to all phases
+
+**Technical debt** (now in 🔧 Technical Improvements section):
+- Code duplication reduction
+- Memory leak prevention
+- Database size management
+- Analytics performance optimization
+
+All items include time estimates and clear implementation details.
