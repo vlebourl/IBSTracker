@@ -43,7 +43,6 @@ fun QuickAddCard(
     Card(
         onClick = onClick,
         modifier = modifier
-            .width(96.dp)
             .height(108.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant

@@ -16,6 +16,8 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Fastfood
 import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material3.*
+import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,7 +27,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.tiarkaerell.ibstracker.R
-import com.tiarkaerell.ibstracker.data.model.FoodCategoryHelper
 import com.tiarkaerell.ibstracker.data.model.FoodItem
 import com.tiarkaerell.ibstracker.data.model.Symptom
 import com.tiarkaerell.ibstracker.ui.viewmodel.FoodViewModel
@@ -186,7 +187,7 @@ fun DashboardScreen(
                         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
                     ) {
                         OutlinedTextField(
-                            value = FoodCategoryHelper.getDisplayName(context, editCategory),
+                            value = editCategory.displayName,
                             onValueChange = {},
                             readOnly = true,
                             label = { Text(stringResource(R.string.category_title)) },
@@ -201,7 +202,7 @@ fun DashboardScreen(
                                         .background(editCategory.colorLight)
                                 )
                             },
-                            modifier = Modifier.menuAnchor()
+                            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
                         )
                         ExposedDropdownMenu(
                             expanded = showEditCategoryDropdown,
@@ -213,12 +214,12 @@ fun DashboardScreen(
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Icon(
                                                 imageVector = category.icon,
-                                                contentDescription = FoodCategoryHelper.getDisplayName(context, category),
+                                                contentDescription = category.displayName,
                                                 tint = category.colorLight,
                                                 modifier = Modifier.size(20.dp)
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
-                                            Text(FoodCategoryHelper.getDisplayName(context, category))
+                                            Text(category.displayName)
                                         }
                                     },
                                     onClick = {
@@ -495,7 +496,7 @@ fun DashboardScreen(
                             .padding(vertical = 8.dp),
                         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                     ) {
-                        Divider(
+                        HorizontalDivider(
                             modifier = Modifier.weight(1f),
                             color = MaterialTheme.colorScheme.outlineVariant
                         )
@@ -505,7 +506,7 @@ fun DashboardScreen(
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(horizontal = 16.dp)
                         )
-                        Divider(
+                        HorizontalDivider(
                             modifier = Modifier.weight(1f),
                             color = MaterialTheme.colorScheme.outlineVariant
                         )
@@ -539,7 +540,7 @@ fun DashboardScreen(
                                 // Category icon
                                 Icon(
                                     imageVector = item.category.icon,
-                                    contentDescription = FoodCategoryHelper.getDisplayName(context, item.category),
+                                    contentDescription = item.category.displayName,
                                     tint = item.category.colorLight,
                                     modifier = Modifier.size(32.dp)
                                 )
@@ -552,7 +553,7 @@ fun DashboardScreen(
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
-                                        text = FoodCategoryHelper.getDisplayName(context, item.category),
+                                        text = item.category.displayName,
                                         style = MaterialTheme.typography.bodySmall,
                                         color = item.category.colorLight
                                     )

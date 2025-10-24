@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
  * Dependency injection container for the IBS Tracker app.
  *
  * Provides:
- * - AppDatabase with migrations (v1→v2, v2→v9) and onCreate callback
+ * - AppDatabase with migrations (v1→v2, v2→v9, v9→v10) and onCreate callback
  * - DataRepository with all DAOs
  * - SettingsRepository for app preferences
  */
@@ -32,7 +32,8 @@ class AppContainer(private val context: Context) {
     )
     .addMigrations(
         AppDatabase.MIGRATION_1_2,
-        AppDatabase.MIGRATION_2_9
+        AppDatabase.MIGRATION_2_9,
+        AppDatabase.MIGRATION_9_10
     )
     .addCallback(DatabaseCallback(applicationScope))
     .build()

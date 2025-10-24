@@ -23,7 +23,11 @@ object CommonFoods {
         val foodName: String,
         val category: FoodCategory
     )
-    
+
+    @Deprecated(
+        message = "Use DataRepository.searchCommonFoods() instead for database-backed search",
+        replaceWith = ReplaceWith("dataRepository.searchCommonFoods(query)")
+    )
     fun searchFoods(context: Context, query: String): List<FoodSearchResult> {
         if (query.isBlank()) return emptyList()
         

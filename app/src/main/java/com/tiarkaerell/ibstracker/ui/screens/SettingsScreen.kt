@@ -12,6 +12,8 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.*
+import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -132,7 +134,7 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel) {
                 readOnly = true,
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = languageExpanded) },
                 modifier = Modifier
-                    .menuAnchor()
+                    .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
                     .fillMaxWidth(),
                 colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
             )
@@ -181,7 +183,7 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel) {
                 readOnly = true,
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = unitsExpanded) },
                 modifier = Modifier
-                    .menuAnchor()
+                    .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
                     .fillMaxWidth(),
                 colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
             )
@@ -699,7 +701,7 @@ fun PersonalInfoSection(
                 }
             }
             
-            Divider()
+            HorizontalDivider()
             
             // Sex
             var sexExpanded by remember { mutableStateOf(false) }
@@ -721,7 +723,7 @@ fun PersonalInfoSection(
                 ) {
                     TextButton(
                         onClick = { sexExpanded = true },
-                        modifier = Modifier.menuAnchor()
+                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
                     ) {
                         Text(stringResource(userProfile.sex.displayNameRes))
                         Icon(Icons.Default.ArrowDropDown, contentDescription = null)
@@ -744,7 +746,7 @@ fun PersonalInfoSection(
                 }
             }
             
-            Divider()
+            HorizontalDivider()
             
             // Height
             Row(
@@ -772,7 +774,7 @@ fun PersonalInfoSection(
                 }
             }
             
-            Divider()
+            HorizontalDivider()
             
             // Weight
             Row(
@@ -1300,7 +1302,7 @@ fun PasswordSetupDialog(
                     visualTransformation = if (passwordVisible) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation(),
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         keyboardType = androidx.compose.ui.text.input.KeyboardType.Password,
-                        autoCorrect = false
+                        autoCorrectEnabled = false
                     ),
                     trailingIcon = {
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -1326,7 +1328,7 @@ fun PasswordSetupDialog(
                     visualTransformation = if (confirmPasswordVisible) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation(),
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         keyboardType = androidx.compose.ui.text.input.KeyboardType.Password,
-                        autoCorrect = false
+                        autoCorrectEnabled = false
                     ),
                     trailingIcon = {
                         IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
@@ -1416,7 +1418,7 @@ fun PasswordVerifyDialog(
                     visualTransformation = if (passwordVisible) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation(),
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         keyboardType = androidx.compose.ui.text.input.KeyboardType.Password,
-                        autoCorrect = false
+                        autoCorrectEnabled = false
                     ),
                     trailingIcon = {
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -1499,7 +1501,7 @@ fun RestorePasswordDialog(
                     visualTransformation = if (passwordVisible) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation(),
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         keyboardType = androidx.compose.ui.text.input.KeyboardType.Password,
-                        autoCorrect = false
+                        autoCorrectEnabled = false
                     ),
                     trailingIcon = {
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {

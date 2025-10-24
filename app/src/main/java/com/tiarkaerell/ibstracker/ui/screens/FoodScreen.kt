@@ -33,8 +33,9 @@ import com.tiarkaerell.ibstracker.R
 import com.tiarkaerell.ibstracker.data.model.CommonFood
 import com.tiarkaerell.ibstracker.data.model.CommonFoods
 import com.tiarkaerell.ibstracker.data.model.FoodCategory
-import com.tiarkaerell.ibstracker.data.model.FoodCategoryHelper
 import com.tiarkaerell.ibstracker.data.model.FoodItem
+import com.tiarkaerell.ibstracker.data.model.FoodUsageStats
+import com.tiarkaerell.ibstracker.ui.components.QuickAddSection
 import com.tiarkaerell.ibstracker.ui.viewmodel.FoodViewModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -52,14 +53,26 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
     var showEditDialog by remember { mutableStateOf(false) }
     var filterCategory by remember { mutableStateOf<FoodCategory?>(null) }
     var searchQuery by remember { mutableStateOf("") }
-    var searchResults by remember { mutableStateOf<List<CommonFoods.FoodSearchResult>>(emptyList()) }
+    var searchResults by remember { mutableStateOf<List<CommonFood>>(emptyList()) }
     var showQuickAddDialog by remember { mutableStateOf(false) }
     var quickAddItem by remember { mutableStateOf<Pair<String, FoodCategory>?>(null) }
     var quickAddDateTime by remember { mutableStateOf(Calendar.getInstance()) }
 
     val foodItems by foodViewModel.foodItems.collectAsState()
+    val topUsedFoods by foodViewModel.getTopUsedFoods().collectAsState(initial = emptyList())
     val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault()) }
     val context = LocalContext.current
+
+    // Reactive search using database DAO
+    LaunchedEffect(searchQuery) {
+        if (searchQuery.isNotEmpty()) {
+            foodViewModel.searchCommonFoods(searchQuery).collect { results ->
+                searchResults = results
+            }
+        } else {
+            searchResults = emptyList()
+        }
+    }
 
     // Quick Add confirmation dialog
     if (showQuickAddDialog && quickAddItem != null) {
@@ -240,7 +253,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Text(
-                                            FoodCategoryHelper.getDisplayName(context, category),
+                                            category.displayName,
                                             style = MaterialTheme.typography.labelSmall
                                         )
                                     }
@@ -329,6 +342,19 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Quick Add Section (Top 6 most-used foods)
+        item {
+            QuickAddSection(
+                topUsedFoods = topUsedFoods,
+                onFoodClick = { foodStats ->
+                    // When clicking a food from quick add, show confirmation dialog
+                    quickAddItem = Pair(foodStats.foodName, foodStats.category)
+                    quickAddDateTime = Calendar.getInstance()
+                    showQuickAddDialog = true
+                }
+            )
+        }
+
         // Entry Section
         item {
             Card(
@@ -360,7 +386,6 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                             value = searchQuery,
                             onValueChange = { query ->
                                 searchQuery = query
-                                searchResults = CommonFoods.searchFoods(context, query)
                             },
                             label = { Text(stringResource(R.string.search_placeholder)) },
                             leadingIcon = {
@@ -396,7 +421,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clickable {
-                                                quickAddItem = Pair(result.foodName, result.category)
+                                                quickAddItem = Pair(result.name, result.category)
                                                 quickAddDateTime = selectedDateTime
                                                 showQuickAddDialog = true
                                                 searchQuery = ""
@@ -423,14 +448,14 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                                 )
                                                 Spacer(modifier = Modifier.width(6.dp))
                                                 Text(
-                                                    text = FoodCategoryHelper.getDisplayName(context, result.category),
+                                                    text = result.category.displayName,
                                                     style = MaterialTheme.typography.labelSmall,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
                                             }
                                             Spacer(modifier = Modifier.height(4.dp))
                                             Text(
-                                                text = result.foodName,
+                                                text = result.name,
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 textAlign = TextAlign.Center,
                                                 fontWeight = FontWeight.Medium
@@ -498,13 +523,13 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                     ) {
                                         Icon(
                                             imageVector = category.icon,
-                                            contentDescription = FoodCategoryHelper.getDisplayName(context, category),
+                                            contentDescription = category.displayName,
                                             tint = category.colorLight,
                                             modifier = Modifier.size(32.dp)
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
-                                            text = FoodCategoryHelper.getDisplayName(context, category),
+                                            text = category.displayName,
                                             style = MaterialTheme.typography.labelSmall,
                                             textAlign = TextAlign.Center,
                                             maxLines = 2
@@ -529,7 +554,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(16.dp))
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Text(FoodCategoryHelper.getDisplayName(context, category))
+                                        Text(category.displayName)
                                     }
                                 },
                                 leadingIcon = {
@@ -673,7 +698,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                         .background(category.colorLight)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text(FoodCategoryHelper.getDisplayName(context, category))
+                                Text(category.displayName)
                             }
                         }
                     )
@@ -721,7 +746,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                 )
                             }
                             Text(
-                                text = FoodCategoryHelper.getDisplayName(context, item.category),
+                                text = item.category.displayName,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

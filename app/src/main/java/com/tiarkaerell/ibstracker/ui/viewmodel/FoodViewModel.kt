@@ -26,6 +26,12 @@ class FoodViewModel(private val dataRepository: DataRepository) : ViewModel() {
         return dataRepository.getCommonFoodsByCategory(category)
     }
 
+    fun searchCommonFoods(query: String): Flow<List<CommonFood>> {
+        return dataRepository.searchCommonFoods(query)
+    }
+
+    fun getTopUsedFoods(limit: Int = 4) = dataRepository.getTopUsedFoods(limit)
+
     fun saveFoodItem(
         name: String,
         category: FoodCategory = FoodCategory.OTHER,

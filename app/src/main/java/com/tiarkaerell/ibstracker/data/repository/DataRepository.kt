@@ -144,7 +144,7 @@ class DataRepository(
 
     fun getAllStats(): Flow<List<FoodUsageStats>> = foodUsageStatsDao.getAllStats()
 
-    fun getTopUsedFoods(limit: Int = 6): Flow<List<FoodUsageStats>> =
+    fun getTopUsedFoods(limit: Int = 4): Flow<List<FoodUsageStats>> =
         foodUsageStatsDao.getTopUsedFoods(limit)
 
     fun getStatsByFoodAndCategory(foodName: String, category: FoodCategory): Flow<FoodUsageStats?> =
