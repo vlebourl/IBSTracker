@@ -1,7 +1,7 @@
 package com.tiarkaerell.ibstracker.data.sync
 
 import android.content.Context
-import com.google.api.client.extensions.android.http.AndroidHttp
+import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.http.HttpRequestInitializer
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.drive.Drive
@@ -294,7 +294,7 @@ class GoogleDriveBackup(
             val requestInitializer: HttpRequestInitializer = HttpCredentialsAdapter(credentials)
 
             Drive.Builder(
-                AndroidHttp.newCompatibleTransport(),
+                NetHttpTransport(),
                 GsonFactory(),
                 requestInitializer
             )
