@@ -40,10 +40,14 @@
   - Sort food categories by usage count (most used first)
   - Use existing FoodUsageStats infrastructure
   - Backend sorting only (no visible counter)
-* **Search functionality on symptom page** - Consistency win (~2-3 hours)
-  - Copy existing search pattern from food page
-  - Filter symptoms by name as user types
-  - Match food page UX
+* **Symptoms page UI revamp** - Modernize and align with Food page (~3-4 hours)
+  - Apply same Material Design 3 styling as Food page
+  - Add search functionality (filter symptoms by name)
+  - Modernize list layout with cards
+  - Add visual intensity indicators (colored bars/icons)
+  - Improve edit/delete workflows
+  - Match Food page architecture and UX patterns
+  - Better date/time display formatting
 
 ### ⭐ New Features
 **Priority**: Major functionality additions
@@ -92,11 +96,6 @@
 
 ### 🔧 Technical Improvements
 **Priority**: Code quality and consistency
-* **Refactor symptom page** - Modernize to match food page architecture
-  - Apply same UI patterns and components
-  - Add search functionality
-  - Implement Material Design 3 styling
-  - Improve edit/delete workflows
 * **Swipe gestures for edit/delete** - Implement intuitive gestures across all lists
   - Swipe left reveals edit action
   - Swipe right reveals delete with confirmation
