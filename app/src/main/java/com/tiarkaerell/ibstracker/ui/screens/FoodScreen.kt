@@ -33,7 +33,6 @@ import com.tiarkaerell.ibstracker.R
 import com.tiarkaerell.ibstracker.data.model.CommonFood
 import com.tiarkaerell.ibstracker.data.model.CommonFoods
 import com.tiarkaerell.ibstracker.data.model.FoodCategory
-import com.tiarkaerell.ibstracker.data.model.FoodCategoryHelper
 import com.tiarkaerell.ibstracker.data.model.FoodItem
 import com.tiarkaerell.ibstracker.ui.viewmodel.FoodViewModel
 import java.text.SimpleDateFormat
@@ -240,7 +239,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Text(
-                                            FoodCategoryHelper.getDisplayName(context, category),
+                                            category.displayName,
                                             style = MaterialTheme.typography.labelSmall
                                         )
                                     }
@@ -423,7 +422,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                                 )
                                                 Spacer(modifier = Modifier.width(6.dp))
                                                 Text(
-                                                    text = FoodCategoryHelper.getDisplayName(context, result.category),
+                                                    text = result.category.displayName,
                                                     style = MaterialTheme.typography.labelSmall,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
@@ -498,13 +497,13 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                     ) {
                                         Icon(
                                             imageVector = category.icon,
-                                            contentDescription = FoodCategoryHelper.getDisplayName(context, category),
+                                            contentDescription = category.displayName,
                                             tint = category.colorLight,
                                             modifier = Modifier.size(32.dp)
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
-                                            text = FoodCategoryHelper.getDisplayName(context, category),
+                                            text = category.displayName,
                                             style = MaterialTheme.typography.labelSmall,
                                             textAlign = TextAlign.Center,
                                             maxLines = 2
@@ -529,7 +528,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(16.dp))
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Text(FoodCategoryHelper.getDisplayName(context, category))
+                                        Text(category.displayName)
                                     }
                                 },
                                 leadingIcon = {
@@ -673,7 +672,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                         .background(category.colorLight)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text(FoodCategoryHelper.getDisplayName(context, category))
+                                Text(category.displayName)
                             }
                         }
                     )
@@ -721,7 +720,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                 )
                             }
                             Text(
-                                text = FoodCategoryHelper.getDisplayName(context, item.category),
+                                text = item.category.displayName,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

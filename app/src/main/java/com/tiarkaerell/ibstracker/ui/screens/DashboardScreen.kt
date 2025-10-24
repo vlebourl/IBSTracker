@@ -25,7 +25,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.tiarkaerell.ibstracker.R
-import com.tiarkaerell.ibstracker.data.model.FoodCategoryHelper
 import com.tiarkaerell.ibstracker.data.model.FoodItem
 import com.tiarkaerell.ibstracker.data.model.Symptom
 import com.tiarkaerell.ibstracker.ui.viewmodel.FoodViewModel
@@ -186,7 +185,7 @@ fun DashboardScreen(
                         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
                     ) {
                         OutlinedTextField(
-                            value = FoodCategoryHelper.getDisplayName(context, editCategory),
+                            value = editCategory.displayName,
                             onValueChange = {},
                             readOnly = true,
                             label = { Text(stringResource(R.string.category_title)) },
@@ -213,12 +212,12 @@ fun DashboardScreen(
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Icon(
                                                 imageVector = category.icon,
-                                                contentDescription = FoodCategoryHelper.getDisplayName(context, category),
+                                                contentDescription = category.displayName,
                                                 tint = category.colorLight,
                                                 modifier = Modifier.size(20.dp)
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
-                                            Text(FoodCategoryHelper.getDisplayName(context, category))
+                                            Text(category.displayName)
                                         }
                                     },
                                     onClick = {
@@ -539,7 +538,7 @@ fun DashboardScreen(
                                 // Category icon
                                 Icon(
                                     imageVector = item.category.icon,
-                                    contentDescription = FoodCategoryHelper.getDisplayName(context, item.category),
+                                    contentDescription = item.category.displayName,
                                     tint = item.category.colorLight,
                                     modifier = Modifier.size(32.dp)
                                 )
@@ -552,7 +551,7 @@ fun DashboardScreen(
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
-                                        text = FoodCategoryHelper.getDisplayName(context, item.category),
+                                        text = item.category.displayName,
                                         style = MaterialTheme.typography.bodySmall,
                                         color = item.category.colorLight
                                     )

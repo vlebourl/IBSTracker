@@ -21,7 +21,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import com.tiarkaerell.ibstracker.R
-import com.tiarkaerell.ibstracker.data.model.FoodCategoryHelper
 import com.tiarkaerell.ibstracker.data.model.InsightSummary
 import com.tiarkaerell.ibstracker.data.model.TriggerAnalysis
 import com.tiarkaerell.ibstracker.data.model.CategoryInsight
@@ -265,7 +264,7 @@ private fun TriggerItem(trigger: TriggerAnalysis) {
             Spacer(modifier = Modifier.width(8.dp))
             Column {
                 Text(
-                    text = FoodCategoryHelper.getDisplayName(context, trigger.category),
+                    text = trigger.category.displayName,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium
                 )
@@ -336,7 +335,7 @@ private fun SafeCategoryItem(category: CategoryInsight) {
             Spacer(modifier = Modifier.width(8.dp))
             Column {
                 Text(
-                    text = FoodCategoryHelper.getDisplayName(context, category.category),
+                    text = category.category.displayName,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium
                 )
