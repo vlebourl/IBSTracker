@@ -1,6 +1,7 @@
 package com.tiarkaerell.ibstracker.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -8,6 +9,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -21,26 +24,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import com.tiarkaerell.ibstracker.R
-import com.tiarkaerell.ibstracker.data.model.InsightSummary
-import com.tiarkaerell.ibstracker.data.model.TriggerAnalysis
-import com.tiarkaerell.ibstracker.data.model.CategoryInsight
-import com.tiarkaerell.ibstracker.data.model.UserProfile
+import com.tiarkaerell.ibstracker.data.model.*
 import com.tiarkaerell.ibstracker.ui.viewmodel.AnalyticsViewModel
 import com.tiarkaerell.ibstracker.IBSTrackerApplication
-import java.text.NumberFormat
-import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnalyticsScreen(analyticsViewModel: AnalyticsViewModel) {
     val insights by analyticsViewModel.insights.collectAsState()
     val isLoading by analyticsViewModel.isLoading.collectAsState()
-    
+
     // Access user profile
     val context = LocalContext.current
     val application = context.applicationContext as IBSTrackerApplication
     val userProfile by application.container.settingsRepository.userProfileFlow.collectAsState(initial = UserProfile())
-    
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -57,7 +55,7 @@ fun AnalyticsScreen(analyticsViewModel: AnalyticsViewModel) {
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold
             )
-            
+
             IconButton(
                 onClick = { analyticsViewModel.refreshInsights() },
                 enabled = !isLoading
@@ -68,9 +66,9 @@ fun AnalyticsScreen(analyticsViewModel: AnalyticsViewModel) {
                 )
             }
         }
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         if (isLoading) {
             Box(
                 modifier = Modifier.fillMaxWidth(),
@@ -97,33 +95,40 @@ private fun InsightsContent(insights: InsightSummary, userProfile: UserProfile) 
                 UserProfileSummaryCard(userProfile)
             }
         }
-        
+
         // Overall stats
         item {
             OverallStatsCard(insights)
         }
-        
-        // Potential triggers
-        if (insights.topTriggers.isNotEmpty()) {
+
+        // Meal triggers (PRIMARY analysis - shown first)
+        if (insights.topMealTriggers.isNotEmpty()) {
             item {
-                TriggerAnalysisCard(triggers = insights.topTriggers)
+                MealTriggerAnalysisCard(triggers = insights.topMealTriggers)
             }
         }
-        
-        // Safe categories
-        if (insights.safestCategories.isNotEmpty()) {
+
+        // Food item triggers (SECONDARY - with isolation data)
+        if (insights.topFoodTriggers.isNotEmpty()) {
             item {
-                SafeCategoriesCard(categories = insights.safestCategories)
+                FoodTriggerAnalysisCard(triggers = insights.topFoodTriggers)
             }
         }
-        
+
+        // IBS attribute triggers
+        if (insights.topAttributeTriggers.isNotEmpty()) {
+            item {
+                AttributeTriggerAnalysisCard(triggers = insights.topAttributeTriggers)
+            }
+        }
+
         // Weekly patterns
         if (insights.weeklyPatterns.any { it.symptomCount > 0 }) {
             item {
                 WeeklyPatternsCard(patterns = insights.weeklyPatterns)
             }
         }
-        
+
         // Trend analysis
         item {
             TrendAnalysisCard(
@@ -151,9 +156,9 @@ private fun OverallStatsCard(insights: InsightSummary) {
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
@@ -197,8 +202,148 @@ private fun StatItem(value: String, label: String, color: Color) {
     }
 }
 
+/**
+ * Card showing meal combinations that trigger symptoms (PRIMARY analysis)
+ */
 @Composable
-private fun TriggerAnalysisCard(triggers: List<TriggerAnalysis>) {
+private fun MealTriggerAnalysisCard(triggers: List<MealTrigger>) {
+    var expanded by remember { mutableStateOf(true) }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            // Clickable header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = "Meal Triggers",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Foods eaten together (High Confidence)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Icon(
+                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // Collapsible content
+            if (expanded) {
+                Spacer(modifier = Modifier.height(12.dp))
+
+                triggers.forEach { trigger ->
+                    MealTriggerItem(trigger = trigger)
+                    if (trigger != triggers.last()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                }
+
+                if (triggers.isEmpty()) {
+                    Text(
+                        text = "No meal triggers found yet. Keep tracking!",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Individual meal trigger item display
+ */
+@Composable
+private fun MealTriggerItem(trigger: MealTrigger) {
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                // Confidence emoji
+                Text(
+                    text = trigger.confidence.emoji,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Column {
+                    Text(
+                        text = trigger.meal.foodNames,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "${trigger.triggeredOccurrences}/${trigger.totalOccurrences} times • ${trigger.confidence.displayName}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Text(
+                text = "${trigger.triggerPercentage.toInt()}%",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+
+        // Symptom breakdown
+        if (trigger.symptomBreakdown.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Symptoms: ${trigger.symptomBreakdown.entries.joinToString(", ") { "${it.key} (${it.value}x)" }}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 32.dp)
+            )
+        }
+    }
+}
+
+/**
+ * Card showing specific food items that trigger symptoms
+ */
+@Composable
+private fun FoodTriggerAnalysisCard(triggers: List<FoodItemTrigger>) {
+    var expanded by remember { mutableStateOf(true) }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -208,156 +353,311 @@ private fun TriggerAnalysisCard(triggers: List<TriggerAnalysis>) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
+            // Clickable header
             Row(
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = "Individual Food Analysis",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Less reliable when foods eaten together",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
                 Icon(
-                    imageVector = Icons.Default.Warning,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = stringResource(R.string.potential_triggers_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            triggers.forEach { trigger ->
-                TriggerItem(trigger = trigger)
-                if (trigger != triggers.last()) {
-                    Spacer(modifier = Modifier.height(8.dp))
+
+            // Collapsible content
+            if (expanded) {
+                Spacer(modifier = Modifier.height(12.dp))
+
+                triggers.forEach { trigger ->
+                    FoodTriggerItem(trigger = trigger)
+                    if (trigger != triggers.last()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                }
+
+                if (triggers.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.no_triggers_found),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
-            
-            if (triggers.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.no_triggers_found),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
         }
     }
 }
 
+/**
+ * Individual food trigger item display (enhanced with isolation tracking)
+ */
 @Composable
-private fun TriggerItem(trigger: TriggerAnalysis) {
-    val context = LocalContext.current
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+private fun FoodTriggerItem(trigger: FoodItemTrigger) {
+    Column {
+        // Main row: Food name + percentage
         Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(12.dp)
-                    .clip(RoundedCornerShape(3.dp))
-                    .background(trigger.category.colorLight)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                // Confidence emoji
+                Text(
+                    text = trigger.confidence.emoji,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                // Category color indicator
+                Icon(
+                    imageVector = trigger.category.icon,
+                    contentDescription = trigger.category.displayName,
+                    tint = trigger.category.colorLight,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Column {
+                    Text(
+                        text = trigger.foodName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "${trigger.triggeredOccurrences}/${trigger.totalOccurrences} times • ${trigger.confidence.displayName}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Text(
+                text = "${trigger.triggerPercentage.toInt()}%",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.error
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Column {
-                Text(
-                    text = trigger.category.displayName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
-                )
-                Text(
-                    text = stringResource(R.string.trigger_times_format, trigger.symptomsTriggered, trigger.occurrences),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+        }
+
+        // Solo vs Meal breakdown
+        if (trigger.soloOccurrences > 0 || trigger.mealOccurrences > 0) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.padding(start = 52.dp)
+            ) {
+                if (trigger.soloOccurrences > 0) {
+                    Text(
+                        text = "Solo: ${trigger.soloTriggered}/${trigger.soloOccurrences}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (trigger.soloOccurrences >= 3) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        fontWeight = if (trigger.soloOccurrences >= 3) FontWeight.Bold else FontWeight.Normal
+                    )
+                }
+                if (trigger.soloOccurrences > 0 && trigger.mealOccurrences > 0) {
+                    Text(
+                        text = " • ",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (trigger.mealOccurrences > 0) {
+                    Text(
+                        text = "In meals: ${trigger.mealTriggered}/${trigger.mealOccurrences}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
-        
-        Text(
-            text = stringResource(R.string.trigger_percentage_format, (trigger.triggerScore * 100).toInt()),
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.error
-        )
+
+        // Co-occurrence warning
+        if (trigger.coOccurrences.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "⚠️ Often with: ${trigger.coOccurrences.entries.take(3).joinToString(", ") { "${it.key} (${it.value}x)" }}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.tertiary,
+                modifier = Modifier.padding(start = 52.dp)
+            )
+        }
+
+        // Symptom breakdown
+        if (trigger.symptomBreakdown.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Symptoms: ${trigger.symptomBreakdown.entries.joinToString(", ") { "${it.key} (${it.value}x)" }}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 52.dp)
+            )
+        }
     }
 }
 
+/**
+ * Card showing IBS attributes that trigger symptoms
+ */
 @Composable
-private fun SafeCategoriesCard(categories: List<CategoryInsight>) {
+private fun AttributeTriggerAnalysisCard(triggers: List<IBSAttributeTrigger>) {
+    var expanded by remember { mutableStateOf(true) }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF4CAF50).copy(alpha = 0.15f)
+            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
         )
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            Text(
-                text = stringResource(R.string.safest_categories_title),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF2E7D32)
-            )
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            categories.take(3).forEach { category ->
-                SafeCategoryItem(category = category)
-                if (category != categories.take(3).last()) {
-                    Spacer(modifier = Modifier.height(8.dp))
+            // Clickable header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "IBS Attribute Triggers",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Icon(
+                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // Collapsible content
+            if (expanded) {
+                Spacer(modifier = Modifier.height(12.dp))
+
+                triggers.forEach { trigger ->
+                    AttributeTriggerItem(trigger = trigger)
+                    if (trigger != triggers.last()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                }
+
+                if (triggers.isEmpty()) {
+                    Text(
+                        text = "No IBS attribute triggers found",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
     }
 }
 
+/**
+ * Individual IBS attribute trigger item display
+ */
 @Composable
-private fun SafeCategoryItem(category: CategoryInsight) {
-    val context = LocalContext.current
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+private fun AttributeTriggerItem(trigger: IBSAttributeTrigger) {
+    Column {
         Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(12.dp)
-                    .clip(RoundedCornerShape(3.dp))
-                    .background(category.category.colorLight)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Column {
-                Text(
-                    text = category.category.displayName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                // Attribute color indicator (use semantic colors based on severity)
+                Box(
+                    modifier = Modifier
+                        .size(12.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(trigger.attribute.getSemanticColor())
                 )
-                Text(
-                    text = context.resources.getQuantityString(R.plurals.entries_logged, category.totalEntries, category.totalEntries),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Column {
+                    Text(
+                        text = trigger.attribute.displayName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "${trigger.triggeredOccurrences}/${trigger.totalOccurrences} times",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
+
+            Text(
+                text = "${trigger.triggerPercentage.toInt()}%",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.error
+            )
         }
-        
-        Text(
-            text = stringResource(R.string.safety_percentage_format, (category.safetyScore * 100).toInt()),
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF2E7D32)
-        )
+
+        // Symptom breakdown
+        if (trigger.symptomBreakdown.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Symptoms: ${trigger.symptomBreakdown.entries.joinToString(", ") { "${it.key} (${it.value}x)" }}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 20.dp)
+            )
+        }
     }
 }
 
 @Composable
-private fun WeeklyPatternsCard(patterns: List<com.tiarkaerell.ibstracker.data.model.WeeklyPattern>) {
+private fun WeeklyPatternsCard(patterns: List<WeeklyPattern>) {
     Card(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -369,9 +669,9 @@ private fun WeeklyPatternsCard(patterns: List<com.tiarkaerell.ibstracker.data.mo
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             val dayNames = listOf(
                 stringResource(R.string.day_sun),
                 stringResource(R.string.day_mon),
@@ -382,12 +682,12 @@ private fun WeeklyPatternsCard(patterns: List<com.tiarkaerell.ibstracker.data.mo
                 stringResource(R.string.day_sat)
             )
             val maxSymptoms = patterns.maxOfOrNull { it.symptomCount } ?: 1
-            
+
             patterns.forEachIndexed { index, pattern ->
                 val barWidth = if (maxSymptoms > 0) {
                     (pattern.symptomCount.toFloat() / maxSymptoms.toFloat()).coerceIn(0f, 1f)
                 } else 0f
-                
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -397,7 +697,7 @@ private fun WeeklyPatternsCard(patterns: List<com.tiarkaerell.ibstracker.data.mo
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.width(40.dp)
                     )
-                    
+
                     Box(
                         modifier = Modifier
                             .height(20.dp)
@@ -417,7 +717,7 @@ private fun WeeklyPatternsCard(patterns: List<com.tiarkaerell.ibstracker.data.mo
                                 )
                         )
                     }
-                    
+
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = pattern.symptomCount.toString(),
@@ -425,7 +725,7 @@ private fun WeeklyPatternsCard(patterns: List<com.tiarkaerell.ibstracker.data.mo
                         modifier = Modifier.width(30.dp)
                     )
                 }
-                
+
                 if (pattern != patterns.last()) {
                     Spacer(modifier = Modifier.height(4.dp))
                 }
@@ -447,9 +747,9 @@ private fun TrendAnalysisCard(improvementTrend: Float, daysSinceLastSymptom: Int
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             // Days since last symptom
             Row(
                 verticalAlignment = Alignment.CenterVertically
@@ -465,9 +765,9 @@ private fun TrendAnalysisCard(improvementTrend: Float, daysSinceLastSymptom: Int
                     color = if (daysSinceLastSymptom > 7) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onSurface
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // Improvement trend
             Row(
                 verticalAlignment = Alignment.CenterVertically
@@ -477,19 +777,19 @@ private fun TrendAnalysisCard(improvementTrend: Float, daysSinceLastSymptom: Int
                     improvementTrend < -0.1f -> Icons.AutoMirrored.Filled.TrendingDown
                     else -> null
                 }
-                
+
                 val trendText = when {
                     improvementTrend > 0.1f -> stringResource(R.string.symptoms_improving)
                     improvementTrend < -0.1f -> stringResource(R.string.symptoms_worsening)
                     else -> stringResource(R.string.symptoms_stable)
                 }
-                
+
                 val trendColor = when {
                     improvementTrend > 0.1f -> Color(0xFF2E7D32)
                     improvementTrend < -0.1f -> MaterialTheme.colorScheme.error
                     else -> MaterialTheme.colorScheme.onSurfaceVariant
                 }
-                
+
                 if (trendIcon != null) {
                     Icon(
                         imageVector = trendIcon,
@@ -499,7 +799,7 @@ private fun TrendAnalysisCard(improvementTrend: Float, daysSinceLastSymptom: Int
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                 }
-                
+
                 Text(
                     text = trendText,
                     style = MaterialTheme.typography.bodyMedium,
@@ -546,9 +846,9 @@ private fun UserProfileSummaryCard(userProfile: UserProfile) {
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -558,24 +858,24 @@ private fun UserProfileSummaryCard(userProfile: UserProfile) {
                     userProfile.getAge()?.let { age ->
                         ProfileInfoItem("Age", "$age years")
                     }
-                    
+
                     ProfileInfoItem("Sex", LocalContext.current.getString(userProfile.sex.displayNameRes))
-                    
+
                     userProfile.getBMI()?.let { bmi ->
                         ProfileInfoItem("BMI", "%.1f".format(bmi))
                     }
                 }
-                
+
                 // Right column
                 Column(modifier = Modifier.weight(1f)) {
                     userProfile.heightCm?.let { height ->
                         ProfileInfoItem("Height", "${height}cm")
                     }
-                    
+
                     userProfile.weightKg?.let { weight ->
                         ProfileInfoItem("Weight", "%.1fkg".format(weight))
                     }
-                    
+
                     userProfile.getIBSDurationYears()?.let { duration ->
                         if (duration > 0) {
                             ProfileInfoItem("IBS Duration", "$duration years")
@@ -583,7 +883,7 @@ private fun UserProfileSummaryCard(userProfile: UserProfile) {
                     }
                 }
             }
-            
+
             // BMI Category
             userProfile.getBMI()?.let {
                 Spacer(modifier = Modifier.height(8.dp))
