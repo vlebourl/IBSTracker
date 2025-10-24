@@ -44,8 +44,8 @@
 - [X] T007 [P] [US1] Replace FoodCategoryHelper.getDisplayName with category.displayName in app/src/main/java/com/tiarkaerell/ibstracker/ui/screens/FoodScreen.kt (7 occurrences at lines 243, 426, 501, 507, 532, 676, 724)
 - [X] T008 [US1] Remove unused FoodCategoryHelper import from all affected files
 - [X] T009 [US1] Compile and verify no FoodCategory deprecation warnings: `./gradlew compileDebugKotlin --warning-mode all 2>&1 | grep -i "FoodCategoryHelper"` - **Result: BUILD SUCCESSFUL, 0 FoodCategory warnings**
-- [ ] T010 [US1] Manual testing: Launch app, navigate Dashboard/Food/Analytics screens, verify category names display correctly - **⚠️ REQUIRES USER ACTION**
-- [ ] T011 [US1] Commit changes: `git add -A && git commit -m "fix(ui): Replace deprecated FoodCategoryHelper.getDisplayName with direct property access (US1)"`
+- [X] T010 [US1] Manual testing: Launch app, navigate Dashboard/Food/Analytics screens, verify category names display correctly - **Result: ✅ All category displays working correctly on physical device**
+- [X] T011 [US1] Commit changes: `git add -A && git commit -m "fix(ui): Replace deprecated FoodCategoryHelper.getDisplayName with direct property access (US1)"` - **Result: Committed 109aa40**
 
 **Checkpoint**: 15 deprecation warnings eliminated; food category display verified across all screens
 
