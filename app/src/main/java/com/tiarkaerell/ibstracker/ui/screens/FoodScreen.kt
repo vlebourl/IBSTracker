@@ -594,7 +594,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                                 selectedCategory = null
                                             },
                                         colors = CardDefaults.cardColors(
-                                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                                            containerColor = category.colorLight.copy(alpha = 0.2f)
                                         )
                                     ) {
                                         Text(

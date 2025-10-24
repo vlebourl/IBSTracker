@@ -197,4 +197,12 @@ enum class IBSImpact(
             return fodmapCount == 1
         }
     }
+
+    /**
+     * Get semantic color for this IBS impact (for display in analytics)
+     * Uses the light theme color for consistency
+     */
+    fun getSemanticColor(): Color {
+        return this.colorLight
+    }
 }

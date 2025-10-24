@@ -4,25 +4,28 @@ import com.tiarkaerell.ibstracker.data.model.*
 import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
-import kotlin.math.min
 
 class AnalyticsEngine {
-    
+
     companion object {
         private const val SYMPTOM_WINDOW_HOURS = 6 // Look for symptoms within 6 hours of food
         private const val MIN_OCCURRENCES_FOR_ANALYSIS = 3 // Need at least 3 entries to analyze
         private const val RECENT_DAYS = 7
     }
-    
+
     fun generateInsights(foodItems: List<FoodItem>, symptoms: List<Symptom>): InsightSummary {
-        val triggerAnalysis = analyzeTriggers(foodItems, symptoms)
-        val categoryInsights = analyzeCategoryInsights(foodItems, symptoms)
+        val foodItemTriggers = analyzeFoodItemTriggers(foodItems, symptoms)
+        val attributeTriggers = analyzeAttributeTriggers(foodItems, symptoms)
         val weeklyPatterns = analyzeWeeklyPatterns(symptoms)
         val trends = analyzeTrends(symptoms)
-        
+
         return InsightSummary(
-            topTriggers = triggerAnalysis.sortedByDescending { it.triggerScore }.take(3),
-            safestCategories = categoryInsights.sortedByDescending { it.safetyScore }.take(3),
+            topFoodTriggers = foodItemTriggers
+                .sortedByDescending { it.triggerPercentage }
+                .take(10), // Top 10 worst triggers
+            topAttributeTriggers = attributeTriggers
+                .sortedByDescending { it.triggerPercentage }
+                .take(10), // Top 10 attribute triggers
             weeklyPatterns = weeklyPatterns,
             totalFoodEntries = foodItems.size,
             totalSymptoms = symptoms.size,
@@ -31,87 +34,129 @@ class AnalyticsEngine {
             improvementTrend = trends
         )
     }
-    
-    private fun analyzeTriggers(foodItems: List<FoodItem>, symptoms: List<Symptom>): List<TriggerAnalysis> {
-        val categoryGroups = foodItems.groupBy { it.category }
-        val triggerAnalysis = mutableListOf<TriggerAnalysis>()
-        
-        categoryGroups.forEach { (category, foods) ->
+
+    /**
+     * Analyze which specific food items trigger symptoms
+     * Algorithm:
+     * 1. Group food entries by name
+     * 2. For each food entry, check if ANY symptom occurred within 6 hours
+     * 3. Count triggered vs total occurrences
+     * 4. Track which symptoms were triggered
+     */
+    private fun analyzeFoodItemTriggers(foodItems: List<FoodItem>, symptoms: List<Symptom>): List<FoodItemTrigger> {
+        val foodGroups = foodItems.groupBy { it.name }
+        val triggers = mutableListOf<FoodItemTrigger>()
+
+        foodGroups.forEach { (foodName, foods) ->
             if (foods.size >= MIN_OCCURRENCES_FOR_ANALYSIS) {
-                val symptomsTriggered = mutableListOf<Pair<Symptom, Long>>()
-                
+                val symptomCounts = mutableMapOf<String, Int>()
+                var triggeredCount = 0
+
+                // For each food entry, check if it triggered any symptom
                 foods.forEach { food ->
-                    val symptomsAfterFood = symptoms.filter { symptom ->
+                    val triggeredSymptoms = symptoms.filter { symptom ->
                         val timeDiff = symptom.date.time - food.timestamp.time
                         timeDiff > 0 && timeDiff <= TimeUnit.HOURS.toMillis(SYMPTOM_WINDOW_HOURS.toLong())
                     }
-                    
-                    symptomsAfterFood.forEach { symptom ->
-                        val timeToSymptom = symptom.date.time - food.timestamp.time
-                        symptomsTriggered.add(symptom to timeToSymptom)
+
+                    // If this food entry triggered at least one symptom, count it
+                    if (triggeredSymptoms.isNotEmpty()) {
+                        triggeredCount++
+
+                        // Track which symptoms were triggered
+                        triggeredSymptoms.forEach { symptom ->
+                            symptomCounts[symptom.name] = (symptomCounts[symptom.name] ?: 0) + 1
+                        }
                     }
                 }
-                
-                val triggerScore = if (foods.isNotEmpty()) {
-                    min(1.0f, symptomsTriggered.size.toFloat() / foods.size.toFloat())
+
+                val percentage = if (foods.isNotEmpty()) {
+                    (triggeredCount.toFloat() / foods.size.toFloat()) * 100f
                 } else 0f
-                
-                val avgTimeToSymptom = if (symptomsTriggered.isNotEmpty()) {
-                    symptomsTriggered.map { it.second }.average().toLong()
-                } else 0L
-                
-                triggerAnalysis.add(
-                    TriggerAnalysis(
-                        category = category,
-                        triggerScore = triggerScore,
-                        occurrences = foods.size,
-                        symptomsTriggered = symptomsTriggered.size,
-                        averageTimeToSymptom = avgTimeToSymptom
+
+                triggers.add(
+                    FoodItemTrigger(
+                        foodName = foodName,
+                        category = foods.first().category,
+                        totalOccurrences = foods.size,
+                        triggeredOccurrences = triggeredCount,
+                        triggerPercentage = percentage,
+                        symptomBreakdown = symptomCounts
                     )
                 )
             }
         }
-        
-        return triggerAnalysis
+
+        return triggers
     }
-    
-    private fun analyzeCategoryInsights(foodItems: List<FoodItem>, symptoms: List<Symptom>): List<CategoryInsight> {
-        val sevenDaysAgo = Calendar.getInstance().apply { 
-            add(Calendar.DAY_OF_YEAR, -RECENT_DAYS) 
-        }.time
-        
-        return FoodCategory.getAllCategories().map { category ->
-            val categoryFoods = foodItems.filter { it.category == category }
-            val recentFoods = categoryFoods.filter { it.timestamp.after(sevenDaysAgo) }
-            
-            // Calculate safety score (inverse of trigger likelihood)
-            val triggerEvents = categoryFoods.count { food ->
-                symptoms.any { symptom ->
-                    val timeDiff = symptom.date.time - food.timestamp.time
-                    timeDiff > 0 && timeDiff <= TimeUnit.HOURS.toMillis(SYMPTOM_WINDOW_HOURS.toLong())
-                }
+
+    /**
+     * Analyze which IBS attributes trigger symptoms
+     * Algorithm:
+     * 1. For each food entry, get all its IBS impacts
+     * 2. Group food entries by each attribute
+     * 3. For each attribute, count how many food entries triggered symptoms
+     */
+    private fun analyzeAttributeTriggers(foodItems: List<FoodItem>, symptoms: List<Symptom>): List<IBSAttributeTrigger> {
+        // Create a map of attribute -> list of food items with that attribute
+        val attributeFoodsMap = mutableMapOf<IBSImpact, MutableList<FoodItem>>()
+
+        foodItems.forEach { food ->
+            food.ibsImpacts.forEach { attribute ->
+                attributeFoodsMap.getOrPut(attribute) { mutableListOf() }.add(food)
             }
-            
-            val safetyScore = if (categoryFoods.isNotEmpty()) {
-                max(0f, 1f - (triggerEvents.toFloat() / categoryFoods.size.toFloat()))
-            } else 0.5f // Neutral for categories with no data
-            
-            CategoryInsight(
-                category = category,
-                totalEntries = categoryFoods.size,
-                recentEntries = recentFoods.size,
-                safetyScore = safetyScore
-            )
-        }.filter { it.totalEntries > 0 } // Only include categories with data
+        }
+
+        val triggers = mutableListOf<IBSAttributeTrigger>()
+
+        attributeFoodsMap.forEach { (attribute, foods) ->
+            if (foods.size >= MIN_OCCURRENCES_FOR_ANALYSIS) {
+                val symptomCounts = mutableMapOf<String, Int>()
+                var triggeredCount = 0
+
+                // For each food entry with this attribute, check if it triggered symptoms
+                foods.forEach { food ->
+                    val triggeredSymptoms = symptoms.filter { symptom ->
+                        val timeDiff = symptom.date.time - food.timestamp.time
+                        timeDiff > 0 && timeDiff <= TimeUnit.HOURS.toMillis(SYMPTOM_WINDOW_HOURS.toLong())
+                    }
+
+                    if (triggeredSymptoms.isNotEmpty()) {
+                        triggeredCount++
+
+                        // Track which symptoms were triggered
+                        triggeredSymptoms.forEach { symptom ->
+                            symptomCounts[symptom.name] = (symptomCounts[symptom.name] ?: 0) + 1
+                        }
+                    }
+                }
+
+                val percentage = if (foods.isNotEmpty()) {
+                    (triggeredCount.toFloat() / foods.size.toFloat()) * 100f
+                } else 0f
+
+                triggers.add(
+                    IBSAttributeTrigger(
+                        attribute = attribute,
+                        totalOccurrences = foods.size,
+                        triggeredOccurrences = triggeredCount,
+                        triggerPercentage = percentage,
+                        symptomBreakdown = symptomCounts
+                    )
+                )
+            }
+        }
+
+        return triggers
     }
-    
+
     private fun analyzeWeeklyPatterns(symptoms: List<Symptom>): List<WeeklyPattern> {
         val calendar = Calendar.getInstance()
         val dayGroups = symptoms.groupBy { symptom ->
             calendar.time = symptom.date
             calendar.get(Calendar.DAY_OF_WEEK)
         }
-        
+
         return (Calendar.SUNDAY..Calendar.SATURDAY).map { dayOfWeek ->
             val daySymptoms = dayGroups[dayOfWeek] ?: emptyList()
             WeeklyPattern(
@@ -121,26 +166,26 @@ class AnalyticsEngine {
             )
         }
     }
-    
+
     private fun analyzeTrends(symptoms: List<Symptom>): Float {
         if (symptoms.size < 4) return 0f // Need sufficient data
-        
+
         val sortedSymptoms = symptoms.sortedBy { it.date }
         val recentHalf = sortedSymptoms.takeLast(sortedSymptoms.size / 2)
         val earlierHalf = sortedSymptoms.take(sortedSymptoms.size / 2)
-        
+
         val recentAvgIntensity = recentHalf.map { it.intensity }.average()
         val earlierAvgIntensity = earlierHalf.map { it.intensity }.average()
-        
+
         // Negative trend = improvement (lower intensity), positive = worsening
         val intensityTrend = (recentAvgIntensity - earlierAvgIntensity) / 10.0 // Normalize to -1 to 1
-        
+
         return -intensityTrend.toFloat().coerceIn(-1f, 1f) // Invert so positive = improvement
     }
-    
+
     private fun calculateDaysSinceLastSymptom(symptoms: List<Symptom>): Int {
         if (symptoms.isEmpty()) return Int.MAX_VALUE
-        
+
         val lastSymptom = symptoms.maxByOrNull { it.date }
         return if (lastSymptom != null) {
             val daysDiff = (Date().time - lastSymptom.date.time) / TimeUnit.DAYS.toMillis(1)

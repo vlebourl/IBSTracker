@@ -2,30 +2,44 @@ package com.tiarkaerell.ibstracker.data.model
 
 import java.util.Date
 
-data class TriggerAnalysis(
+/**
+ * Analysis of a specific food item as a potential trigger
+ */
+data class FoodItemTrigger(
+    val foodName: String,
     val category: FoodCategory,
-    val triggerScore: Float, // 0.0 to 1.0, higher = more likely trigger
-    val occurrences: Int,
-    val symptomsTriggered: Int,
-    val averageTimeToSymptom: Long // milliseconds
+    val totalOccurrences: Int, // How many times this food was eaten
+    val triggeredOccurrences: Int, // How many times it triggered symptoms
+    val triggerPercentage: Float, // (triggeredOccurrences / totalOccurrences) * 100
+    val symptomBreakdown: Map<String, Int> // Symptom name -> count
 )
 
+/**
+ * Analysis of an IBS attribute as a potential trigger
+ */
+data class IBSAttributeTrigger(
+    val attribute: IBSImpact,
+    val totalOccurrences: Int, // How many times foods with this attribute were eaten
+    val triggeredOccurrences: Int, // How many times they triggered symptoms
+    val triggerPercentage: Float, // (triggeredOccurrences / totalOccurrences) * 100
+    val symptomBreakdown: Map<String, Int> // Symptom name -> count
+)
+
+/**
+ * Weekly symptom patterns (kept for trend analysis)
+ */
 data class WeeklyPattern(
     val dayOfWeek: Int, // 1 = Monday, 7 = Sunday
     val symptomCount: Int,
     val averageIntensity: Float
 )
 
-data class CategoryInsight(
-    val category: FoodCategory,
-    val totalEntries: Int,
-    val recentEntries: Int, // last 7 days
-    val safetyScore: Float // 0.0 = high trigger, 1.0 = safe
-)
-
+/**
+ * Complete analytics summary
+ */
 data class InsightSummary(
-    val topTriggers: List<TriggerAnalysis>,
-    val safestCategories: List<CategoryInsight>,
+    val topFoodTriggers: List<FoodItemTrigger>, // Top food items that trigger symptoms
+    val topAttributeTriggers: List<IBSAttributeTrigger>, // Top IBS attributes that trigger symptoms
     val weeklyPatterns: List<WeeklyPattern>,
     val totalFoodEntries: Int,
     val totalSymptoms: Int,
