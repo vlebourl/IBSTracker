@@ -51,7 +51,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
     var showEditDialog by remember { mutableStateOf(false) }
     var filterCategory by remember { mutableStateOf<FoodCategory?>(null) }
     var searchQuery by remember { mutableStateOf("") }
-    var searchResults by remember { mutableStateOf<List<CommonFoods.FoodSearchResult>>(emptyList()) }
+    var searchResults by remember { mutableStateOf<List<CommonFood>>(emptyList()) }
     var showQuickAddDialog by remember { mutableStateOf(false) }
     var quickAddItem by remember { mutableStateOf<Pair<String, FoodCategory>?>(null) }
     var quickAddDateTime by remember { mutableStateOf(Calendar.getInstance()) }
@@ -59,6 +59,17 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
     val foodItems by foodViewModel.foodItems.collectAsState()
     val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault()) }
     val context = LocalContext.current
+
+    // Reactive search using database DAO
+    LaunchedEffect(searchQuery) {
+        if (searchQuery.isNotEmpty()) {
+            foodViewModel.searchCommonFoods(searchQuery).collect { results ->
+                searchResults = results
+            }
+        } else {
+            searchResults = emptyList()
+        }
+    }
 
     // Quick Add confirmation dialog
     if (showQuickAddDialog && quickAddItem != null) {
@@ -359,7 +370,6 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                             value = searchQuery,
                             onValueChange = { query ->
                                 searchQuery = query
-                                searchResults = CommonFoods.searchFoods(context, query)
                             },
                             label = { Text(stringResource(R.string.search_placeholder)) },
                             leadingIcon = {
@@ -395,7 +405,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clickable {
-                                                quickAddItem = Pair(result.foodName, result.category)
+                                                quickAddItem = Pair(result.name, result.category)
                                                 quickAddDateTime = selectedDateTime
                                                 showQuickAddDialog = true
                                                 searchQuery = ""
@@ -429,7 +439,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                                             }
                                             Spacer(modifier = Modifier.height(4.dp))
                                             Text(
-                                                text = result.foodName,
+                                                text = result.name,
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 textAlign = TextAlign.Center,
                                                 fontWeight = FontWeight.Medium
