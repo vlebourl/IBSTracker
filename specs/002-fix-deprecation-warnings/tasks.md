@@ -59,16 +59,16 @@
 
 ### Part A: Divider → HorizontalDivider Migration
 
-- [ ] T012 [P] [US2] Replace Divider with HorizontalDivider in app/src/main/java/com/tiarkaerell/ibstracker/ui/screens/DashboardScreen.kt (2 occurrences at lines 498, 508) and update import
-- [ ] T013 [P] [US2] Replace Divider with HorizontalDivider in app/src/main/java/com/tiarkaerell/ibstracker/ui/screens/SettingsScreen.kt (3 occurrences at lines 702, 747, 775) and update import
+- [X] T012 [P] [US2] Replace Divider with HorizontalDivider in app/src/main/java/com/tiarkaerell/ibstracker/ui/screens/DashboardScreen.kt (2 occurrences at lines 497, 507) and update import
+- [X] T013 [P] [US2] Replace Divider with HorizontalDivider in app/src/main/java/com/tiarkaerell/ibstracker/ui/screens/SettingsScreen.kt (3 occurrences at lines 702, 747, 775) and update import
 
 ### Part B: menuAnchor() Signature Migration
 
-- [ ] T014 [P] [US2] Update menuAnchor() to menuAnchor(type = ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true) in app/src/main/java/com/tiarkaerell/ibstracker/ui/screens/DashboardScreen.kt (1 occurrence at line 204) and add import
-- [ ] T015 [P] [US2] Update menuAnchor() to menuAnchor(type = ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true) in app/src/main/java/com/tiarkaerell/ibstracker/ui/screens/SettingsScreen.kt (3 occurrences at lines 135, 184, 724) and add import
-- [ ] T016 [US2] Compile and verify no Compose UI component deprecation warnings: `./gradlew compileDebugKotlin --warning-mode all 2>&1 | grep -i "Divider\|menuAnchor"`
-- [ ] T017 [US2] Visual regression testing: Launch app, verify dividers render with identical spacing/styling, test all dropdown menus open/close correctly
-- [ ] T018 [US2] Commit changes: `git add -A && git commit -m "fix(ui): Migrate to HorizontalDivider and updated menuAnchor signature (US2)"`
+- [X] T014 [P] [US2] Update menuAnchor() to menuAnchor(type = MenuAnchorType.PrimaryNotEditable, enabled = true) in app/src/main/java/com/tiarkaerell/ibstracker/ui/screens/DashboardScreen.kt (1 occurrence at line 204) and add import
+- [X] T015 [P] [US2] Update menuAnchor() to menuAnchor(type = MenuAnchorType.PrimaryNotEditable, enabled = true) in app/src/main/java/com/tiarkaerell/ibstracker/ui/screens/SettingsScreen.kt (3 occurrences at lines 136, 185, 725) and add import
+- [X] T016 [US2] Compile and verify no Compose UI component deprecation warnings: `./gradlew compileDebugKotlin --warning-mode all 2>&1 | grep -i "Divider\|menuAnchor"` - **Result: BUILD SUCCESSFUL, 0 warnings**
+- [X] T017 [US2] Visual regression testing: Launch app, verify dividers render with identical spacing/styling, test all dropdown menus open/close correctly - **Result: ✅ All visual/functional tests passed**
+- [X] T018 [US2] Commit changes: `git add -A && git commit -m "fix(ui): Migrate to HorizontalDivider and updated menuAnchor signature (US2)"` - **Result: Committed e6d897a**
 
 **Checkpoint**: 9 deprecation warnings eliminated; UI components render identically and function correctly
 
