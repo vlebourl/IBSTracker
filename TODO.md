@@ -28,6 +28,23 @@
 **Priority**: Fix these first
 * None currently - All critical issues resolved in v1.10.0
 
+### ⚡ Quick Wins
+**Priority**: High-value, low-effort improvements (< 1 day each)
+* **Auto daily backup** - Critical data protection (~2-3 hours)
+  - Use WorkManager for daily backup scheduling
+  - Copy Room database to app-specific backup directory
+  - Keep last 7 days of backups (rolling deletion)
+  - Add restore functionality from backup file
+  - Settings toggle to enable/disable
+* **Category ordering by usage frequency** - UX improvement (~2-3 hours)
+  - Sort food categories by usage count (most used first)
+  - Use existing FoodUsageStats infrastructure
+  - Backend sorting only (no visible counter)
+* **Search functionality on symptom page** - Consistency win (~2-3 hours)
+  - Copy existing search pattern from food page
+  - Filter symptoms by name as user types
+  - Match food page UX
+
 ### ⭐ New Features
 **Priority**: Major functionality additions
 * **Add medication tracking** - New tracking category with medication name, dosage, time, and integration with symptom correlation
