@@ -30,6 +30,8 @@ class FoodViewModel(private val dataRepository: DataRepository) : ViewModel() {
         return dataRepository.searchCommonFoods(query)
     }
 
+    fun getTopUsedFoods(limit: Int = 6) = dataRepository.getTopUsedFoods(limit)
+
     fun saveFoodItem(
         name: String,
         category: FoodCategory = FoodCategory.OTHER,
