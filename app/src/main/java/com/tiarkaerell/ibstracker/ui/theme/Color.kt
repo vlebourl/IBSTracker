@@ -57,3 +57,61 @@ val md_theme_dark_outline = Color(0xFF8E9286)
 val md_theme_dark_inverseOnSurface = Color(0xFF1A1C18)
 val md_theme_dark_inverseSurface = Color(0xFFE3E3DC)
 val md_theme_dark_inversePrimary = Color(0xFF546E41)
+
+// ============================================================================
+// Extended Category Colors (Material Design 3 Extended Palette)
+// For Smart Food Categorization System (v1.9.0)
+// ============================================================================
+
+// VEGETABLES - Green
+val CategoryGreenLight = Color(0xFF4CAF50)      // MD3 Green 500
+val CategoryGreenDark = Color(0xFF2E7D32)       // MD3 Green 800
+
+// FRUITS - Orange
+val CategoryOrangeLight = Color(0xFFFF9800)     // MD3 Orange 500
+val CategoryOrangeDark = Color(0xFFE65100)      // MD3 Orange 900
+
+// LEGUMES - Brown
+val CategoryBrownLight = Color(0xFF795548)      // MD3 Brown 500
+val CategoryBrownDark = Color(0xFF4E342E)       // MD3 Brown 800
+
+// NUTS_SEEDS - Amber
+val CategoryAmberLight = Color(0xFFFFC107)      // MD3 Amber 500
+val CategoryAmberDark = Color(0xFFFF8F00)       // MD3 Amber 800
+
+// BEVERAGES - Blue
+val CategoryBlueLight = Color(0xFF2196F3)       // MD3 Blue 500
+val CategoryBlueDark = Color(0xFF1565C0)        // MD3 Blue 800
+
+// FATS_OILS - Yellow/Gold (darker for better readability)
+val CategoryYellowLight = Color(0xFFFFA726)     // MD3 Orange 400 (gold tone, more readable)
+val CategoryYellowDark = Color(0xFFFF8F00)      // MD3 Amber 800
+
+// SWEETS - Pink
+val CategoryPinkLight = Color(0xFFE91E63)       // MD3 Pink 500
+val CategoryPinkDark = Color(0xFFAD1457)        // MD3 Pink 800
+
+// PROCESSED - Red
+val CategoryRedLight = Color(0xFFF44336)        // MD3 Red 500
+val CategoryRedDark = Color(0xFFC62828)         // MD3 Red 800
+
+// OTHER - Neutral Gray
+val CategoryNeutralLight = Color(0xFF9E9E9E)    // MD3 Gray 500
+val CategoryNeutralDark = Color(0xFF616161)     // MD3 Gray 700
+
+// ============================================================================
+// Semantic IBS Impact Colors (Material Design 3 Extended Palette)
+// For IBSImpact enum attributes
+// ============================================================================
+
+// ERROR - High risk attributes (FODMAP_HIGH, GLUTEN, LACTOSE, ALCOHOL)
+val IBSErrorLight = md_theme_light_error        // Red 500
+val IBSErrorDark = md_theme_dark_error          // Red 400
+
+// WARNING - Moderate risk attributes (FODMAP_MODERATE, CAFFEINE, SPICY, FATTY, ACIDIC)
+val IBSWarningLight = Color(0xFFFFA726)         // MD3 Orange 400
+val IBSWarningDark = Color(0xFFFF9800)          // MD3 Orange 500
+
+// SUCCESS - Low risk attributes (FODMAP_LOW)
+val IBSSuccessLight = Color(0xFF66BB6A)         // MD3 Green 400
+val IBSSuccessDark = Color(0xFF4CAF50)          // MD3 Green 500

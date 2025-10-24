@@ -42,12 +42,12 @@ class AnalyticsEngine {
                 
                 foods.forEach { food ->
                     val symptomsAfterFood = symptoms.filter { symptom ->
-                        val timeDiff = symptom.date.time - food.date.time
+                        val timeDiff = symptom.date.time - food.timestamp.time
                         timeDiff > 0 && timeDiff <= TimeUnit.HOURS.toMillis(SYMPTOM_WINDOW_HOURS.toLong())
                     }
                     
                     symptomsAfterFood.forEach { symptom ->
-                        val timeToSymptom = symptom.date.time - food.date.time
+                        val timeToSymptom = symptom.date.time - food.timestamp.time
                         symptomsTriggered.add(symptom to timeToSymptom)
                     }
                 }
@@ -82,12 +82,12 @@ class AnalyticsEngine {
         
         return FoodCategory.getAllCategories().map { category ->
             val categoryFoods = foodItems.filter { it.category == category }
-            val recentFoods = categoryFoods.filter { it.date.after(sevenDaysAgo) }
+            val recentFoods = categoryFoods.filter { it.timestamp.after(sevenDaysAgo) }
             
             // Calculate safety score (inverse of trigger likelihood)
             val triggerEvents = categoryFoods.count { food ->
                 symptoms.any { symptom ->
-                    val timeDiff = symptom.date.time - food.date.time
+                    val timeDiff = symptom.date.time - food.timestamp.time
                     timeDiff > 0 && timeDiff <= TimeUnit.HOURS.toMillis(SYMPTOM_WINDOW_HOURS.toLong())
                 }
             }

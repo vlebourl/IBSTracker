@@ -112,8 +112,8 @@ class GoogleDriveBackup(
                 ?: return@withContext Result.failure(Exception("Failed to initialize Drive service"))
             
             // Get data from database
-            val foodItems = database.foodItemDao().getAllFoodItems()
-            val symptoms = database.symptomDao().getAllSymptoms()
+            val foodItems = database.foodItemDao().getAllFoodItems().first()
+            val symptoms = database.symptomDao().getAll().first()
 
             // Get settings
             val currentLanguage = settingsRepository.languageFlow.first()
@@ -125,11 +125,11 @@ class GoogleDriveBackup(
                 timestamp = dateFormat.format(Date()),
                 foodItems = foodItems.map {
                     SerializableFoodItem(
-                        id = it.id,
+                        id = it.id.toInt(),
                         name = it.name,
                         quantity = it.quantity,
                         category = it.category.name,
-                        timestamp = it.date.time
+                        timestamp = it.timestamp.time
                     )
                 },
                 symptoms = symptoms.map {
@@ -212,9 +212,9 @@ class GoogleDriveBackup(
             val backupData = json.decodeFromString<BackupData>(jsonContent)
             
             // Clear existing data
-            database.foodItemDao().deleteAllFoodItems()
+            database.foodItemDao().deleteAll()
             database.symptomDao().deleteAllSymptoms()
-            
+
             // Restore food items
             backupData.foodItems.forEach { item ->
                 val foodItem = FoodItem(
@@ -222,9 +222,9 @@ class GoogleDriveBackup(
                     name = item.name,
                     quantity = item.quantity,
                     category = com.tiarkaerell.ibstracker.data.model.FoodCategory.valueOf(item.category),
-                    date = Date(item.timestamp)
+                    timestamp = Date(item.timestamp)
                 )
-                database.foodItemDao().insertFoodItem(foodItem)
+                database.foodItemDao().insert(foodItem)
             }
             
             // Restore symptoms
@@ -235,7 +235,7 @@ class GoogleDriveBackup(
                     intensity = item.intensity,
                     date = Date(item.timestamp)
                 )
-                database.symptomDao().insertSymptom(symptom)
+                database.symptomDao().insert(symptom)
             }
             
             Result.success("Restored ${backupData.foodItems.size} food items and ${backupData.symptoms.size} symptoms")
@@ -460,11 +460,11 @@ class GoogleDriveBackup(
             when (mergeStrategy) {
                 MergeStrategy.KEEP_LOCAL -> {
                     // Get existing data
-                    val existingFoodItems = database.foodItemDao().getAllFoodItems()
-                    val existingSymptoms = database.symptomDao().getAllSymptoms()
+                    val existingFoodItems = database.foodItemDao().getAllFoodItems().first()
+                    val existingSymptoms = database.symptomDao().getAll().first()
 
                     // Only add items that don't conflict (by timestamp)
-                    val existingFoodTimestamps = existingFoodItems.map { it.date.time }.toSet()
+                    val existingFoodTimestamps = existingFoodItems.map { it.timestamp.time }.toSet()
                     val existingSymptomTimestamps = existingSymptoms.map { it.date.time }.toSet()
 
                     var addedFood = 0
@@ -477,9 +477,9 @@ class GoogleDriveBackup(
                                 name = item.name,
                                 quantity = item.quantity,
                                 category = com.tiarkaerell.ibstracker.data.model.FoodCategory.valueOf(item.category),
-                                date = Date(item.timestamp)
+                                timestamp = Date(item.timestamp)
                             )
-                            database.foodItemDao().insertFoodItem(foodItem)
+                            database.foodItemDao().insert(foodItem)
                             addedFood++
                         }
                     }
@@ -492,7 +492,7 @@ class GoogleDriveBackup(
                                 intensity = item.intensity,
                                 date = Date(item.timestamp)
                             )
-                            database.symptomDao().insertSymptom(symptom)
+                            database.symptomDao().insert(symptom)
                             addedSymptoms++
                         }
                     }
@@ -502,15 +502,15 @@ class GoogleDriveBackup(
 
                 MergeStrategy.KEEP_BACKUP -> {
                     // Get existing data
-                    val existingFoodItems = database.foodItemDao().getAllFoodItems()
-                    val existingSymptoms = database.symptomDao().getAllSymptoms()
+                    val existingFoodItems = database.foodItemDao().getAllFoodItems().first()
+                    val existingSymptoms = database.symptomDao().getAll().first()
 
                     // Delete conflicting entries
                     val backupFoodTimestamps = backupData.foodItems.map { it.timestamp }.toSet()
                     val backupSymptomTimestamps = backupData.symptoms.map { it.timestamp }.toSet()
 
                     existingFoodItems.forEach { item ->
-                        if (item.date.time in backupFoodTimestamps) {
+                        if (item.timestamp.time in backupFoodTimestamps) {
                             database.foodItemDao().delete(item)
                         }
                     }
@@ -528,9 +528,9 @@ class GoogleDriveBackup(
                             name = item.name,
                             quantity = item.quantity,
                             category = com.tiarkaerell.ibstracker.data.model.FoodCategory.valueOf(item.category),
-                            date = Date(item.timestamp)
+                            timestamp = Date(item.timestamp)
                         )
-                        database.foodItemDao().insertFoodItem(foodItem)
+                        database.foodItemDao().insert(foodItem)
                     }
 
                     backupData.symptoms.forEach { item ->
@@ -540,7 +540,7 @@ class GoogleDriveBackup(
                             intensity = item.intensity,
                             date = Date(item.timestamp)
                         )
-                        database.symptomDao().insertSymptom(symptom)
+                        database.symptomDao().insert(symptom)
                     }
 
                     Result.success("Restored ${backupData.foodItems.size} food items and ${backupData.symptoms.size} symptoms (overwrote conflicts)")
@@ -554,9 +554,9 @@ class GoogleDriveBackup(
                             name = item.name,
                             quantity = item.quantity,
                             category = com.tiarkaerell.ibstracker.data.model.FoodCategory.valueOf(item.category),
-                            date = Date(item.timestamp)
+                            timestamp = Date(item.timestamp)
                         )
-                        database.foodItemDao().insertFoodItem(foodItem)
+                        database.foodItemDao().insert(foodItem)
                     }
 
                     backupData.symptoms.forEach { item ->
@@ -566,7 +566,7 @@ class GoogleDriveBackup(
                             intensity = item.intensity,
                             date = Date(item.timestamp)
                         )
-                        database.symptomDao().insertSymptom(symptom)
+                        database.symptomDao().insert(symptom)
                     }
 
                     Result.success("Restored ${backupData.foodItems.size} food items and ${backupData.symptoms.size} symptoms (kept all)")

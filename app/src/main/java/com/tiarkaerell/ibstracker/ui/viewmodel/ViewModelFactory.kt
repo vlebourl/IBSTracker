@@ -30,9 +30,9 @@ class ViewModelFactory(
             @Suppress("UNCHECKED_CAST")
             return AnalyticsViewModel(dataRepository) as T
         }
-        if (modelClass.isAssignableFrom(AnalyticsViewModel::class.java)) {
+        if (modelClass.isAssignableFrom(FoodUsageStatsViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return AnalyticsViewModel(dataRepository) as T
+            return FoodUsageStatsViewModel(dataRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
