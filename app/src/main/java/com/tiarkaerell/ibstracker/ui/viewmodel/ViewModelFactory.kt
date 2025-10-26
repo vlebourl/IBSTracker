@@ -4,12 +4,15 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.tiarkaerell.ibstracker.data.database.AppDatabase
+import com.tiarkaerell.ibstracker.data.repository.AnalysisRepository
 import com.tiarkaerell.ibstracker.data.repository.DataRepository
 import com.tiarkaerell.ibstracker.data.repository.SettingsRepository
+import com.tiarkaerell.ibstracker.data.preferences.FilterPreferencesManager
 
 class ViewModelFactory(
     private val dataRepository: DataRepository,
     private val settingsRepository: SettingsRepository,
+    private val analysisRepository: AnalysisRepository,
     private val context: Context,
     private val database: AppDatabase
 ) : ViewModelProvider.Factory {
@@ -28,7 +31,8 @@ class ViewModelFactory(
         }
         if (modelClass.isAssignableFrom(AnalyticsViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return AnalyticsViewModel(dataRepository) as T
+            val filterPreferencesManager = FilterPreferencesManager(context)
+            return AnalyticsViewModel(analysisRepository, filterPreferencesManager) as T
         }
         if (modelClass.isAssignableFrom(FoodUsageStatsViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")

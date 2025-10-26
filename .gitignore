@@ -96,9 +96,17 @@ client_secret*.json
 keystore.properties
 secrets.properties
 signing.properties
+.env*
 
 # Local signing configuration (contains passwords and keys)
 app/keystore.properties
 app/signing.properties
-.gitignore updated
-AUDIT_REPORT.md
+
+# Editor/IDE
+.vscode/
+.idea/misc.xml
+.idea/vcs.xml
+
+# Temporary files
+*.tmp
+*.swp

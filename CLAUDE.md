@@ -168,3 +168,10 @@ val viewModel: FoodViewModel = viewModel(
 - Database name: `"ibs-tracker-database"`
 - All database operations should be performed on background threads (use suspend functions or Flow)
 - Date handling uses `java.util.Date` with Room TypeConverters
+
+## Active Technologies
+- Kotlin 1.8.20 / Android SDK 34 + Jetpack Compose, Material3, Room Database, Kotlin Coroutines (001-improve-analysis-insights)
+- Room SQLite database (existing AppDatabase with FoodItem and Symptom entities) (001-improve-analysis-insights)
+
+## Recent Changes
+- 001-improve-analysis-insights: Added Kotlin 1.8.20 / Android SDK 34 + Jetpack Compose, Material3, Room Database, Kotlin Coroutines

@@ -24,7 +24,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.tiarkaerell.ibstracker.ui.screens.AnalyticsScreen
+import com.tiarkaerell.ibstracker.ui.screens.AnalysisScreen
 import com.tiarkaerell.ibstracker.ui.screens.DashboardScreen
 import com.tiarkaerell.ibstracker.ui.screens.FoodScreen
 import com.tiarkaerell.ibstracker.ui.screens.SettingsScreen
@@ -69,6 +69,7 @@ class MainActivity : ComponentActivity() {
         val viewModelFactory = ViewModelFactory(
             container.dataRepository, 
             container.settingsRepository,
+            container.analysisRepository,
             container.appContext,
             container.appDatabase
         )
@@ -156,7 +157,7 @@ fun MainScreen(viewModelFactory: ViewModelFactory) {
             }
             composable(Screen.Analytics.route) {
                 val analyticsViewModel: AnalyticsViewModel = viewModel(factory = viewModelFactory)
-                AnalyticsScreen(analyticsViewModel = analyticsViewModel)
+                AnalysisScreen(analyticsViewModel = analyticsViewModel)
             }
             composable(Screen.Settings.route) {
                 val settingsViewModel: SettingsViewModel = viewModel(factory = viewModelFactory)
