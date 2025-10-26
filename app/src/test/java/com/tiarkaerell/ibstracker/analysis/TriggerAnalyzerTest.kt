@@ -147,18 +147,18 @@ class TriggerAnalyzerTest {
     private fun createTestSymptomOccurrences(): List<com.tiarkaerell.ibstracker.data.analysis.SymptomOccurrence> {
         val now = java.time.Instant.now()
         return listOf(
-            com.tiarkaerell.ibstracker.data.analysis.SymptomOccurrence("Diarrhea", 7, now.minusSeconds(3600)),
-            com.tiarkaerell.ibstracker.data.analysis.SymptomOccurrence("Diarrhea", 5, now.minusSeconds(1800)),
-            com.tiarkaerell.ibstracker.data.analysis.SymptomOccurrence("Diarrhea", 8, now)
+            com.tiarkaerell.ibstracker.data.analysis.SymptomOccurrence("Diarrhea", 7, now.minusSeconds(1800)), // 30 min ago
+            com.tiarkaerell.ibstracker.data.analysis.SymptomOccurrence("Diarrhea", 5, now.minusSeconds(900)),  // 15 min ago
+            com.tiarkaerell.ibstracker.data.analysis.SymptomOccurrence("Diarrhea", 8, now)                    // now
         )
     }
     
     private fun createTestFoodOccurrences(): List<com.tiarkaerell.ibstracker.data.analysis.FoodOccurrence> {
         val now = java.time.Instant.now()
         return listOf(
-            com.tiarkaerell.ibstracker.data.analysis.FoodOccurrence("Coffee", "2 cups", now.minusSeconds(7200)),
-            com.tiarkaerell.ibstracker.data.analysis.FoodOccurrence("Milk", "1 glass", now.minusSeconds(5400)),
-            com.tiarkaerell.ibstracker.data.analysis.FoodOccurrence("Cheese", "2 slices", now.minusSeconds(3600))
+            com.tiarkaerell.ibstracker.data.analysis.FoodOccurrence("Coffee", "2 cups", now.minusSeconds(7200)),  // 2 hours ago
+            com.tiarkaerell.ibstracker.data.analysis.FoodOccurrence("Milk", "1 glass", now.minusSeconds(5400)),   // 1.5 hours ago
+            com.tiarkaerell.ibstracker.data.analysis.FoodOccurrence("Cheese", "2 slices", now.minusSeconds(3600)) // 1 hour ago
         )
     }
 }

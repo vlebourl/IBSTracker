@@ -69,10 +69,11 @@ class ProbabilityEngineTest {
     
     @Test
     fun `generateSymptomAnalysis filters symptoms by severity threshold`() {
+        val now = Instant.now()
         val symptoms = listOf(
-            SymptomOccurrence("Diarrhea", 2, Instant.now().minusSeconds(3600)),
-            SymptomOccurrence("Diarrhea", 8, Instant.now().minusSeconds(1800)),
-            SymptomOccurrence("Diarrhea", 3, Instant.now())
+            SymptomOccurrence("Diarrhea", 2, now.minusSeconds(1800)), // 30 min ago
+            SymptomOccurrence("Diarrhea", 8, now.minusSeconds(900)),  // 15 min ago
+            SymptomOccurrence("Diarrhea", 3, now)                    // now
         )
         val foods = createTestFoodOccurrences()
         val filters = AnalysisFilters(severityThreshold = 5)
@@ -95,10 +96,11 @@ class ProbabilityEngineTest {
     @Test
     fun `trigger probabilities are sorted by probability descending`() {
         val symptoms = createTestSymptomOccurrences()
+        val now = Instant.now()
         val foods = listOf(
-            FoodOccurrence("Coffee", "1 cup", Instant.now().minusSeconds(7200)),
-            FoodOccurrence("Milk", "1 glass", Instant.now().minusSeconds(5400)),
-            FoodOccurrence("Apple", "1 medium", Instant.now().minusSeconds(3600))
+            FoodOccurrence("Coffee", "1 cup", now.minusSeconds(7200)),  // 2 hours ago
+            FoodOccurrence("Milk", "1 glass", now.minusSeconds(5400)),  // 1.5 hours ago
+            FoodOccurrence("Apple", "1 medium", now.minusSeconds(3600)) // 1 hour ago
         )
         
         // Ensure we have valid test data
@@ -129,11 +131,12 @@ class ProbabilityEngineTest {
     
     @Test
     fun `recommendation level is HIDE for insufficient data`() {
+        val now = Instant.now()
         val symptoms = listOf(
-            SymptomOccurrence("Diarrhea", 5, Instant.now())
+            SymptomOccurrence("Diarrhea", 5, now) // now
         )
         val foods = listOf(
-            FoodOccurrence("Coffee", "1 cup", Instant.now().minusSeconds(3600))
+            FoodOccurrence("Coffee", "1 cup", now.minusSeconds(3600)) // 1 hour ago
         )
         
         val result = probabilityEngine.generateSymptomAnalysis(
@@ -157,18 +160,18 @@ class ProbabilityEngineTest {
     private fun createTestSymptomOccurrences(): List<SymptomOccurrence> {
         val now = Instant.now()
         return listOf(
-            SymptomOccurrence("Diarrhea", 7, now.minusSeconds(3600)),
-            SymptomOccurrence("Diarrhea", 5, now.minusSeconds(1800)),
-            SymptomOccurrence("Diarrhea", 8, now)
+            SymptomOccurrence("Diarrhea", 7, now.minusSeconds(1800)), // 30 min ago
+            SymptomOccurrence("Diarrhea", 5, now.minusSeconds(900)),  // 15 min ago  
+            SymptomOccurrence("Diarrhea", 8, now)                    // now
         )
     }
     
     private fun createTestFoodOccurrences(): List<FoodOccurrence> {
         val now = Instant.now()
         return listOf(
-            FoodOccurrence("Coffee", "2 cups", now.minusSeconds(7200)),
-            FoodOccurrence("Milk", "1 glass", now.minusSeconds(5400)),
-            FoodOccurrence("Cheese", "2 slices", now.minusSeconds(3600))
+            FoodOccurrence("Coffee", "2 cups", now.minusSeconds(7200)),  // 2 hours ago
+            FoodOccurrence("Milk", "1 glass", now.minusSeconds(5400)),   // 1.5 hours ago
+            FoodOccurrence("Cheese", "2 slices", now.minusSeconds(3600)) // 1 hour ago
         )
     }
     
