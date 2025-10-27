@@ -476,4 +476,239 @@ class CustomFoodPersistenceTest {
         assertEquals("Mango should be #3", "Mango", updatedNames[2])
         assertEquals("Cherry should be #4", "Cherry", updatedNames[3])
     }
+
+    /**
+     * Test Case 11: Performance with 200 custom foods (Phase 6)
+     *
+     * Performance Test
+     * Given: 200 custom foods in a single category
+     * When: Category list is queried
+     * Then: Response time is < 500ms (p95)
+     *
+     * This ensures the app remains responsive with large datasets.
+     */
+    @Test
+    fun testPerformanceWith200CustomFoods() = runBlocking {
+        // Arrange - Create 200 custom foods
+        val foods = (1..200).map { index ->
+            FoodItem(
+                name = "CustomFood$index",
+                quantity = "",
+                timestamp = Date(),
+                category = FoodCategory.OTHER
+            )
+        }
+
+        // Act - Insert all foods and measure time
+        val startTime = System.currentTimeMillis()
+        foods.forEach { repository.insertFoodItem(it) }
+        val insertTime = System.currentTimeMillis() - startTime
+
+        // Query category and measure time
+        val queryStartTime = System.currentTimeMillis()
+        val categoryFoods = repository.getCommonFoodsByCategory(FoodCategory.OTHER).first()
+        val queryTime = System.currentTimeMillis() - queryStartTime
+
+        // Assert - Verify all foods created
+        assertTrue("Should have at least 200 foods", categoryFoods.size >= 200)
+
+        // Performance assertion - query should be < 500ms
+        assertTrue(
+            "Category query should complete in < 500ms (actual: ${queryTime}ms)",
+            queryTime < 500
+        )
+
+        // Log performance metrics for analysis
+        println("Performance Test Results:")
+        println("  Insert 200 foods: ${insertTime}ms")
+        println("  Query category: ${queryTime}ms")
+        println("  Total foods in category: ${categoryFoods.size}")
+    }
+
+    /**
+     * Test Case 12: Search performance with many foods (Phase 6)
+     *
+     * Performance Test
+     * Given: 100+ foods in database
+     * When: Search is performed
+     * Then: Response time is < 1s for 50 results
+     *
+     * Validates search remains fast with large datasets.
+     */
+    @Test
+    fun testSearchPerformanceWithManyFoods() = runBlocking {
+        // Arrange - Create 100 foods with searchable names
+        val foods = (1..100).map { index ->
+            FoodItem(
+                name = "SearchTest$index",
+                quantity = "",
+                timestamp = Date(),
+                category = FoodCategory.OTHER
+            )
+        }
+
+        foods.forEach { repository.insertFoodItem(it) }
+
+        // Act - Search for "SearchTest" and measure time
+        val searchStartTime = System.currentTimeMillis()
+        val searchResults = repository.searchCommonFoods("SearchTest").first()
+        val searchTime = System.currentTimeMillis() - searchStartTime
+
+        // Assert - Verify results limited to 50 (DAO LIMIT)
+        assertTrue("Search should return results", searchResults.isNotEmpty())
+        assertTrue("Search should limit to 50 results", searchResults.size <= 50)
+
+        // Performance assertion - search should be < 1s
+        assertTrue(
+            "Search should complete in < 1s (actual: ${searchTime}ms)",
+            searchTime < 1000
+        )
+
+        // All results should match query
+        searchResults.forEach { food ->
+            assertTrue(
+                "Food name should contain 'SearchTest': ${food.name}",
+                food.name.contains("SearchTest", ignoreCase = true)
+            )
+        }
+
+        println("Search Performance: ${searchTime}ms for ${searchResults.size} results")
+    }
+
+    /**
+     * Test Case 13: Special characters in food name (Phase 6)
+     *
+     * Edge Case Test
+     * Given: Food name contains UTF-8 special characters
+     * When: Food is saved and retrieved
+     * Then: Special characters are preserved correctly
+     *
+     * Validates UTF-8 support for international characters.
+     */
+    @Test
+    fun testSpecialCharactersInFoodName() = runBlocking {
+        // Arrange - Foods with various special characters
+        val specialFoods = listOf(
+            "Café au lait",           // French accents
+            "Jalapeño",                // Spanish ñ
+            "Crème brûlée",           // Multiple accents
+            "Mozzarella di bufala",   // Italian
+            "Köttbullar",              // Swedish ö
+            "Crêpe",                   // French circumflex
+            "Würstchen"                // German umlaut
+        )
+
+        // Act - Insert and retrieve each food
+        specialFoods.forEach { name ->
+            val food = FoodItem(
+                name = name,
+                quantity = "",
+                timestamp = Date(),
+                category = FoodCategory.OTHER
+            )
+            repository.insertFoodItem(food)
+        }
+
+        // Assert - Verify all special characters preserved
+        val allFoods = repository.getAllCommonFoods().first()
+
+        specialFoods.forEach { expectedName ->
+            val found = allFoods.find { it.name == expectedName }
+            assertNotNull("Should find food with name: $expectedName", found)
+            assertEquals("Name should match exactly", expectedName, found?.name)
+        }
+
+        // Verify search works with special characters
+        val searchResult = repository.searchCommonFoods("Café").first()
+        assertTrue("Should find 'Café au lait'", searchResult.any { it.name == "Café au lait" })
+    }
+
+    /**
+     * Test Case 14: Case-sensitive duplicates (Phase 6)
+     *
+     * Edge Case Test
+     * Given: Foods with same name but different case
+     * When: Both are saved
+     * Then: Both entries are created (case-sensitive matching)
+     *
+     * Validates that "Soja" and "soja" are treated as different foods.
+     */
+    @Test
+    fun testCaseInsensitiveDuplicates() = runBlocking {
+        // Arrange - Same name, different case
+        val food1 = FoodItem(name = "Soja", quantity = "", timestamp = Date(), category = FoodCategory.OTHER)
+        val food2 = FoodItem(name = "soja", quantity = "", timestamp = Date(), category = FoodCategory.OTHER)
+        val food3 = FoodItem(name = "SOJA", quantity = "", timestamp = Date(), category = FoodCategory.OTHER)
+
+        // Act - Insert all variations
+        repository.insertFoodItem(food1)
+        repository.insertFoodItem(food2)
+        repository.insertFoodItem(food3)
+
+        // Assert - All three should create separate CommonFood entries
+        val allFoods = repository.getAllCommonFoods().first()
+        val sojaVariants = allFoods.filter {
+            it.name.equals("Soja", ignoreCase = true)
+        }
+
+        assertEquals("Should have 3 separate entries for case variations", 3, sojaVariants.size)
+
+        // Verify exact names
+        assertTrue("Should have 'Soja'", sojaVariants.any { it.name == "Soja" })
+        assertTrue("Should have 'soja'", sojaVariants.any { it.name == "soja" })
+        assertTrue("Should have 'SOJA'", sojaVariants.any { it.name == "SOJA" })
+
+        // Each should have usage_count = 1
+        sojaVariants.forEach { food ->
+            assertEquals("Usage count should be 1 for ${food.name}", 1, food.usageCount)
+        }
+    }
+
+    /**
+     * Test Case 15: Very large usage count (Phase 6)
+     *
+     * Edge Case Test
+     * Given: Food logged 1000+ times
+     * When: Sorting is applied
+     * Then: Sorting works correctly with large usage counts
+     *
+     * Validates integer overflow doesn't occur and sorting remains correct.
+     */
+    @Test
+    fun testVeryLargeUsageCount() = runBlocking {
+        // Arrange - Create foods with varying large usage counts
+        val highUsage = FoodItem(name = "HighUsage", quantity = "", timestamp = Date(), category = FoodCategory.OTHER)
+        val mediumUsage = FoodItem(name = "MediumUsage", quantity = "", timestamp = Date(), category = FoodCategory.OTHER)
+        val lowUsage = FoodItem(name = "LowUsage", quantity = "", timestamp = Date(), category = FoodCategory.OTHER)
+
+        // Act - Log foods many times
+        repeat(1500) { repository.insertFoodItem(highUsage.copy(timestamp = Date())) }  // 1500 uses
+        repeat(500) { repository.insertFoodItem(mediumUsage.copy(timestamp = Date())) }  // 500 uses
+        repeat(100) { repository.insertFoodItem(lowUsage.copy(timestamp = Date())) }     // 100 uses
+
+        // Assert - Verify correct sorting with large counts
+        val categoryFoods = repository.getCommonFoodsByCategory(FoodCategory.OTHER).first()
+        val foodNames = categoryFoods.map { it.name }
+
+        val highIdx = foodNames.indexOf("HighUsage")
+        val mediumIdx = foodNames.indexOf("MediumUsage")
+        val lowIdx = foodNames.indexOf("LowUsage")
+
+        assertTrue("HighUsage should appear before MediumUsage", highIdx < mediumIdx)
+        assertTrue("MediumUsage should appear before LowUsage", mediumIdx < lowIdx)
+
+        // Verify usage counts stored correctly (no overflow)
+        val highFood = categoryFoods.find { it.name == "HighUsage" }
+        val mediumFood = categoryFoods.find { it.name == "MediumUsage" }
+        val lowFood = categoryFoods.find { it.name == "LowUsage" }
+
+        assertEquals("HighUsage count", 1500, highFood?.usageCount)
+        assertEquals("MediumUsage count", 500, mediumFood?.usageCount)
+        assertEquals("LowUsage count", 100, lowFood?.usageCount)
+
+        println("Large Usage Count Test:")
+        println("  HighUsage: ${highFood?.usageCount} uses")
+        println("  MediumUsage: ${mediumFood?.usageCount} uses")
+        println("  LowUsage: ${lowFood?.usageCount} uses")
+    }
 }
