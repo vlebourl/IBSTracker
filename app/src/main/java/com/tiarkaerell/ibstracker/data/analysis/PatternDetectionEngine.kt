@@ -345,31 +345,48 @@ class PatternDetectionEngine {
         foods: List<FoodOccurrence>
     ): List<SymptomPattern> {
         val patterns = mutableListOf<SymptomPattern>()
-        
-        // Detect if symptoms consistently occur at specific intervals after eating
-        val timeLags = analyses.flatMap { it.triggerProbabilities }
-            .map { it.averageTimeLag.toHours() }
-        
-        if (timeLags.size >= 5) {
-            val avgLag = timeLags.average()
-            val consistency = 1.0 - (timeLags.map { abs(it - avgLag) }.average() / avgLag)
-            
-            if (consistency >= 0.6) {
-                patterns.add(SymptomPattern(
-                    id = "timing_${System.currentTimeMillis()}",
-                    symptomType = "General",
-                    patternType = PatternType.TEMPORAL,
-                    description = "Symptoms consistently appear ${avgLag.toInt()} hours after eating",
-                    confidence = consistency,
-                    occurrenceCount = timeLags.size,
-                    metadata = mapOf(
-                        "averageLagHours" to avgLag,
-                        "consistency" to consistency
-                    )
-                ))
+
+        // For each symptom type, find timing patterns with specific foods
+        analyses.forEach { analysis ->
+            // Group trigger probabilities by food
+            val foodTimingMap = mutableMapOf<String, MutableList<Long>>()
+
+            analysis.triggerProbabilities.forEach { trigger ->
+                if (trigger.confidence >= 0.3) { // Only consider confident correlations
+                    val lagHours = trigger.averageTimeLag.toHours()
+                    foodTimingMap.getOrPut(trigger.foodName) { mutableListOf() }.add(lagHours)
+                }
+            }
+
+            // For each food, check if timing is consistent
+            foodTimingMap.forEach { (foodName, timeLags) ->
+                if (timeLags.size >= 3) { // Need at least 3 occurrences
+                    val avgLag = timeLags.average()
+                    val consistency = if (avgLag > 0) {
+                        1.0 - (timeLags.map { abs(it - avgLag) }.average() / avgLag)
+                    } else {
+                        0.0
+                    }
+
+                    if (consistency >= 0.6 && avgLag > 0) {
+                        patterns.add(SymptomPattern(
+                            id = "timing_${analysis.symptomType}_${foodName}_${System.currentTimeMillis()}",
+                            symptomType = analysis.symptomType,
+                            patternType = PatternType.TEMPORAL,
+                            description = "${analysis.symptomType} consistently appears ${avgLag.toInt()} hours after eating $foodName",
+                            confidence = consistency,
+                            occurrenceCount = timeLags.size,
+                            metadata = mapOf(
+                                "averageLagHours" to avgLag,
+                                "consistency" to consistency,
+                                "foodName" to foodName
+                            )
+                        ))
+                    }
+                }
             }
         }
-        
+
         return patterns
     }
     
