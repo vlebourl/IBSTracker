@@ -1,7 +1,23 @@
 ## Completed ✅
 
-### v1.10.0 - Phase 1 Analytics Enhancement
-* ~~**Phase 1 Analytics Implementation**~~ **[Completed - Released v1.10.0]**
+### v1.11.1 - Deprecation Warnings Elimination
+* ~~**Fix all 13 deprecation compilation warnings**~~ **[Completed - Released v1.11.1]**
+  - ~~Migrated 6 Material Icons to AutoMirrored variants (TrendingUp, Help, HelpOutline, ArrowBack, ArrowForward)~~
+  - ~~Replaced TabRowDefaults.Indicator with SecondaryIndicator~~
+  - ~~Removed deprecated getCommonFoods() and searchFoods() functions~~
+  - ~~Wrapped LinearProgressIndicator progress in lambda for animation support~~
+  - ~~Simplified always-true condition in CredentialManagerAuth~~
+  - ~~Improved @Suppress placement in ViewModelFactory~~
+  - ~~Migrated statusBarColor to WindowCompat with edge-to-edge display~~
+  - ~~Replaced updateConfiguration() with createConfigurationContext()~~
+  - ~~Zero behavioral changes - 100% functional parity maintained~~
+  - ~~All tests passing - verified on emulator~~
+
+### v1.11.0 - Phase 1 Analytics Enhancement
+* ~~**Phase 1 Analytics Implementation**~~ **[Completed - Released v1.11.0]**
+  - ~~Symptom-centric analysis with probability correlations~~
+  - ~~Enhanced pattern detection with temporal and severity analysis~~
+  - ~~Improved insights with actionable recommendations~~
   - ~~3-hour symptom window (clinical standard)~~
   - ~~30-minute meal grouping~~
   - ~~PRIMARY meal-level trigger analysis~~
@@ -10,6 +26,8 @@
   - ~~Co-occurrence warnings~~
   - ~~Collapsible UI cards for all three trigger types~~
   - ~~Material Design 3 styled analytics cards~~
+
+### v1.10.0 - Previous Analytics Work
 * ~~Fix colors in food selection~~ **[Completed - Category cards properly colored]**
 
 ### v1.9.1 - Deprecation Fixes & Quick-Add Restoration
