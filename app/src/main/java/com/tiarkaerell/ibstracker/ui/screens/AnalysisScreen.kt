@@ -12,6 +12,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.Help
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
@@ -94,7 +98,7 @@ fun AnalysisScreen(analyticsViewModel: AnalyticsViewModel) {
                 
                 IconButton(onClick = { showHelpDialog = true }) {
                     Icon(
-                        imageVector = Icons.Default.Help,
+                        imageVector = Icons.AutoMirrored.Filled.Help,
                         contentDescription = "Help",
                         tint = MaterialTheme.colorScheme.primary
                     )
@@ -227,7 +231,7 @@ private fun AnalysisContent(
             selectedTabIndex = selectedTabIndex,
             modifier = Modifier.fillMaxWidth(),
             indicator = { tabPositions ->
-                TabRowDefaults.Indicator(
+                TabRowDefaults.SecondaryIndicator(
                     modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -955,7 +959,7 @@ private fun TriggerProbabilityBar(trigger: TriggerProbability) {
                         trigger.confidence >= 0.8 -> Icons.Default.VerifiedUser
                         trigger.confidence >= 0.6 -> Icons.Default.Security
                         trigger.confidence >= 0.4 -> Icons.Default.Info
-                        else -> Icons.Default.HelpOutline
+                        else -> Icons.AutoMirrored.Filled.HelpOutline
                     },
                     contentDescription = "Confidence level",
                     modifier = Modifier.size(12.dp),
@@ -1338,7 +1342,7 @@ private fun OnboardingTooltipsOverlay(
                         if (currentTooltipIndex > 0) {
                             TextButton(onClick = onPreviousTooltip) {
                                 Icon(
-                                    imageVector = Icons.Default.ArrowBack,
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                     contentDescription = null,
                                     modifier = Modifier.size(16.dp)
                                 )
@@ -1357,7 +1361,7 @@ private fun OnboardingTooltipsOverlay(
                                 Text("Next")
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Icon(
-                                    imageVector = Icons.Default.ArrowForward,
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                                     contentDescription = null,
                                     modifier = Modifier.size(16.dp)
                                 )

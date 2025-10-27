@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -74,7 +75,7 @@ fun PatternsTab(
                     title = "Emerging Patterns",
                     subtitle = "Patterns that are developing",
                     patterns = moderateConfidencePatterns,
-                    icon = Icons.Default.TrendingUp,
+                    icon = Icons.AutoMirrored.Filled.TrendingUp,
                     cardColor = MaterialTheme.colorScheme.secondaryContainer
                 )
             }
@@ -417,7 +418,7 @@ private fun getPatternTypeIcon(patternType: PatternType): ImageVector {
         PatternType.FREQUENCY -> Icons.Default.Schedule
         PatternType.TEMPORAL -> Icons.Default.AccessTime
         PatternType.TRIGGER_CONSISTENCY -> Icons.Default.Repeat
-        PatternType.SEVERITY_TREND -> Icons.Default.TrendingUp
+        PatternType.SEVERITY_TREND -> Icons.AutoMirrored.Filled.TrendingUp
         PatternType.COMBINATION -> Icons.Default.GroupWork
         PatternType.MEAL_RELATED -> Icons.Default.Restaurant
         PatternType.CATEGORY_PREFERENCE -> Icons.Default.Category
