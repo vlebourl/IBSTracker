@@ -34,8 +34,6 @@ import com.tiarkaerell.ibstracker.data.model.CommonFood
 import com.tiarkaerell.ibstracker.data.model.CommonFoods
 import com.tiarkaerell.ibstracker.data.model.FoodCategory
 import com.tiarkaerell.ibstracker.data.model.FoodItem
-import com.tiarkaerell.ibstracker.data.model.FoodUsageStats
-import com.tiarkaerell.ibstracker.ui.components.QuickAddSection
 import com.tiarkaerell.ibstracker.ui.viewmodel.FoodViewModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -59,7 +57,6 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
     var quickAddDateTime by remember { mutableStateOf(Calendar.getInstance()) }
 
     val foodItems by foodViewModel.foodItems.collectAsState()
-    val topUsedFoods by foodViewModel.getTopUsedFoods().collectAsState(initial = emptyList())
     val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault()) }
     val context = LocalContext.current
 
@@ -342,19 +339,6 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Quick Add Section (Top 6 most-used foods)
-        item {
-            QuickAddSection(
-                topUsedFoods = topUsedFoods,
-                onFoodClick = { foodStats ->
-                    // When clicking a food from quick add, show confirmation dialog
-                    quickAddItem = Pair(foodStats.foodName, foodStats.category)
-                    quickAddDateTime = Calendar.getInstance()
-                    showQuickAddDialog = true
-                }
-            )
-        }
-
         // Entry Section
         item {
             Card(

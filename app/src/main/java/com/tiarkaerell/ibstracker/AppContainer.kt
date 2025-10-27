@@ -4,7 +4,10 @@ import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.tiarkaerell.ibstracker.data.analysis.*
 import com.tiarkaerell.ibstracker.data.database.AppDatabase
+import com.tiarkaerell.ibstracker.data.repository.AnalysisRepository
+import com.tiarkaerell.ibstracker.data.repository.AnalysisRepositoryImpl
 import com.tiarkaerell.ibstracker.data.repository.DataRepository
 import com.tiarkaerell.ibstracker.data.repository.SettingsRepository
 import com.tiarkaerell.ibstracker.util.PrePopulatedFoods
@@ -21,6 +24,7 @@ import kotlinx.coroutines.launch
  * - AppDatabase with migrations (v1→v2, v2→v9, v9→v10) and onCreate callback
  * - DataRepository with all DAOs
  * - SettingsRepository for app preferences
+ * - AnalysisRepository with analysis engine
  */
 class AppContainer(private val context: Context) {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -64,6 +68,27 @@ class AppContainer(private val context: Context) {
 
     val settingsRepository: SettingsRepository by lazy {
         SettingsRepository(context)
+    }
+
+    // Analysis dependencies
+    private val dataAdapter: DataAdapter by lazy {
+        DataAdapter(dataRepository)
+    }
+
+    private val correlationCalculator: CorrelationCalculator by lazy {
+        CorrelationCalculator()
+    }
+
+    private val probabilityEngine: ProbabilityEngine by lazy {
+        ProbabilityEngine(correlationCalculator)
+    }
+
+    private val triggerAnalyzer: TriggerAnalyzer by lazy {
+        TriggerAnalyzer(probabilityEngine, dataAdapter)
+    }
+
+    val analysisRepository: AnalysisRepository by lazy {
+        AnalysisRepositoryImpl(triggerAnalyzer)
     }
 
     val appContext: Context = context.applicationContext

@@ -50,7 +50,7 @@ fun QuickAddSection(
     ) {
         // Section header
         Text(
-            text = "Quick Add (Top 4 by Usage)",
+            text = "Quick Add",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -72,11 +72,5 @@ fun QuickAddSection(
                 )
             }
         }
-
-        // Divider after section
-        HorizontalDivider(
-            modifier = Modifier.padding(top = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant
-        )
     }
 }

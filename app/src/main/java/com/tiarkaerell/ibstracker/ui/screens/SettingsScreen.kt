@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.tiarkaerell.ibstracker.R
 import com.tiarkaerell.ibstracker.data.auth.AuthorizationManager
 import com.tiarkaerell.ibstracker.data.auth.GoogleAuthManager
@@ -289,6 +290,13 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel) {
             onClearState = {
                 settingsViewModel.clearBackupState()
             }
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Local File Backup Card
+        LocalFileBackupCard(
+            settingsViewModel = settingsViewModel
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -1543,4 +1551,291 @@ fun RestorePasswordDialog(
             }
         }
     )
+}
+
+@Composable
+fun LocalFileBackupCard(
+    settingsViewModel: SettingsViewModel
+) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    var exportMessage by remember { mutableStateOf<String?>(null) }
+    var importMessage by remember { mutableStateOf<String?>(null) }
+    var isExporting by remember { mutableStateOf(false) }
+    var isImporting by remember { mutableStateOf(false) }
+    var showClearDataDialog by remember { mutableStateOf(false) }
+    var selectedFileUri by remember { mutableStateOf<android.net.Uri?>(null) }
+
+    // Export launcher - saves JSON file to user-selected location
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        uri?.let {
+            coroutineScope.launch {
+                isExporting = true
+                try {
+                    val file = settingsViewModel.exportToLocalFile()
+                    // Copy file to selected location
+                    context.contentResolver.openOutputStream(it)?.use { outputStream ->
+                        file.inputStream().copyTo(outputStream)
+                    }
+                    exportMessage = "Backup exported successfully"
+                } catch (e: Exception) {
+                    exportMessage = "Export failed: ${e.message}"
+                } finally {
+                    isExporting = false
+                }
+            }
+        }
+    }
+
+    // Import launcher - reads JSON file from user-selected location
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            selectedFileUri = it
+            showClearDataDialog = true
+        }
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        )
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            // Header with icon
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Save,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(32.dp)
+                        .padding(end = 16.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Local File Backup",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Import/Export JSON",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Description
+            Text(
+                text = "Backup and restore your data using local JSON files. Perfect for manual backups and data transfers.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = 20.sp
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                FilledTonalButton(
+                    onClick = {
+                        val dateFormat = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
+                        val filename = "ibs_tracker_backup_${dateFormat.format(Date())}.json"
+                        exportLauncher.launch(filename)
+                    },
+                    enabled = !isExporting && !isImporting,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
+                ) {
+                    if (isExporting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Upload,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Export", style = MaterialTheme.typography.labelLarge)
+                    }
+                }
+                FilledTonalButton(
+                    onClick = {
+                        importLauncher.launch(arrayOf("application/json"))
+                    },
+                    enabled = !isExporting && !isImporting,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
+                ) {
+                    if (isImporting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Download,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Import", style = MaterialTheme.typography.labelLarge)
+                    }
+                }
+            }
+
+            // Display export/import messages
+            exportMessage?.let { message ->
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (message.contains("failed", ignoreCase = true)) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+                LaunchedEffect(message) {
+                    kotlinx.coroutines.delay(3000)
+                    exportMessage = null
+                }
+            }
+
+            importMessage?.let { message ->
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (message.contains("failed", ignoreCase = true)) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+                LaunchedEffect(message) {
+                    kotlinx.coroutines.delay(5000)
+                    importMessage = null
+                }
+            }
+        }
+    }
+
+    // Clear data dialog before import
+    if (showClearDataDialog && selectedFileUri != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showClearDataDialog = false
+                selectedFileUri = null
+            },
+            title = { Text("Clear Existing Data?") },
+            text = {
+                Column {
+                    Text(
+                        text = "Do you want to clear existing data before importing?",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "• Clear: Replace all data with backup\n• Keep: Merge backup with existing data",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            isImporting = true
+                            try {
+                                context.contentResolver.openInputStream(selectedFileUri!!)?.use { inputStream ->
+                                    val file = java.io.File(context.cacheDir, "temp_import.json")
+                                    file.outputStream().use { outputStream ->
+                                        inputStream.copyTo(outputStream)
+                                    }
+                                    val result = settingsViewModel.importFromLocalFile(file, clearExisting = true)
+                                    importMessage = result.fold(
+                                        onSuccess = { "Import successful! Go to Analytics, select 'All Time' date range, and tap Refresh." },
+                                        onFailure = { e -> "Import failed: ${e.message}" }
+                                    )
+                                }
+                            } catch (e: Exception) {
+                                importMessage = "Import failed: ${e.message}"
+                            } finally {
+                                isImporting = false
+                                showClearDataDialog = false
+                                selectedFileUri = null
+                            }
+                        }
+                    }
+                ) {
+                    Text("Clear & Import")
+                }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                isImporting = true
+                                try {
+                                    context.contentResolver.openInputStream(selectedFileUri!!)?.use { inputStream ->
+                                        val file = java.io.File(context.cacheDir, "temp_import.json")
+                                        file.outputStream().use { outputStream ->
+                                            inputStream.copyTo(outputStream)
+                                        }
+                                        val result = settingsViewModel.importFromLocalFile(file, clearExisting = false)
+                                        importMessage = result.fold(
+                                            onSuccess = { "Import successful! Go to Analytics and tap Refresh to see updated analysis." },
+                                            onFailure = { e -> "Import failed: ${e.message}" }
+                                        )
+                                    }
+                                } catch (e: Exception) {
+                                    importMessage = "Import failed: ${e.message}"
+                                } finally {
+                                    isImporting = false
+                                    showClearDataDialog = false
+                                    selectedFileUri = null
+                                }
+                            }
+                        }
+                    ) {
+                        Text("Keep & Merge")
+                    }
+                    TextButton(
+                        onClick = {
+                            showClearDataDialog = false
+                            selectedFileUri = null
+                        }
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            }
+        )
+    }
 }

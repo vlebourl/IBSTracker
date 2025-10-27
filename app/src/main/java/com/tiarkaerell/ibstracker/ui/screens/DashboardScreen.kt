@@ -28,7 +28,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.tiarkaerell.ibstracker.R
 import com.tiarkaerell.ibstracker.data.model.FoodItem
+import com.tiarkaerell.ibstracker.data.model.FoodUsageStats
 import com.tiarkaerell.ibstracker.data.model.Symptom
+import com.tiarkaerell.ibstracker.ui.components.QuickAddSection
+import com.tiarkaerell.ibstracker.ui.viewmodel.FoodUsageStatsViewModel
 import com.tiarkaerell.ibstracker.ui.viewmodel.FoodViewModel
 import com.tiarkaerell.ibstracker.ui.viewmodel.SymptomsViewModel
 import java.text.SimpleDateFormat
@@ -97,13 +100,20 @@ private fun Date.startOfDay(): Date {
 @Composable
 fun DashboardScreen(
     foodViewModel: FoodViewModel,
-    symptomsViewModel: SymptomsViewModel
+    symptomsViewModel: SymptomsViewModel,
+    foodUsageStatsViewModel: FoodUsageStatsViewModel
 ) {
     val foodItems by foodViewModel.foodItems.collectAsState()
     val symptoms by symptomsViewModel.symptoms.collectAsState()
+    val topUsedFoods by foodUsageStatsViewModel.topUsedFoods.collectAsState()
     val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
     val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault()) }
     val context = LocalContext.current
+
+    // Quick add dialog states
+    var showQuickAddDialog by remember { mutableStateOf(false) }
+    var quickAddItem by remember { mutableStateOf<Pair<String, com.tiarkaerell.ibstracker.data.model.FoodCategory>?>(null) }
+    var quickAddDateTime by remember { mutableStateOf(Calendar.getInstance()) }
 
     // Dialog states
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -430,6 +440,79 @@ fun DashboardScreen(
         )
     }
 
+    // Quick add confirmation dialog
+    if (showQuickAddDialog && quickAddItem != null) {
+        val (foodName, category) = quickAddItem!!
+        var selectedDateTime by remember { mutableStateOf(quickAddDateTime) }
+
+        AlertDialog(
+            onDismissRequest = {
+                showQuickAddDialog = false
+                quickAddItem = null
+            },
+            title = { Text("Add $foodName") },
+            text = {
+                Column {
+                    Text("Category: ${category.displayName}")
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedButton(
+                        onClick = {
+                            DatePickerDialog(
+                                context,
+                                { _, year, month, dayOfMonth ->
+                                    TimePickerDialog(
+                                        context,
+                                        { _, hourOfDay, minute ->
+                                            selectedDateTime = Calendar.getInstance().apply {
+                                                set(year, month, dayOfMonth, hourOfDay, minute)
+                                            }
+                                        },
+                                        selectedDateTime.get(Calendar.HOUR_OF_DAY),
+                                        selectedDateTime.get(Calendar.MINUTE),
+                                        true
+                                    ).show()
+                                },
+                                selectedDateTime.get(Calendar.YEAR),
+                                selectedDateTime.get(Calendar.MONTH),
+                                selectedDateTime.get(Calendar.DAY_OF_MONTH)
+                            ).show()
+                        }
+                    ) {
+                        Icon(Icons.Default.CalendarToday, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(dateFormat.format(selectedDateTime.time))
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        foodViewModel.saveFoodItem(
+                            name = foodName,
+                            category = category,
+                            timestamp = selectedDateTime.time
+                        )
+                        showQuickAddDialog = false
+                        quickAddItem = null
+                    }
+                ) {
+                    Text("Add")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showQuickAddDialog = false
+                        quickAddItem = null
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     // Combine, sort, and group entries by day
     val groupedEntries = remember(foodItems, symptoms) {
         val entries = mutableListOf<TimelineEntry>()
@@ -449,12 +532,15 @@ fun DashboardScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Timeline section header
+        // Quick Add Section
         item {
-            Text(
-                text = stringResource(R.string.dashboard_recent_activity),
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(bottom = 8.dp)
+            QuickAddSection(
+                topUsedFoods = topUsedFoods,
+                onFoodClick = { foodStats ->
+                    quickAddItem = Pair(foodStats.foodName, foodStats.category)
+                    quickAddDateTime = Calendar.getInstance()
+                    showQuickAddDialog = true
+                }
             )
         }
 

@@ -10,8 +10,10 @@ import com.tiarkaerell.ibstracker.data.model.Units
 import com.tiarkaerell.ibstracker.data.model.UserProfile
 import com.tiarkaerell.ibstracker.data.repository.SettingsRepository
 import com.tiarkaerell.ibstracker.data.sync.GoogleDriveBackup
+import com.tiarkaerell.ibstracker.data.sync.JsonExportImport
 import com.tiarkaerell.ibstracker.data.sync.PasswordRequiredException
 import com.tiarkaerell.ibstracker.data.sync.IncorrectPasswordException
+import java.io.File
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -277,6 +279,20 @@ class SettingsViewModel(
      */
     fun getCachedAccessToken(): String? {
         return cachedAccessToken
+    }
+
+    /**
+     * Export database to local JSON file
+     */
+    suspend fun exportToLocalFile(): File {
+        return JsonExportImport.exportToJson(context, database)
+    }
+
+    /**
+     * Import database from local JSON file
+     */
+    suspend fun importFromLocalFile(file: File, clearExisting: Boolean = false): Result<String> {
+        return JsonExportImport.importFromJson(context, database, file, clearExisting)
     }
 
     sealed class BackupState {
