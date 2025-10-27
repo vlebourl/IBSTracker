@@ -114,7 +114,11 @@ class AnalyticsViewModel(
     }
     
     fun refreshAnalysis() {
-        generateAnalysis()
+        viewModelScope.launch {
+            // Invalidate cache to force fresh analysis
+            analysisRepository.invalidateCache(java.time.Instant.now())
+            generateAnalysis()
+        }
     }
     
     fun clearError() {
