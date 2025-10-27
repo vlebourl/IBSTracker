@@ -72,11 +72,5 @@ fun QuickAddSection(
                 )
             }
         }
-
-        // Divider after section
-        HorizontalDivider(
-            modifier = Modifier.padding(top = 16.dp),
-            color = MaterialTheme.colorScheme.outlineVariant
-        )
     }
 }
