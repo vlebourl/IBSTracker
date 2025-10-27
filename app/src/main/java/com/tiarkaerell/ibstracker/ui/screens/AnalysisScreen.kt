@@ -8,6 +8,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -30,6 +32,7 @@ import com.tiarkaerell.ibstracker.ui.viewmodel.AnalyticsViewModel
 import com.tiarkaerell.ibstracker.ui.components.analysis.FilterChips
 import com.tiarkaerell.ibstracker.ui.components.analysis.DateRangePickerDialog
 import com.tiarkaerell.ibstracker.ui.components.analysis.FilterPresets
+import com.tiarkaerell.ibstracker.ui.components.analysis.FilterPresetsDialog
 import com.tiarkaerell.ibstracker.ui.components.analysis.TriggerDetailsDialog
 import com.tiarkaerell.ibstracker.ui.components.analysis.InsightsTab
 import com.tiarkaerell.ibstracker.ui.components.analysis.PatternsTab
@@ -115,16 +118,14 @@ fun AnalysisScreen(analyticsViewModel: AnalyticsViewModel) {
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // Filter Presets
-        FilterPresets(
-            filterState = filterState,
-            modifier = Modifier.fillMaxWidth()
-        )
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
+        // Show Overview first if analysis is available
+        if (analysisResult != null && errorMessage == null && !isLoading) {
+            OverviewStatsCard(analysisResult!!)
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
         // Advanced Filter Controls
         FilterChips(
             filters = filterState.filters,
@@ -132,6 +133,7 @@ fun AnalysisScreen(analyticsViewModel: AnalyticsViewModel) {
                 filterState.filters = newFilters
                 analyticsViewModel.updateFilters(newFilters)
             },
+            onShowQuickFilters = { filterState.showQuickFiltersDialog() },
             modifier = Modifier.fillMaxWidth()
         )
         
@@ -147,7 +149,14 @@ fun AnalysisScreen(analyticsViewModel: AnalyticsViewModel) {
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        // Quick Filters Dialog
+        if (filterState.isQuickFiltersDialogOpen) {
+            FilterPresetsDialog(
+                filterState = filterState,
+                onApplyFilter = { analyticsViewModel.updateFilters(filterState.filters) },
+                onDismiss = { filterState.closeQuickFiltersDialog() }
+            )
+        }
 
         when {
             isLoading -> {
@@ -210,13 +219,8 @@ private fun AnalysisContent(
     analyticsViewModel: AnalyticsViewModel
 ) {
     var selectedTabIndex by remember { mutableStateOf(0) }
-    
+
     Column {
-        // Overview Stats
-        OverviewStatsCard(analysisResult)
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
         // Tab Row
         TabRow(
             selectedTabIndex = selectedTabIndex,
@@ -282,7 +286,9 @@ private fun AnalysisContent(
                 }
             )
         }
-        
+
+        Spacer(modifier = Modifier.height(12.dp))
+
         // Tab Content
         when (selectedTabIndex) {
             0 -> SymptomsTabContent(analysisResult)
@@ -302,20 +308,57 @@ private fun AnalysisContent(
 
 @Composable
 private fun SymptomsTabContent(analysisResult: AnalysisResult) {
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.fillMaxSize()
-    ) {
-        // Symptom Analysis Cards
-        items(analysisResult.symptomAnalyses) { symptomAnalysis ->
-            SymptomAnalysisCard(symptomAnalysis)
-        }
+    var selectedSymptom by remember { mutableStateOf<SymptomAnalysis?>(null) }
 
-        if (analysisResult.symptomAnalyses.isEmpty()) {
-            item {
-                NoSymptomsEmptyState()
+    if (analysisResult.symptomAnalyses.isEmpty()) {
+        NoSymptomsEmptyState()
+    } else {
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(vertical = 8.dp),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            // Grid layout - 2 items per row
+            items(
+                count = (analysisResult.symptomAnalyses.size + 1) / 2,
+                key = { index -> "row_$index" }
+            ) { rowIndex ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    val firstIndex = rowIndex * 2
+                    val secondIndex = firstIndex + 1
+
+                    // First card in row
+                    CompactSymptomCard(
+                        symptomAnalysis = analysisResult.symptomAnalyses[firstIndex],
+                        onClick = { selectedSymptom = analysisResult.symptomAnalyses[firstIndex] },
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    // Second card in row (if exists)
+                    if (secondIndex < analysisResult.symptomAnalyses.size) {
+                        CompactSymptomCard(
+                            symptomAnalysis = analysisResult.symptomAnalyses[secondIndex],
+                            onClick = { selectedSymptom = analysisResult.symptomAnalyses[secondIndex] },
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else {
+                        // Empty spacer to balance grid
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
             }
         }
+    }
+
+    // Modal Bottom Sheet for symptom details
+    selectedSymptom?.let { symptom ->
+        SymptomDetailsBottomSheet(
+            symptomAnalysis = symptom,
+            onDismiss = { selectedSymptom = null }
+        )
     }
 }
 
@@ -369,16 +412,16 @@ private fun OverviewStatsCard(analysisResult: AnalysisResult) {
         )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(12.dp)
         ) {
             Text(
                 text = "Analysis Overview",
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -429,8 +472,246 @@ private fun StatItem(value: String, label: String, color: Color) {
 }
 
 @Composable
-private fun SymptomAnalysisCard(symptomAnalysis: SymptomAnalysis) {
-    var expanded by remember { mutableStateOf(true) }
+private fun CompactSymptomCard(
+    symptomAnalysis: SymptomAnalysis,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        onClick = onClick,
+        modifier = modifier.height(120.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = when (symptomAnalysis.severityLevel) {
+                SeverityLevel.HIGH -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f)
+                SeverityLevel.MEDIUM -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)
+                SeverityLevel.LOW -> MaterialTheme.colorScheme.surfaceVariant
+            }
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                // Severity indicator
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .clip(RoundedCornerShape(5.dp))
+                        .background(
+                            when (symptomAnalysis.severityLevel) {
+                                SeverityLevel.HIGH -> MaterialTheme.colorScheme.error
+                                SeverityLevel.MEDIUM -> MaterialTheme.colorScheme.secondary
+                                SeverityLevel.LOW -> MaterialTheme.colorScheme.outline
+                            }
+                        )
+                )
+
+                // Confidence badge
+                Text(
+                    text = "${(symptomAnalysis.confidence * 100).toInt()}%",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = when {
+                        symptomAnalysis.confidence >= 0.7 -> MaterialTheme.colorScheme.primary
+                        symptomAnalysis.confidence >= 0.5 -> MaterialTheme.colorScheme.secondary
+                        else -> MaterialTheme.colorScheme.outline
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Symptom name
+            Text(
+                text = symptomAnalysis.symptomType,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
+
+            // Stats
+            Column(
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    text = "${symptomAnalysis.totalOccurrences} times",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "Avg ${String.format("%.1f", symptomAnalysis.averageIntensity)}/10",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SymptomDetailsBottomSheet(
+    symptomAnalysis: SymptomAnalysis,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scrollState = rememberScrollState()
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(scrollState)
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Severity indicator
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(
+                                when (symptomAnalysis.severityLevel) {
+                                    SeverityLevel.HIGH -> MaterialTheme.colorScheme.error
+                                    SeverityLevel.MEDIUM -> MaterialTheme.colorScheme.secondary
+                                    SeverityLevel.LOW -> MaterialTheme.colorScheme.outline
+                                }
+                            )
+                    )
+
+                    Text(
+                        text = symptomAnalysis.symptomType,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                // Confidence badge
+                AssistChip(
+                    onClick = { },
+                    label = {
+                        Text(
+                            text = "${(symptomAnalysis.confidence * 100).toInt()}%",
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    },
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = when {
+                            symptomAnalysis.confidence >= 0.7 -> MaterialTheme.colorScheme.primary
+                            symptomAnalysis.confidence >= 0.5 -> MaterialTheme.colorScheme.secondary
+                            else -> MaterialTheme.colorScheme.outline
+                        }
+                    )
+                )
+            }
+
+            // Stats summary
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = symptomAnalysis.totalOccurrences.toString(),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Occurrences",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = String.format("%.1f", symptomAnalysis.averageIntensity),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Avg Intensity",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            HorizontalDivider()
+
+            // Trigger probabilities
+            if (symptomAnalysis.triggerProbabilities.isNotEmpty()) {
+                Text(
+                    text = "Trigger Probabilities",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
+                symptomAnalysis.triggerProbabilities.forEach { trigger ->
+                    TriggerProbabilityBar(trigger)
+                }
+            }
+
+            // Insights
+            if (symptomAnalysis.insights.isNotEmpty()) {
+                HorizontalDivider()
+
+                Text(
+                    text = "Key Insights",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
+                symptomAnalysis.insights.forEach { insight ->
+                    Row(
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "•",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = insight,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SymptomAnalysisCard(
+    symptomAnalysis: SymptomAnalysis,
+    forceExpanded: Boolean = false
+) {
+    var manuallyExpanded by remember { mutableStateOf(false) }
+    val expanded = forceExpanded || manuallyExpanded
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -449,7 +730,7 @@ private fun SymptomAnalysisCard(symptomAnalysis: SymptomAnalysis) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { expanded = !expanded },
+                    .clickable { manuallyExpanded = !manuallyExpanded },
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {

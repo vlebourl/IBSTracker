@@ -25,7 +25,10 @@ class AnalysisFilterState {
     
     var isDateRangeDialogOpen by mutableStateOf(false)
         private set
-    
+
+    var isQuickFiltersDialogOpen by mutableStateOf(false)
+        private set
+
     var lastAppliedFilters by mutableStateOf(AnalysisFilters())
         private set
     
@@ -104,7 +107,15 @@ class AnalysisFilterState {
     fun closeDateRangeDialog() {
         isDateRangeDialogOpen = false
     }
-    
+
+    fun showQuickFiltersDialog() {
+        isQuickFiltersDialogOpen = true
+    }
+
+    fun closeQuickFiltersDialog() {
+        isQuickFiltersDialogOpen = false
+    }
+
     // Filter removal
     fun removeFilter(filterType: FilterType) {
         filters = when (filterType) {

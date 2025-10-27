@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,11 +24,12 @@ import com.tiarkaerell.ibstracker.data.model.IBSTriggerCategory
 fun FilterChips(
     filters: AnalysisFilters,
     onFiltersChange: (AnalysisFilters) -> Unit,
+    onShowQuickFilters: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var isExpanded by remember { mutableStateOf(false) }
     val hasActiveFilters = filters.hasActiveFilters()
-    
+
     Column(
         modifier = modifier.fillMaxWidth()
     ) {
@@ -47,9 +49,9 @@ fun FilterChips(
                     contentDescription = "Filters",
                     tint = if (hasActiveFilters) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                 )
-                
+
                 Spacer(modifier = Modifier.width(8.dp))
-                
+
                 Text(
                     text = "Filters${if (hasActiveFilters) " (${filters.getActiveFilterCount()})" else ""}",
                     style = MaterialTheme.typography.titleMedium,
@@ -57,8 +59,21 @@ fun FilterChips(
                     color = if (hasActiveFilters) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                 )
             }
-            
+
             Row {
+                // Quick Filters button
+                TextButton(
+                    onClick = onShowQuickFilters
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Speed,
+                        contentDescription = "Quick filters",
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Quick")
+                }
+
                 if (hasActiveFilters) {
                     TextButton(
                         onClick = { onFiltersChange(AnalysisFilters()) }
@@ -72,7 +87,7 @@ fun FilterChips(
                         Text("Clear")
                     }
                 }
-                
+
                 IconButton(
                     onClick = { isExpanded = !isExpanded }
                 ) {
@@ -448,8 +463,8 @@ private fun AnalysisFilters.hasActiveFilters(): Boolean {
            symptomTypes.isNotEmpty() ||
            foodCategories.isNotEmpty() ||
            excludeFoods.isNotEmpty() ||
-           minimumConfidence > 0.0 ||
-           !showLowOccurrenceCorrelations
+           minimumConfidence > 0.3 || // Only count if above default
+           showLowOccurrenceCorrelations  // Only count if changed from default (false)
 }
 
 private fun AnalysisFilters.getActiveFilterCount(): Int {
@@ -458,7 +473,7 @@ private fun AnalysisFilters.getActiveFilterCount(): Int {
     if (symptomTypes.isNotEmpty()) count++
     if (foodCategories.isNotEmpty()) count++
     if (excludeFoods.isNotEmpty()) count++
-    if (minimumConfidence > 0.0) count++
-    if (!showLowOccurrenceCorrelations) count++
+    if (minimumConfidence > 0.3) count++  // Only count if above default
+    if (showLowOccurrenceCorrelations) count++  // Only count if changed from default
     return count
 }

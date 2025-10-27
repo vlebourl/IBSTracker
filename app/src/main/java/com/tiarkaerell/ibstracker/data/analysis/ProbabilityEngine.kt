@@ -70,6 +70,9 @@ class ProbabilityEngine(
         
         for (symptom in symptoms) {
             val eligibleFoods = foods.filter { food ->
+                // Only consider foods that occurred BEFORE the symptom (not at the same time)
+                food.timestamp.isBefore(symptom.timestamp)
+            }.filter { food ->
                 val timeLag = Duration.between(food.timestamp, symptom.timestamp)
                 timeLag.toHours() in 0..timeWindow.windowSizeHours.toLong()
             }

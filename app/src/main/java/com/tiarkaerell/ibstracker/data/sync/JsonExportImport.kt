@@ -92,7 +92,7 @@ object JsonExportImport {
 
         // Convert to serializable format
         val backupData = BackupData(
-            version = 9,
+            version = 10,
             timestamp = dateFormat.format(Date()),
             foodItems = foodItems.map { food ->
                 SerializableFoodItem(
@@ -151,9 +151,9 @@ object JsonExportImport {
             val jsonString = file.readText()
             val backupData = json.decodeFromString(BackupData.serializer(), jsonString)
 
-            // Validate version compatibility
-            if (backupData.version != 9) {
-                return Result.failure(Exception("Backup version ${backupData.version} is not compatible with current database version 9"))
+            // Validate version compatibility (support v9 and v10)
+            if (backupData.version < 9 || backupData.version > 10) {
+                return Result.failure(Exception("Backup version ${backupData.version} is not compatible with current database version 10"))
             }
 
             // Clear existing data if requested

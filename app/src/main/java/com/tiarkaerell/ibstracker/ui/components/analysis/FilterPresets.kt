@@ -145,8 +145,9 @@ private fun PresetFilterCard(
 }
 
 @Composable
-private fun FilterPresetsDialog(
+fun FilterPresetsDialog(
     filterState: AnalysisFilterState,
+    onApplyFilter: () -> Unit = {},
     onDismiss: () -> Unit
 ) {
     AlertDialog(
@@ -174,10 +175,11 @@ private fun FilterPresetsDialog(
                         isActive = isPresetActive(preset, filterState.filters),
                         onClick = {
                             applyPreset(preset, filterState)
+                            onApplyFilter()
                             onDismiss()
                         }
                     )
-                    
+
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             }
