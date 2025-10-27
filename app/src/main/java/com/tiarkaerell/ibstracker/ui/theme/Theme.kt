@@ -10,6 +10,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -93,8 +94,15 @@ fun IBSTrackerTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
+            // Use modern Window Insets approach for edge-to-edge display
+            WindowCompat.setDecorFitsSystemWindows(window, false)
+
+            @Suppress("DEPRECATION") // Setting transparent status bar is still recommended for Material Design 3 edge-to-edge
+            window.statusBarColor = Color.Transparent.toArgb()
+
+            // Set light/dark status bar icons based on theme
+            val insetsController = WindowCompat.getInsetsController(window, view)
+            insetsController.isAppearanceLightStatusBars = !darkTheme
         }
     }
 

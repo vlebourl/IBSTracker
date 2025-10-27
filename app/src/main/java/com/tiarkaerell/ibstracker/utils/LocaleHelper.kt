@@ -24,9 +24,11 @@ object LocaleHelper {
         val config = Configuration(activity.resources.configuration)
         config.setLocale(locale)
 
-        // For API 26+, we need to create a new configuration context
-        // updateConfiguration is deprecated and doesn't work reliably
-        val context = activity.createConfigurationContext(config)
-        activity.resources.updateConfiguration(context.resources.configuration, activity.resources.displayMetrics)
+        // Use createConfigurationContext instead of deprecated updateConfiguration
+        // The context should be attached in Activity.attachBaseContext() for proper locale application
+        activity.createConfigurationContext(config)
+
+        // Note: For runtime locale changes, activity must be recreated to properly apply the new locale
+        // Use activity.recreate() if changing locale while app is running
     }
 }
