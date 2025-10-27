@@ -44,13 +44,16 @@
 
 ### 🔴 Critical / Bugs
 **Priority**: Fix these first
-* **Food not appearing after adding to Other category** - Data persistence bug (~2-3 hours)
-  - Issue: Adding "Soja" to Other category doesn't show in category after save
-  - Issue: Added food doesn't appear as existing in search bar
-  - Investigate FoodItem save operation and Room DAO queries
-  - Check category filtering logic in FoodScreen
-  - Verify search functionality includes newly added foods
-  - Add tests for custom food persistence and retrieval
+* ~~**Food not appearing after adding to a category**~~ **[Completed - Fixed in PR #9 / v1.12.0]**
+  - ~~Issue: Adding "Soja" to Other category (for instance) doesn't show in category after save~~
+  - ~~Issue: Added food doesn't appear as existing in search bar~~
+  - ~~Root cause: Custom foods saved as FoodItem without creating CommonFood entries~~
+  - ~~Fix: Modified DataRepository.insertFoodItem() to create/link CommonFood entries~~
+  - ~~Testing: 15 comprehensive tests (30 tests across 2 devices), 100% passing~~
+  - ~~Categories sorted by usage_count DESC, name ASC~~
+  - ~~Custom foods appear in quick-add (top 4 most-used)~~
+  - ~~Performance validated: < 500ms with 200+ foods, search < 1s~~
+  - ~~Edge cases: UTF-8 support, case-sensitive, large usage counts (1500+)~~
 * **Error handling in ViewModels** - Users need feedback on failed operations (~3-4 hours)
   - Add sealed class `UiState<T>` with Loading/Success/Error states
   - Expose error states from FoodViewModel, SymptomsViewModel
@@ -148,14 +151,21 @@
 
 ### 🎨 UI/UX Polish
 **Priority**: Visual consistency and user experience
+* **Comprehensive 2025 Material Design 3 alignment** - Full app UI/UX review and modernization (~10-14 days)
+  - Review entire app UI against latest Material Design 3 (2025) guidelines
+  - Align all screens, panes, and tabs for visual consistency
+  - Harmonize navigation patterns (tabs, bottom nav, top bar)
+  - Ensure consistent spacing, typography, and component usage
+  - Modernize color palette across food, categories, quick-adds, symptoms, analysis
+  - Fix color inconsistencies (dairy brightness vs fruits contrast)
+  - Standardize interaction patterns (swipes, taps, long-press)
+  - Update elevation, shadows, and surface treatments
+  - Apply motion and animation guidelines
+  - Create comprehensive design system documentation
 * **Color harmonization** - Ensure consistent color scheme across all screens (~2-3 hours)
   - Fix dairy brightness vs fruits contrast
   - Harmonize food, categories, quick-adds, symptoms, analysis colors
   - Apply Material Design 3 color palette consistently
-* **Global Material Design 3 alignment** - Comprehensive UI audit (~5-7 days)
-  - Analyze current UI against MD3 guidelines
-  - Create design system specification
-  - Apply consistently across all screens
 * **Dashboard timeline enhancements** - Better filtering and search (~4-5 hours)
   - Add filter by entry type (food only / symptoms only / all)
   - Add search functionality across timeline

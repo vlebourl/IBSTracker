@@ -44,26 +44,50 @@ class DataRepository(
      * Insert a food item and update usage statistics.
      *
      * Business Logic:
-     * 1. Insert food item to food_items table
-     * 2. If commonFoodId is not null, increment CommonFood.usage_count
-     * 3. Upsert FoodUsageStats (increment count or create new entry)
+     * 1. Check for existing CommonFood by exact name match
+     * 2. If not found, create new CommonFood with is_verified = false
+     * 3. Link FoodItem to CommonFood via commonFoodId
+     * 4. Insert food item to food_items table
+     * 5. Increment CommonFood.usage_count
+     * 6. Upsert FoodUsageStats (increment count or create new entry)
      */
     suspend fun insertFoodItem(foodItem: FoodItem): Long {
-        // Step 1: Insert food item
-        val rowId = foodItemDao.insert(foodItem)
+        // Step 1: Check for existing CommonFood
+        val existingCommonFood = getCommonFoodByName(foodItem.name).first()
 
-        // Step 2: Update CommonFood usage count (if linked)
-        foodItem.commonFoodId?.let { commonFoodId ->
-            commonFoodDao.incrementUsageCountById(commonFoodId)
+        // Step 2: Create CommonFood if not found
+        val commonFood = existingCommonFood ?: run {
+            val newCommonFood = CommonFood(
+                name = foodItem.name,
+                category = foodItem.category,
+                ibsImpacts = listOf(IBSImpact.FODMAP_LOW),  // Safe default
+                isVerified = false,  // Marks as custom food
+                usageCount = 0,
+                searchTerms = emptyList(),  // Empty for custom
+                nameFr = null,
+                nameEn = null,
+                createdAt = Date()
+            )
+            val commonFoodId = commonFoodDao.insert(newCommonFood)
+            newCommonFood.copy(id = commonFoodId)
         }
 
-        // Step 3: Upsert FoodUsageStats
+        // Step 3: Link FoodItem to CommonFood
+        val updatedFoodItem = foodItem.copy(commonFoodId = commonFood.id)
+
+        // Step 4: Insert food item
+        val rowId = foodItemDao.insert(updatedFoodItem)
+
+        // Step 5: Update CommonFood usage count (now always runs)
+        commonFoodDao.incrementUsageCountById(commonFood.id)
+
+        // Step 6: Upsert FoodUsageStats
         upsertUsageStats(
             foodItem.name,
             foodItem.category,
             foodItem.timestamp,
             foodItem.ibsImpacts,
-            foodItem.commonFoodId != null
+            true  // isFromCommonFoods = true
         )
 
         return rowId
