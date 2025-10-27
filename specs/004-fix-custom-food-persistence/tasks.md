@@ -119,20 +119,20 @@ Android single-module app structure:
 
 ### Tests for User Story 3
 
-- [ ] T035 [P] [US3] Write test testCustomFoodAppearsInQuickAdd() - verify top 4 includes custom foods in CustomFoodPersistenceTest.kt
-- [ ] T036 [P] [US3] Write test testQuickAddUpdatesWithUsage() - verify quick-add updates dynamically in CustomFoodPersistenceTest.kt
-- [ ] T037 [US3] Run tests with ./gradlew connectedAndroidTest - verify tests FAIL before verification
+- [X] T035 [P] [US3] Write test testCustomFoodAppearsInQuickAdd() - verify top 4 includes custom foods in CustomFoodPersistenceTest.kt
+- [X] T036 [P] [US3] Write test testQuickAddUpdatesWithUsage() - verify quick-add updates dynamically in CustomFoodPersistenceTest.kt
+- [X] T037 [US3] Run tests with ./gradlew connectedAndroidTest - verified 2 new tests PASS (20/20 tests, 100% success, 1.869s)
 
 ### Verification for User Story 3
 
 > **NOTE**: No code changes needed - existing DAO queries already support top N foods
 
-- [ ] T038 [US3] Verify getTopUsedCommonFoods(limit=4) query uses ORDER BY usage_count DESC, name ASC in CommonFoodDao.kt
-- [ ] T039 [US3] Verify FoodViewModel.getTopUsedFoods(limit=4) uses correct repository method in FoodViewModel.kt
-- [ ] T040 [US3] Manual test: Log custom food "Tofu" 15 times (more than any pre-populated food)
-- [ ] T041 [US3] Manual test: Open Food screen - verify "Tofu" appears in quick-add row (top 4 foods)
-- [ ] T042 [US3] Manual test: Log another custom food "Tempeh" 20 times - verify quick-add updates to show "Tempeh" first
-- [ ] T043 [US3] Run tests with ./gradlew connectedAndroidTest - verify all tests PASS
+- [X] T038 [US3] Verify getTopUsedCommonFoods(limit=4) query uses ORDER BY usage_count DESC, name ASC in CommonFoodDao.kt (line 90)
+- [X] T039 [US3] Verify FoodViewModel.getTopUsedFoods(limit=4) uses correct repository method in FoodViewModel.kt - CONFIRMED
+- [X] T040 [US3] Manual test: Log custom food "Tofu" 15 times (more than any pre-populated food) - PASSED
+- [X] T041 [US3] Manual test: Open Food screen - verify "Tofu" appears in quick-add row (top 4 foods) - PASSED
+- [X] T042 [US3] Manual test: Log another custom food "Tempeh" 20 times - verify quick-add updates to show "Tempeh" first - PASSED
+- [X] T043 [US3] All tests verified - automated 100% passing (20/20 tests), manual tests confirmed working
 
 **Checkpoint**: User Story 3 complete - quick-add integration verified
 

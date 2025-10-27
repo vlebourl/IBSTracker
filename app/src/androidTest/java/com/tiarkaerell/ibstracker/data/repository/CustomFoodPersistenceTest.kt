@@ -366,4 +366,114 @@ class CustomFoodPersistenceTest {
         assertEquals("Pain complet usage", 3, painComplet?.usageCount)
         assertEquals("Pain usage", 1, pain?.usageCount)
     }
+
+    /**
+     * Test Case 9: Custom food appears in quick-add (User Story 3)
+     *
+     * User Story 3 - Verification Test
+     * Given: Custom food logged multiple times to become top-used
+     * When: Quick-add list is queried (top 4 foods)
+     * Then: Custom food appears in quick-add row
+     *
+     * Use Case: Frequently logged custom foods should appear in quick-add
+     * shortcuts alongside pre-populated foods.
+     */
+    @Test
+    fun testCustomFoodAppearsInQuickAdd() = runBlocking {
+        // Arrange - Create multiple foods with different usage counts
+        val tofu = FoodItem(name = "Tofu", quantity = "", timestamp = Date(), category = FoodCategory.PROTEINS)
+        val tempeh = FoodItem(name = "Tempeh", quantity = "", timestamp = Date(), category = FoodCategory.PROTEINS)
+        val seitan = FoodItem(name = "Seitan", quantity = "", timestamp = Date(), category = FoodCategory.PROTEINS)
+        val edamame = FoodItem(name = "Edamame", quantity = "", timestamp = Date(), category = FoodCategory.PROTEINS)
+        val lentils = FoodItem(name = "Lentils", quantity = "", timestamp = Date(), category = FoodCategory.PROTEINS)
+
+        // Act - Log foods with different frequencies
+        // Tofu: 15 times (should be #1 in quick-add)
+        repeat(15) { repository.insertFoodItem(tofu.copy(timestamp = Date())) }
+        // Tempeh: 10 times
+        repeat(10) { repository.insertFoodItem(tempeh.copy(timestamp = Date())) }
+        // Seitan: 7 times
+        repeat(7) { repository.insertFoodItem(seitan.copy(timestamp = Date())) }
+        // Edamame: 5 times
+        repeat(5) { repository.insertFoodItem(edamame.copy(timestamp = Date())) }
+        // Lentils: 3 times (should NOT be in top 4)
+        repeat(3) { repository.insertFoodItem(lentils.copy(timestamp = Date())) }
+
+        // Assert - Get top 4 foods
+        val topFoods = repository.getTopUsedCommonFoods(limit = 4).first()
+        val topFoodNames = topFoods.map { it.name }
+
+        assertEquals("Should return exactly 4 foods", 4, topFoods.size)
+
+        // Verify top 4 in correct order
+        assertTrue("Tofu should be in top 4", topFoodNames.contains("Tofu"))
+        assertTrue("Tempeh should be in top 4", topFoodNames.contains("Tempeh"))
+        assertTrue("Seitan should be in top 4", topFoodNames.contains("Seitan"))
+        assertTrue("Edamame should be in top 4", topFoodNames.contains("Edamame"))
+        assertFalse("Lentils should NOT be in top 4", topFoodNames.contains("Lentils"))
+
+        // Verify correct order
+        assertEquals("Tofu should be #1", "Tofu", topFoodNames[0])
+        assertEquals("Tempeh should be #2", "Tempeh", topFoodNames[1])
+        assertEquals("Seitan should be #3", "Seitan", topFoodNames[2])
+        assertEquals("Edamame should be #4", "Edamame", topFoodNames[3])
+
+        // Verify usage counts
+        assertEquals("Tofu usage count", 15, topFoods[0].usageCount)
+        assertEquals("Tempeh usage count", 10, topFoods[1].usageCount)
+        assertEquals("Seitan usage count", 7, topFoods[2].usageCount)
+        assertEquals("Edamame usage count", 5, topFoods[3].usageCount)
+    }
+
+    /**
+     * Test Case 10: Quick-add updates dynamically with usage (User Story 3)
+     *
+     * User Story 3 - Verification Test
+     * Given: Quick-add showing top 4 foods
+     * When: User logs a different food many times
+     * Then: Quick-add updates to show new top food
+     *
+     * This verifies the quick-add is dynamic and reflects real-time usage patterns.
+     */
+    @Test
+    fun testQuickAddUpdatesWithUsage() = runBlocking {
+        // Arrange - Create initial top 4 foods
+        val food1 = FoodItem(name = "Apple", quantity = "", timestamp = Date(), category = FoodCategory.FRUITS)
+        val food2 = FoodItem(name = "Banana", quantity = "", timestamp = Date(), category = FoodCategory.FRUITS)
+        val food3 = FoodItem(name = "Cherry", quantity = "", timestamp = Date(), category = FoodCategory.FRUITS)
+        val food4 = FoodItem(name = "Date", quantity = "", timestamp = Date(), category = FoodCategory.FRUITS)
+        val newFood = FoodItem(name = "Mango", quantity = "", timestamp = Date(), category = FoodCategory.FRUITS)
+
+        // Log initial top 4 foods
+        repeat(10) { repository.insertFoodItem(food1.copy(timestamp = Date())) }
+        repeat(8) { repository.insertFoodItem(food2.copy(timestamp = Date())) }
+        repeat(6) { repository.insertFoodItem(food3.copy(timestamp = Date())) }
+        repeat(4) { repository.insertFoodItem(food4.copy(timestamp = Date())) }
+
+        // Act - Verify initial state
+        val initialTopFoods = repository.getTopUsedCommonFoods(limit = 4).first()
+        val initialNames = initialTopFoods.map { it.name }
+
+        assertEquals("Initial top 4 should have 4 foods", 4, initialTopFoods.size)
+        assertFalse("Mango should NOT be in initial top 4", initialNames.contains("Mango"))
+
+        // Log new food enough times to enter top 4 (but not #1)
+        repeat(7) { repository.insertFoodItem(newFood.copy(timestamp = Date())) }
+
+        // Assert - Verify Mango now appears in top 4
+        val updatedTopFoods = repository.getTopUsedCommonFoods(limit = 4).first()
+        val updatedNames = updatedTopFoods.map { it.name }
+
+        assertEquals("Updated top 4 should have 4 foods", 4, updatedTopFoods.size)
+        assertTrue("Mango should now be in top 4", updatedNames.contains("Mango"))
+
+        // Verify Mango pushed out the lowest (Date with 4 uses)
+        assertFalse("Date should be pushed out of top 4", updatedNames.contains("Date"))
+
+        // Verify new order: Apple (10), Banana (8), Mango (7), Cherry (6)
+        assertEquals("Apple should still be #1", "Apple", updatedNames[0])
+        assertEquals("Banana should still be #2", "Banana", updatedNames[1])
+        assertEquals("Mango should be #3", "Mango", updatedNames[2])
+        assertEquals("Cherry should be #4", "Cherry", updatedNames[3])
+    }
 }
