@@ -23,12 +23,12 @@ class TriggerAnalyzer(
         
         val symptoms = dataRepository.getSymptomsInTimeRange(
             timeWindow.startDate.atStartOfDay().toInstant(java.time.ZoneOffset.UTC),
-            timeWindow.endDate.atStartOfDay().toInstant(java.time.ZoneOffset.UTC)
+            timeWindow.endDate.plusDays(1).atStartOfDay().toInstant(java.time.ZoneOffset.UTC)
         )
-        
+
         val foods = dataRepository.getFoodsInTimeRange(
             timeWindow.startDate.atStartOfDay().toInstant(java.time.ZoneOffset.UTC),
-            timeWindow.endDate.atStartOfDay().toInstant(java.time.ZoneOffset.UTC)
+            timeWindow.endDate.plusDays(1).atStartOfDay().toInstant(java.time.ZoneOffset.UTC)
         )
         
         // Apply comprehensive filtering using the filter processor
