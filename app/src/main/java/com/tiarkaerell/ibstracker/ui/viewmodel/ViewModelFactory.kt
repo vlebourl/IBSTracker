@@ -30,8 +30,8 @@ class ViewModelFactory(
             return SettingsViewModel(settingsRepository, context, database) as T
         }
         if (modelClass.isAssignableFrom(AnalyticsViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
             val filterPreferencesManager = FilterPreferencesManager(context)
+            @Suppress("UNCHECKED_CAST") // Safe: type checked with isAssignableFrom() above
             return AnalyticsViewModel(analysisRepository, dataRepository, filterPreferencesManager) as T
         }
         if (modelClass.isAssignableFrom(FoodUsageStatsViewModel::class.java)) {

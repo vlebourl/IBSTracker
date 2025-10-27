@@ -26,6 +26,13 @@
 
 ### 🔴 Critical / Bugs
 **Priority**: Fix these first
+* **Food not appearing after adding to Other category** - Data persistence bug (~2-3 hours)
+  - Issue: Adding "Soja" to Other category doesn't show in category after save
+  - Issue: Added food doesn't appear as existing in search bar
+  - Investigate FoodItem save operation and Room DAO queries
+  - Check category filtering logic in FoodScreen
+  - Verify search functionality includes newly added foods
+  - Add tests for custom food persistence and retrieval
 * **Error handling in ViewModels** - Users need feedback on failed operations (~3-4 hours)
   - Add sealed class `UiState<T>` with Loading/Success/Error states
   - Expose error states from FoodViewModel, SymptomsViewModel

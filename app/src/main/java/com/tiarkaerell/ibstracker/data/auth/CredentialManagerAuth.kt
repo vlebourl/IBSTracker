@@ -123,13 +123,13 @@ class CredentialManagerAuth(private val context: Context) {
                 .addCredentialOption(googleIdOption)
                 .build()
 
-            val result = credentialManager.getCredential(
+            credentialManager.getCredential(
                 request = request,
                 context = context,
             )
 
-            // If we get a credential, user is signed in
-            result.credential != null
+            // If we successfully get a credential response, user is signed in
+            true
         } catch (e: Exception) {
             // No authorized accounts available
             false
