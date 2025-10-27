@@ -172,6 +172,8 @@ val viewModel: FoodViewModel = viewModel(
 ## Active Technologies
 - Kotlin 1.8.20 / Android SDK 34 + Jetpack Compose, Material3, Room Database, Kotlin Coroutines (001-improve-analysis-insights)
 - Room SQLite database (existing AppDatabase with FoodItem and Symptom entities) (001-improve-analysis-insights)
+- Kotlin 1.8.20, Android Gradle Plugin 8.x + Jetpack Compose BOM 2023.08.00, Material Icons Extended, AndroidX Core KTX 1.10.1 (003-fix-deprecation-warnings)
+- N/A (code quality feature, no data storage changes) (003-fix-deprecation-warnings)
 
 ## Recent Changes
 - 001-improve-analysis-insights: Added Kotlin 1.8.20 / Android SDK 34 + Jetpack Compose, Material3, Room Database, Kotlin Coroutines
