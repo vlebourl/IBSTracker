@@ -544,15 +544,6 @@ fun DashboardScreen(
             )
         }
 
-        // Timeline section header
-        item {
-            Text(
-                text = stringResource(R.string.dashboard_recent_activity),
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-        }
-
         // Empty state
         if (groupedEntries.isEmpty()) {
             item {
