@@ -132,7 +132,19 @@ fun DateRangePickerDialog(
                             startDate = endDate.minusDays(90)
                         }
                     )
-                    
+
+                    DatePresetOption(
+                        title = "All Time",
+                        description = "Entire history",
+                        isSelected = selectedPreset == "all_time",
+                        onClick = {
+                            selectedPreset = "all_time"
+                            endDate = LocalDate.now()
+                            // Go back 10 years - should cover any realistic data
+                            startDate = endDate.minusYears(10)
+                        }
+                    )
+
                     DatePresetOption(
                         title = "Custom Range",
                         description = "Choose specific dates",
@@ -363,6 +375,10 @@ private fun DateRangeSummary(
 
 private fun getPresetForTimeWindow(timeWindow: AnalysisTimeWindow): String {
     val daysBetween = java.time.temporal.ChronoUnit.DAYS.between(timeWindow.startDate, timeWindow.endDate)
+    // Check if it's "All Time" (roughly 10 years)
+    if (daysBetween >= 3650) {
+        return "all_time"
+    }
     return when (daysBetween) {
         7L -> "7_days"
         14L -> "14_days"

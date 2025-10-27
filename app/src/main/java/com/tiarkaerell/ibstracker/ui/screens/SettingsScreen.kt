@@ -1779,7 +1779,7 @@ fun LocalFileBackupCard(
                                     }
                                     val result = settingsViewModel.importFromLocalFile(file, clearExisting = true)
                                     importMessage = result.fold(
-                                        onSuccess = { "Import successful! Go to Analytics and tap Refresh to see updated analysis." },
+                                        onSuccess = { "Import successful! Go to Analytics, select 'All Time' date range, and tap Refresh." },
                                         onFailure = { e -> "Import failed: ${e.message}" }
                                     )
                                 }

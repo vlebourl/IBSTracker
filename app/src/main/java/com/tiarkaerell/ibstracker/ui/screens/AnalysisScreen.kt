@@ -134,6 +134,7 @@ fun AnalysisScreen(analyticsViewModel: AnalyticsViewModel) {
                 analyticsViewModel.updateFilters(newFilters)
             },
             onShowQuickFilters = { filterState.showQuickFiltersDialog() },
+            onShowDateRangePicker = { filterState.openDateRangeDialog() },
             modifier = Modifier.fillMaxWidth()
         )
         

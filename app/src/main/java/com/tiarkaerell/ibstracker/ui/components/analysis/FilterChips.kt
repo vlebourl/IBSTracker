@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,6 +26,7 @@ fun FilterChips(
     filters: AnalysisFilters,
     onFiltersChange: (AnalysisFilters) -> Unit,
     onShowQuickFilters: () -> Unit,
+    onShowDateRangePicker: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var isExpanded by remember { mutableStateOf(false) }
@@ -61,6 +63,21 @@ fun FilterChips(
             }
 
             Row {
+                // Date Range button
+                onShowDateRangePicker?.let { onShowDateRange ->
+                    TextButton(
+                        onClick = onShowDateRange
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DateRange,
+                            contentDescription = "Select date range",
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Dates")
+                    }
+                }
+
                 // Quick Filters button
                 TextButton(
                     onClick = onShowQuickFilters
