@@ -228,4 +228,142 @@ class CustomFoodPersistenceTest {
         assertEquals("CommonFood name should match", "Tofu", commonFood?.name)
         assertEquals("CommonFood category should match", FoodCategory.PROTEINS, commonFood?.category)
     }
+
+    /**
+     * Test Case 6: Sorting with custom foods (User Story 2)
+     *
+     * User Story 2 - Verification Test
+     * Given: Multiple foods with different usage counts
+     * When: Category list is queried
+     * Then: Foods are sorted by usage_count DESC, then name ASC
+     *
+     * Expected order:
+     * 1. Zucchini (usage: 5)
+     * 2. Carrot (usage: 3)
+     * 3. Eggplant (usage: 0, alphabetically first)
+     * 4. Tomato (usage: 0, alphabetically second)
+     */
+    @Test
+    fun testSortingWithCustomFoods() = runBlocking {
+        // Arrange - Create foods with varying usage counts
+        val zucchini = FoodItem(name = "Zucchini", quantity = "", timestamp = Date(), category = FoodCategory.VEGETABLES)
+        val carrot = FoodItem(name = "Carrot", quantity = "", timestamp = Date(), category = FoodCategory.VEGETABLES)
+        val eggplant = FoodItem(name = "Eggplant", quantity = "", timestamp = Date(), category = FoodCategory.VEGETABLES)
+        val tomato = FoodItem(name = "Tomato", quantity = "", timestamp = Date(), category = FoodCategory.VEGETABLES)
+
+        // Act - Insert with different usage patterns
+        // Zucchini: 5 times
+        repeat(5) { repository.insertFoodItem(zucchini.copy(timestamp = Date())) }
+        // Carrot: 3 times
+        repeat(3) { repository.insertFoodItem(carrot.copy(timestamp = Date())) }
+        // Eggplant: 1 time
+        repository.insertFoodItem(eggplant)
+        // Tomato: 1 time
+        repository.insertFoodItem(tomato)
+
+        // Assert - Verify sort order
+        val categoryFoods = repository.getCommonFoodsByCategory(FoodCategory.VEGETABLES).first()
+        val foodNames = categoryFoods.map { it.name }
+
+        assertTrue("Should have at least 4 foods", categoryFoods.size >= 4)
+
+        // Find indices of our test foods
+        val zucchiniIdx = foodNames.indexOf("Zucchini")
+        val carrotIdx = foodNames.indexOf("Carrot")
+        val eggplantIdx = foodNames.indexOf("Eggplant")
+        val tomatoIdx = foodNames.indexOf("Tomato")
+
+        assertTrue("Zucchini should appear before Carrot (higher usage)", zucchiniIdx < carrotIdx)
+        assertTrue("Carrot should appear before Eggplant (higher usage)", carrotIdx < eggplantIdx)
+        assertTrue("Eggplant should appear before Tomato (alphabetically)", eggplantIdx < tomatoIdx)
+
+        // Verify usage counts
+        val zucchiniFood = categoryFoods.find { it.name == "Zucchini" }
+        val carrotFood = categoryFoods.find { it.name == "Carrot" }
+        assertEquals("Zucchini usage count", 5, zucchiniFood?.usageCount)
+        assertEquals("Carrot usage count", 3, carrotFood?.usageCount)
+    }
+
+    /**
+     * Test Case 7: Category fills to display limit (User Story 2)
+     *
+     * User Story 2 - Verification Test
+     * Given: Category has many foods
+     * When: Category list is queried
+     * Then: All foods are returned (no artificial limit in DAO)
+     *
+     * Note: UI applies display limits (e.g., 8 items), but DAO returns all
+     */
+    @Test
+    fun testCategoryFillsToDisplayLimit() = runBlocking {
+        // Arrange - Create 10 custom foods in same category
+        val foodNames = listOf(
+            "Apple", "Banana", "Cherry", "Date", "Elderberry",
+            "Fig", "Grape", "Honeydew", "Kiwi", "Lemon"
+        )
+
+        foodNames.forEach { name ->
+            val food = FoodItem(
+                name = name,
+                quantity = "",
+                timestamp = Date(),
+                category = FoodCategory.FRUITS
+            )
+            repository.insertFoodItem(food)
+        }
+
+        // Act
+        val categoryFoods = repository.getCommonFoodsByCategory(FoodCategory.FRUITS).first()
+
+        // Assert - DAO returns all foods (no limit)
+        assertTrue("Should return at least 10 foods", categoryFoods.size >= 10)
+
+        // Verify all our test foods are present
+        val returnedNames = categoryFoods.map { it.name }
+        foodNames.forEach { name ->
+            assertTrue("Should contain $name", returnedNames.contains(name))
+        }
+    }
+
+    /**
+     * Test Case 8: Mixed pre-populated and custom foods (User Story 2)
+     *
+     * User Story 2 - Verification Test
+     * Given: Category has both pre-populated and custom foods
+     * When: Category list is queried
+     * Then: Both types appear together, sorted by usage count
+     *
+     * This simulates real usage where users add custom foods alongside
+     * the 72 pre-populated French foods in the database.
+     */
+    @Test
+    fun testMixedPrePopulatedAndCustomFoods() = runBlocking {
+        // Arrange - Create mix of pre-populated-style and custom foods
+        // Pre-populated style (isVerified would be true in real data, but we create as custom for test)
+        val bread = FoodItem(name = "Pain", quantity = "", timestamp = Date(), category = FoodCategory.GRAINS)
+        val customBread = FoodItem(name = "Pain complet", quantity = "", timestamp = Date(), category = FoodCategory.GRAINS)
+
+        // Act - Log custom food more than pre-populated
+        repeat(3) { repository.insertFoodItem(customBread.copy(timestamp = Date())) }
+        repository.insertFoodItem(bread)
+
+        // Assert
+        val categoryFoods = repository.getCommonFoodsByCategory(FoodCategory.GRAINS).first()
+        val foodNames = categoryFoods.map { it.name }
+
+        // Verify both foods present
+        assertTrue("Should contain Pain", foodNames.contains("Pain"))
+        assertTrue("Should contain Pain complet", foodNames.contains("Pain complet"))
+
+        // Verify custom food with higher usage appears first
+        val painCompletIdx = foodNames.indexOf("Pain complet")
+        val painIdx = foodNames.indexOf("Pain")
+        assertTrue("Pain complet should appear before Pain (higher usage)", painCompletIdx < painIdx)
+
+        // Verify usage counts
+        val painComplet = categoryFoods.find { it.name == "Pain complet" }
+        val pain = categoryFoods.find { it.name == "Pain" }
+        assertEquals("Pain complet usage", 3, painComplet?.usageCount)
+        assertEquals("Pain usage", 1, pain?.usageCount)
+    }
 }
