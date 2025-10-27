@@ -50,7 +50,7 @@ fun QuickAddSection(
     ) {
         // Section header
         Text(
-            text = "Quick Add (Top 4 by Usage)",
+            text = "Quick Add",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface,

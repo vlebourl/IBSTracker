@@ -145,7 +145,12 @@ fun MainScreen(viewModelFactory: ViewModelFactory) {
             composable(Screen.Dashboard.route) {
                 val foodViewModel: FoodViewModel = viewModel(factory = viewModelFactory)
                 val symptomsViewModel: SymptomsViewModel = viewModel(factory = viewModelFactory)
-                DashboardScreen(foodViewModel = foodViewModel, symptomsViewModel = symptomsViewModel)
+                val foodUsageStatsViewModel: com.tiarkaerell.ibstracker.ui.viewmodel.FoodUsageStatsViewModel = viewModel(factory = viewModelFactory)
+                DashboardScreen(
+                    foodViewModel = foodViewModel,
+                    symptomsViewModel = symptomsViewModel,
+                    foodUsageStatsViewModel = foodUsageStatsViewModel
+                )
             }
             composable(Screen.Food.route) {
                 val foodViewModel: FoodViewModel = viewModel(factory = viewModelFactory)
