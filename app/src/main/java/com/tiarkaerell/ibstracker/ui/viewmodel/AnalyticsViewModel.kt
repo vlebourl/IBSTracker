@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tiarkaerell.ibstracker.data.model.*
 import com.tiarkaerell.ibstracker.data.repository.AnalysisRepository
+import com.tiarkaerell.ibstracker.data.repository.DataRepository
 import com.tiarkaerell.ibstracker.data.preferences.FilterPreferencesManager
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -11,6 +12,7 @@ import java.time.LocalDate
 
 class AnalyticsViewModel(
     private val analysisRepository: AnalysisRepository,
+    private val dataRepository: DataRepository,
     private val filterPreferencesManager: FilterPreferencesManager
 ) : ViewModel() {
     
@@ -31,12 +33,34 @@ class AnalyticsViewModel(
     
     init {
         generateAnalysis()
-        
+
         // Observe analysis results from repository
         viewModelScope.launch {
             analysisRepository.observeAnalysisResults()
                 .collect { result ->
                     _analysisResult.value = result
+                }
+        }
+
+        // Automatically refresh analysis when food items change
+        viewModelScope.launch {
+            dataRepository.getAllFoodItems()
+                .drop(1) // Skip initial emission to avoid double analysis on init
+                .collect {
+                    // Invalidate cache to force fresh analysis
+                    analysisRepository.invalidateCache(java.time.Instant.now())
+                    generateAnalysis()
+                }
+        }
+
+        // Automatically refresh analysis when symptoms change
+        viewModelScope.launch {
+            dataRepository.getAllSymptoms()
+                .drop(1) // Skip initial emission to avoid double analysis on init
+                .collect {
+                    // Invalidate cache to force fresh analysis
+                    analysisRepository.invalidateCache(java.time.Instant.now())
+                    generateAnalysis()
                 }
         }
     }

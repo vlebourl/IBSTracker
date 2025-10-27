@@ -32,7 +32,7 @@ class ViewModelFactory(
         if (modelClass.isAssignableFrom(AnalyticsViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
             val filterPreferencesManager = FilterPreferencesManager(context)
-            return AnalyticsViewModel(analysisRepository, filterPreferencesManager) as T
+            return AnalyticsViewModel(analysisRepository, dataRepository, filterPreferencesManager) as T
         }
         if (modelClass.isAssignableFrom(FoodUsageStatsViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
