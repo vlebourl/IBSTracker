@@ -1,5 +1,20 @@
 ## Completed ✅
 
+### v1.12.0 - Custom Food Persistence Fix
+* ~~**Food not appearing after adding to a category**~~ **[Completed - Released v1.12.0]**
+  - ~~Issue: Adding "Soja" to Other category doesn't show in category after save~~
+  - ~~Issue: Added food doesn't appear as existing in search bar~~
+  - ~~Root cause: Custom foods saved as FoodItem without creating CommonFood entries~~
+  - ~~Fix: Modified DataRepository.insertFoodItem() to create/link CommonFood entries~~
+  - ~~Testing: 30 comprehensive tests (15 tests × 2 devices), 100% passing~~
+  - ~~Categories sorted by usage_count DESC, name ASC~~
+  - ~~Custom foods appear in quick-add (top 4 most-used)~~
+  - ~~Performance validated: < 500ms with 200+ foods, search < 1s~~
+  - ~~Edge cases: UTF-8 support, case-sensitive, large usage counts (1500+)~~
+  - ~~No database migration required (schema v10 unchanged)~~
+  - ~~Backward compatible (nullable commonFoodId)~~
+  - ~~Single file modification (DataRepository.kt)~~
+
 ### v1.11.1 - Deprecation Warnings Elimination
 * ~~**Fix all 13 deprecation compilation warnings**~~ **[Completed - Released v1.11.1]**
   - ~~Migrated 6 Material Icons to AutoMirrored variants (TrendingUp, Help, HelpOutline, ArrowBack, ArrowForward)~~
@@ -44,16 +59,6 @@
 
 ### 🔴 Critical / Bugs
 **Priority**: Fix these first
-* ~~**Food not appearing after adding to a category**~~ **[Completed - Fixed in PR #9 / v1.12.0]**
-  - ~~Issue: Adding "Soja" to Other category (for instance) doesn't show in category after save~~
-  - ~~Issue: Added food doesn't appear as existing in search bar~~
-  - ~~Root cause: Custom foods saved as FoodItem without creating CommonFood entries~~
-  - ~~Fix: Modified DataRepository.insertFoodItem() to create/link CommonFood entries~~
-  - ~~Testing: 15 comprehensive tests (30 tests across 2 devices), 100% passing~~
-  - ~~Categories sorted by usage_count DESC, name ASC~~
-  - ~~Custom foods appear in quick-add (top 4 most-used)~~
-  - ~~Performance validated: < 500ms with 200+ foods, search < 1s~~
-  - ~~Edge cases: UTF-8 support, case-sensitive, large usage counts (1500+)~~
 * **Error handling in ViewModels** - Users need feedback on failed operations (~3-4 hours)
   - Add sealed class `UiState<T>` with Loading/Success/Error states
   - Expose error states from FoodViewModel, SymptomsViewModel
@@ -265,10 +270,18 @@
 ✅ Edge-to-edge display implementation
 ✅ Zero behavioral changes, 100% test coverage maintained
 
-### 🎯 Next Release Options (v1.12.0)
+### ✅ Critical Bug Fix (v1.12.0) - COMPLETED
+✅ Fixed custom food persistence bug (PR #9)
+✅ Custom foods now appear immediately in category lists
+✅ Search functionality includes custom foods
+✅ 30 comprehensive automated tests (100% passing)
+✅ Performance validated (< 500ms category, < 1s search)
+✅ No database migration required
+✅ Backward compatible
 
-**Option A: Fix Critical Bugs** - 1-2 days (RECOMMENDED)
-- Fix "Soja" food not appearing bug (data persistence)
+### 🎯 Next Release Options (v1.13.0)
+
+**Option A: Remaining Critical Bugs** - 1-2 days (RECOMMENDED)
 - Add error handling in ViewModels (UiState pattern)
 - Implement input validation
 - Add sync status indicator
@@ -292,7 +305,7 @@
 - Implement swipe gestures
 - Category ordering by frequency
 
-### Future Releases (v1.13.0+)
+### Future Releases (v1.14.0+)
 - Analytics Phase 3: Advanced Pattern Recognition
 - Analytics Phase 4: Personalization & Recommendations
 - Body weight history tracking
