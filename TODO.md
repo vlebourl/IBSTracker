@@ -238,37 +238,51 @@
 
 ## 📋 Development Roadmap
 
-### ✅ Phase 1: Analytics Foundation (v1.10.0) - COMPLETED
+### ✅ Phase 1: Analytics Foundation (v1.11.0) - COMPLETED
 ✅ 3-hour symptom window (clinical standard)
 ✅ 30-minute meal grouping
 ✅ Meal-level PRIMARY analysis
 ✅ Individual food SECONDARY analysis
+✅ Symptom-centric analysis with probability correlations
+✅ Enhanced pattern detection with temporal and severity analysis
 ✅ Confidence indicators
 ✅ Co-occurrence tracking
 ✅ Collapsible UI cards
 
-### 🎯 Next Release Options (v1.11.0)
+### ✅ Code Quality (v1.11.1) - COMPLETED
+✅ Eliminated all 13 deprecation compilation warnings
+✅ Migrated to modern Android/Compose APIs
+✅ Edge-to-edge display implementation
+✅ Zero behavioral changes, 100% test coverage maintained
 
-**Option A: Analytics Phase 2 (Statistical Enhancements)** - 3-5 days
+### 🎯 Next Release Options (v1.12.0)
+
+**Option A: Fix Critical Bugs** - 1-2 days (RECOMMENDED)
+- Fix "Soja" food not appearing bug (data persistence)
+- Add error handling in ViewModels (UiState pattern)
+- Implement input validation
+- Add sync status indicator
+
+**Option B: Analytics Phase 2 (Statistical Enhancements)** - 3-5 days
 - Build on Phase 1 foundation
 - Add statistical significance testing
 - Confidence intervals
 - Better handling of low-data scenarios
 - More accurate trigger identification
 
-**Option B: Medication Tracking** - 3-5 days
+**Option C: Medication Tracking** - 3-5 days
 - New tracking category
 - Medication-symptom correlations
 - Pre-populated medication database
 - Integration with existing analytics
 
-**Option C: UI/UX Overhaul** - 5-7 days
+**Option D: UI/UX Overhaul** - 5-7 days
 - Global Material Design 3 alignment
 - Refactor symptom page
 - Implement swipe gestures
 - Category ordering by frequency
 
-### Future Releases (v1.12.0+)
+### Future Releases (v1.13.0+)
 - Analytics Phase 3: Advanced Pattern Recognition
 - Analytics Phase 4: Personalization & Recommendations
 - Body weight history tracking
