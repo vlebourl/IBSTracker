@@ -1325,7 +1325,7 @@ private fun OnboardingTooltipsOverlay(
                     
                     // Progress indicator
                     LinearProgressIndicator(
-                        progress = (currentTooltipIndex + 1).toFloat() / tooltips.size,
+                        progress = { (currentTooltipIndex + 1).toFloat() / tooltips.size },
                         modifier = Modifier.fillMaxWidth(),
                         color = MaterialTheme.colorScheme.primary,
                         trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
