@@ -76,6 +76,7 @@ class AppContainer(private val context: Context) {
             context = context,
             database = appDatabase,
             backupManager = backupManager,
+            googleDriveService = googleDriveService,
             currentDatabaseVersion = 10
         )
     }

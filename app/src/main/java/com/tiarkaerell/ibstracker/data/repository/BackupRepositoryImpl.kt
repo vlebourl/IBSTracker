@@ -114,10 +114,22 @@ class BackupRepositoryImpl(
     // ==================== RESTORE ====================
 
     override suspend fun restoreFromBackup(backupFile: BackupFile): RestoreResult {
-        return restoreManager.restoreFromBackup(backupFile)
+        // TODO: Get access token from GoogleAuthManager for cloud backups
+        val accessToken: String? = null
+        return restoreManager.restoreFromBackup(backupFile, accessToken)
     }
 
     override fun isBackupCompatible(backupFile: BackupFile): Boolean {
         return restoreManager.checkDatabaseVersionCompatibility(backupFile.databaseVersion)
+    }
+
+    // ==================== CLOUD BACKUPS ====================
+
+    override fun observeCloudBackups(accessToken: String?): Flow<List<BackupFile>> {
+        return googleDriveService.listCloudBackups(accessToken)
+    }
+
+    override suspend fun deleteCloudBackup(backupFile: BackupFile, accessToken: String?): Boolean {
+        return googleDriveService.deleteCloudBackup(backupFile.filePath, accessToken)
     }
 }

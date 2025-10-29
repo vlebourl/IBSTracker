@@ -119,4 +119,27 @@ interface BackupRepository {
      * @return true if compatible, false otherwise
      */
     fun isBackupCompatible(backupFile: BackupFile): Boolean
+
+    // ==================== CLOUD BACKUPS ====================
+
+    /**
+     * Observes cloud backup files as a reactive Flow.
+     *
+     * Emits sorted list (most recent first) when:
+     * - User signs into Google account
+     * - Cloud sync completes
+     * - Cloud backup is deleted
+     *
+     * @param accessToken OAuth access token for Google Drive
+     */
+    fun observeCloudBackups(accessToken: String?): Flow<List<BackupFile>>
+
+    /**
+     * Deletes a specific cloud backup from Google Drive.
+     *
+     * @param backupFile The cloud backup to delete
+     * @param accessToken OAuth access token
+     * @return true if deleted successfully
+     */
+    suspend fun deleteCloudBackup(backupFile: BackupFile, accessToken: String?): Boolean
 }

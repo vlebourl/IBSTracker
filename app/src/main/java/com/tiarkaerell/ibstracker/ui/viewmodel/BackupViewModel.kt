@@ -36,6 +36,20 @@ class BackupViewModel(
     val settings = backupRepository.observeSettings()
     val localBackups = backupRepository.observeLocalBackups()
 
+    // Cloud backups - requires access token
+    // TODO: Get access token from GoogleAuthManager
+    private val _cloudBackups = MutableStateFlow<List<BackupFile>>(emptyList())
+    val cloudBackups: StateFlow<List<BackupFile>> = _cloudBackups.asStateFlow()
+
+    init {
+        // Initialize cloud backups observation
+        viewModelScope.launch {
+            backupRepository.observeCloudBackups(null).collect {  // TODO: Pass actual access token
+                _cloudBackups.value = it
+            }
+        }
+    }
+
     // ==================== ACTIONS ====================
 
     /**
@@ -87,13 +101,19 @@ class BackupViewModel(
     }
 
     /**
-     * Deletes a local backup file.
+     * Deletes a backup file (local or cloud).
      *
      * @param backupFile The backup to delete
      */
     fun deleteBackup(backupFile: BackupFile) {
         viewModelScope.launch {
-            val success = backupRepository.deleteLocalBackup(backupFile)
+            val success = if (backupFile.location == com.tiarkaerell.ibstracker.data.model.backup.BackupLocation.LOCAL) {
+                backupRepository.deleteLocalBackup(backupFile)
+            } else {
+                // TODO: Get access token from GoogleAuthManager
+                backupRepository.deleteCloudBackup(backupFile, accessToken = null)
+            }
+
             if (success) {
                 _uiState.value = BackupUiState.BackupDeleted
                 kotlinx.coroutines.delay(2000)

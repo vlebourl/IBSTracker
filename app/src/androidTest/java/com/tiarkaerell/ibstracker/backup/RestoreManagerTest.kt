@@ -138,4 +138,45 @@ class RestoreManagerTest {
         // This test will FAIL until RestoreManager is implemented
         TODO("T054: Implement test after RestoreManager is created")
     }
+
+    // ==================== PHASE 6: CLOUD RESTORE TESTS ====================
+
+    /**
+     * T120: Test successful restore from cloud backup
+     *
+     * Given: A valid cloud backup available in Google Drive
+     * When: restoreFromBackup() is called with CLOUD location
+     * Then: Backup is downloaded, verified, and restored successfully
+     */
+    @org.junit.Test
+    fun testRestoreFromCloud_success() = runTest {
+        // This test will FAIL until cloud restore is implemented
+        TODO("T120: Implement test after cloud restore is added to RestoreManager")
+    }
+
+    /**
+     * T121: Test cloud restore with download failure
+     *
+     * Given: Network error during cloud backup download
+     * When: restoreFromBackup() is called with CLOUD location
+     * Then: Returns Failure with RestoreError.DOWNLOAD_FAILED
+     */
+    @org.junit.Test
+    fun testRestoreFromCloud_downloadFailure() = runTest {
+        // This test will FAIL until cloud restore is implemented
+        TODO("T121: Implement test after cloud restore is added to RestoreManager")
+    }
+
+    /**
+     * T122: Test cloud backup with checksum mismatch after download
+     *
+     * Given: Cloud backup downloads but checksum doesn't match
+     * When: restoreFromBackup() is called with CLOUD location
+     * Then: Returns Failure with RestoreError.FILE_CORRUPTED
+     */
+    @org.junit.Test
+    fun testRestoreFromCloud_checksumMismatch() = runTest {
+        // This test will FAIL until cloud restore is implemented
+        TODO("T122: Implement test after cloud restore is added to RestoreManager")
+    }
 }

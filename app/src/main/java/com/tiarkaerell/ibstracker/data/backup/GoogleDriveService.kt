@@ -137,10 +137,14 @@ class GoogleDriveService(
     }
 
     /**
-     * Downloads a cloud backup file to local storage.
+     * Downloads a cloud backup file to a temporary local file.
      *
-     * Note: Existing GoogleDriveBackup restores directly to database.
-     * This method would need modification to download to file instead.
+     * This method creates a temporary file in the app's cache directory,
+     * downloads the backup from Google Drive, and returns the File reference.
+     * The caller is responsible for deleting the temp file after use.
+     *
+     * Note: Existing GoogleDriveBackup only supports direct database restore.
+     * This implementation will use the Drive API directly to download the file.
      *
      * @param fileId Google Drive file ID
      * @param accessToken Google OAuth access token
@@ -150,10 +154,30 @@ class GoogleDriveService(
         fileId: String,
         accessToken: String?
     ): File? {
-        // TODO: Modify GoogleDriveBackup to support downloading to file
-        // Currently it only supports direct restore to database
-        // For now, return null - will implement in Phase 6 (US4)
-        return null
+        return try {
+            if (accessToken.isNullOrEmpty()) {
+                return null
+            }
+
+            // Create temporary file in cache directory
+            val tempFile = File(context.cacheDir, "temp_cloud_backup_${System.currentTimeMillis()}.db")
+
+            // Use existing GoogleDriveBackup to download the file
+            // Note: The current GoogleDriveBackup.restoreBackup() restores directly to DB
+            // We need to modify this to download to file instead
+            // For now, we'll use a workaround that downloads the content
+
+            val result = googleDriveBackup.downloadBackupToFile(fileId, tempFile, accessToken)
+
+            if (result.isSuccess) {
+                tempFile
+            } else {
+                tempFile.delete()
+                null
+            }
+        } catch (e: Exception) {
+            null
+        }
     }
 
     /**

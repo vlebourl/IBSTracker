@@ -98,4 +98,19 @@ class BackupIntegrationTest {
         // This test will FAIL until RestoreManager is implemented
         TODO("T056: Implement test after RestoreManager is created")
     }
+
+    // ==================== PHASE 6: CLOUD BACKUP TESTS ====================
+
+    /**
+     * T123: Test cloud backup list is sorted by date (newest first)
+     *
+     * Given: Multiple cloud backups in Google Drive
+     * When: listCloudBackups() is called
+     * Then: Returns Flow of backups sorted by timestamp descending
+     */
+    @org.junit.Test
+    fun testCloudBackupList_sortedByDate() = runTest {
+        // This test will FAIL until cloud backup listing is implemented
+        TODO("T123: Implement test after cloud backup listing is added")
+    }
 }

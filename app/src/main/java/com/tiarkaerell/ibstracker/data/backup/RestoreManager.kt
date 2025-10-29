@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.RoomDatabase
 import com.tiarkaerell.ibstracker.data.backup.BackupFileManager.verifyChecksum
 import com.tiarkaerell.ibstracker.data.model.backup.BackupFile
+import com.tiarkaerell.ibstracker.data.model.backup.BackupLocation
 import com.tiarkaerell.ibstracker.data.model.backup.RestoreError
 import com.tiarkaerell.ibstracker.data.model.backup.RestoreResult
 import kotlinx.coroutines.Dispatchers
@@ -11,12 +12,13 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 /**
- * RestoreManager handles database restore operations from local backups.
+ * RestoreManager handles database restore operations from local and cloud backups.
  *
  * Key Responsibilities:
  * - Validates backup file integrity (checksum verification)
  * - Checks database version compatibility
  * - Creates pre-restore safety backup
+ * - Downloads cloud backups to temporary files
  * - Performs database file replacement
  * - Counts restored items for user feedback
  *
@@ -25,12 +27,14 @@ import java.io.File
  * @param context Application context for accessing file storage
  * @param database Room database instance for closing/reopening
  * @param backupManager BackupManager instance for creating pre-restore backup
+ * @param googleDriveService GoogleDriveService for downloading cloud backups
  * @param currentDatabaseVersion Current app database schema version
  */
 class RestoreManager(
     private val context: Context,
     private val database: RoomDatabase,
     private val backupManager: BackupManager,
+    private val googleDriveService: GoogleDriveService? = null,
     private val currentDatabaseVersion: Int
 ) {
     companion object {
@@ -39,11 +43,12 @@ class RestoreManager(
     }
 
     /**
-     * Restores the database from a backup file.
+     * Restores the database from a backup file (local or cloud).
      *
-     * Performance target: <3s for typical database size
+     * Performance target: <3s for typical database size (excluding cloud download time)
      *
      * Steps:
+     * 0. If CLOUD backup, download to temporary file first
      * 1. Verify backup file exists and checksum is valid
      * 2. Check database version compatibility
      * 3. Create pre-restore safety backup of current data
@@ -51,16 +56,53 @@ class RestoreManager(
      * 5. Replace database file with backup
      * 6. Reopen database (Room will handle WAL files automatically)
      * 7. Count restored items
+     * 8. Clean up temporary file if cloud backup
      *
      * @param backupFile The backup file to restore from
+     * @param accessToken OAuth access token for cloud backups (required if location == CLOUD)
      * @return RestoreResult.Success with item count and duration, or RestoreResult.Failure
      */
-    suspend fun restoreFromBackup(backupFile: BackupFile): RestoreResult = withContext(Dispatchers.IO) {
+    suspend fun restoreFromBackup(
+        backupFile: BackupFile,
+        accessToken: String? = null
+    ): RestoreResult = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
+        var tempCloudFile: File? = null
 
         try {
+            // Step 0: Download cloud backup if needed
+            val actualBackupFile = if (backupFile.location == BackupLocation.CLOUD) {
+                if (googleDriveService == null) {
+                    return@withContext RestoreResult.Failure(
+                        error = RestoreError.DOWNLOAD_FAILED,
+                        message = "GoogleDriveService not available for cloud restore"
+                    )
+                }
+
+                val downloadedFile = googleDriveService.downloadBackupFromDrive(
+                    fileId = backupFile.filePath, // filePath contains Drive file ID for cloud backups
+                    accessToken = accessToken
+                )
+
+                if (downloadedFile == null || !downloadedFile.exists()) {
+                    return@withContext RestoreResult.Failure(
+                        error = RestoreError.DOWNLOAD_FAILED,
+                        message = "Failed to download cloud backup"
+                    )
+                }
+
+                tempCloudFile = downloadedFile
+                // Create new BackupFile pointing to downloaded temp file
+                backupFile.copy(
+                    filePath = downloadedFile.absolutePath,
+                    location = BackupLocation.LOCAL // Now it's a local file
+                )
+            } else {
+                backupFile
+            }
+
             // Step 1: Verify backup file
-            val verificationError = verifyBackupFile(backupFile)
+            val verificationError = verifyBackupFile(actualBackupFile)
             if (verificationError != null) {
                 return@withContext RestoreResult.Failure(
                     error = verificationError,
@@ -69,10 +111,10 @@ class RestoreManager(
             }
 
             // Step 2: Check version compatibility
-            if (!checkDatabaseVersionCompatibility(backupFile.databaseVersion)) {
+            if (!checkDatabaseVersionCompatibility(actualBackupFile.databaseVersion)) {
                 return@withContext RestoreResult.Failure(
                     error = RestoreError.VERSION_MISMATCH,
-                    message = "Backup version ${backupFile.databaseVersion} incompatible with current version $currentDatabaseVersion"
+                    message = "Backup version ${actualBackupFile.databaseVersion} incompatible with current version $currentDatabaseVersion"
                 )
             }
 
@@ -86,7 +128,7 @@ class RestoreManager(
             }
 
             // Step 4-6: Perform database restore
-            val restoreSuccess = performDatabaseRestore(backupFile)
+            val restoreSuccess = performDatabaseRestore(actualBackupFile)
             if (!restoreSuccess) {
                 return@withContext RestoreResult.Failure(
                     error = RestoreError.RESTORE_INTERRUPTED,
@@ -110,6 +152,17 @@ class RestoreManager(
                 message = "Unexpected error during restore: ${e.message}",
                 cause = e
             )
+        } finally {
+            // Step 8: Clean up temporary cloud backup file
+            tempCloudFile?.let {
+                try {
+                    if (it.exists()) {
+                        it.delete()
+                    }
+                } catch (e: Exception) {
+                    // Ignore cleanup errors
+                }
+            }
         }
     }
 

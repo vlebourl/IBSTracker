@@ -202,15 +202,15 @@ class GoogleDriveBackup(
 
             val driveService = getDriveService(accessToken)
                 ?: return@withContext Result.failure(Exception("Failed to initialize Drive service"))
-            
+
             // Download file content
             val outputStream = ByteArrayOutputStream()
             driveService.files().get(fileId).executeMediaAndDownloadTo(outputStream)
             val jsonContent = outputStream.toString("UTF-8")
-            
+
             // Parse backup data
             val backupData = json.decodeFromString<BackupData>(jsonContent)
-            
+
             // Clear existing data
             database.foodItemDao().deleteAll()
             database.symptomDao().deleteAllSymptoms()
@@ -226,7 +226,7 @@ class GoogleDriveBackup(
                 )
                 database.foodItemDao().insert(foodItem)
             }
-            
+
             // Restore symptoms
             backupData.symptoms.forEach { item ->
                 val symptom = Symptom(
@@ -237,8 +237,43 @@ class GoogleDriveBackup(
                 )
                 database.symptomDao().insert(symptom)
             }
-            
+
             Result.success("Restored ${backupData.foodItems.size} food items and ${backupData.symptoms.size} symptoms")
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Downloads a cloud backup file to a local file.
+     *
+     * This method is used for the new backup/restore system that needs
+     * to download the backup file first before restoring.
+     *
+     * @param fileId Google Drive file ID
+     * @param destinationFile Local file to write the downloaded content
+     * @param accessToken OAuth 2.0 access token
+     * @return Result indicating success or failure
+     */
+    suspend fun downloadBackupToFile(
+        fileId: String,
+        destinationFile: java.io.File,
+        accessToken: String?
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            if (accessToken == null) {
+                return@withContext Result.failure(Exception("Not authorized. Please sign in to Google Drive."))
+            }
+
+            val driveService = getDriveService(accessToken)
+                ?: return@withContext Result.failure(Exception("Failed to initialize Drive service"))
+
+            // Download file content to destination file
+            destinationFile.outputStream().use { outputStream ->
+                driveService.files().get(fileId).executeMediaAndDownloadTo(outputStream)
+            }
+
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
