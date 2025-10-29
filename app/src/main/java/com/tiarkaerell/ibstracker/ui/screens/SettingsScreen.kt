@@ -34,7 +34,10 @@ import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(settingsViewModel: SettingsViewModel) {
+fun SettingsScreen(
+    settingsViewModel: SettingsViewModel,
+    onNavigateToBackupSettings: () -> Unit = {}
+) {
     val language by settingsViewModel.language.collectAsState()
     val units by settingsViewModel.units.collectAsState()
     val userProfile by settingsViewModel.userProfile.collectAsState()
@@ -309,6 +312,19 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel) {
             onPasswordChange = { password ->
                 settingsViewModel.setBackupPassword(password)
             }
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // Backup & Restore Section
+        Text(
+            text = "Backup & Restore",
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        BackupRestoreCard(
+            onNavigateToBackupSettings = onNavigateToBackupSettings
         )
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -1837,5 +1853,65 @@ fun LocalFileBackupCard(
                 }
             }
         )
+    }
+}
+
+@Composable
+fun BackupRestoreCard(
+    onNavigateToBackupSettings: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Local Backup & Restore",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        text = "Manage local backups and restore your data",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Storage,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 12.dp)
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Backup Settings",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = "Configure automatic backups and restore options",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                OutlinedButton(onClick = onNavigateToBackupSettings) {
+                    Text("Open")
+                }
+            }
+        }
     }
 }

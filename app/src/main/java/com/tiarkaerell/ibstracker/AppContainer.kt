@@ -5,9 +5,15 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.tiarkaerell.ibstracker.data.analysis.*
+import com.tiarkaerell.ibstracker.data.backup.BackupManager
+import com.tiarkaerell.ibstracker.data.backup.GoogleDriveService
+import com.tiarkaerell.ibstracker.data.backup.RestoreManager
 import com.tiarkaerell.ibstracker.data.database.AppDatabase
+import com.tiarkaerell.ibstracker.data.preferences.BackupPreferences
 import com.tiarkaerell.ibstracker.data.repository.AnalysisRepository
 import com.tiarkaerell.ibstracker.data.repository.AnalysisRepositoryImpl
+import com.tiarkaerell.ibstracker.data.repository.BackupRepository
+import com.tiarkaerell.ibstracker.data.repository.BackupRepositoryImpl
 import com.tiarkaerell.ibstracker.data.repository.DataRepository
 import com.tiarkaerell.ibstracker.data.repository.SettingsRepository
 import com.tiarkaerell.ibstracker.util.PrePopulatedFoods
@@ -57,12 +63,51 @@ class AppContainer(private val context: Context) {
         // Callback kept for potential future use
     }
 
+    val backupManager: BackupManager by lazy {
+        BackupManager(
+            context = context,
+            database = appDatabase,
+            databaseVersion = 10 // AppDatabase current version
+        )
+    }
+
+    private val restoreManager: RestoreManager by lazy {
+        RestoreManager(
+            context = context,
+            database = appDatabase,
+            backupManager = backupManager,
+            currentDatabaseVersion = 10
+        )
+    }
+
+    val backupPreferences: BackupPreferences by lazy {
+        BackupPreferences(context)
+    }
+
+    val googleDriveService: GoogleDriveService by lazy {
+        GoogleDriveService(
+            context = context,
+            database = appDatabase,
+            settingsRepository = settingsRepository
+        )
+    }
+
+    val backupRepository: BackupRepository by lazy {
+        BackupRepositoryImpl(
+            backupManager = backupManager,
+            restoreManager = restoreManager,
+            googleDriveService = googleDriveService,
+            backupPreferences = backupPreferences
+        )
+    }
+
     val dataRepository: DataRepository by lazy {
         DataRepository(
             foodItemDao = appDatabase.foodItemDao(),
             commonFoodDao = appDatabase.commonFoodDao(),
             foodUsageStatsDao = appDatabase.foodUsageStatsDao(),
-            symptomDao = appDatabase.symptomDao()
+            symptomDao = appDatabase.symptomDao(),
+            backupManager = backupManager
         )
     }
 

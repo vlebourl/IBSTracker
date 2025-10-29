@@ -25,12 +25,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.tiarkaerell.ibstracker.ui.screens.AnalysisScreen
+import com.tiarkaerell.ibstracker.ui.screens.BackupSettingsScreen
 import com.tiarkaerell.ibstracker.ui.screens.DashboardScreen
 import com.tiarkaerell.ibstracker.ui.screens.FoodScreen
 import com.tiarkaerell.ibstracker.ui.screens.SettingsScreen
 import com.tiarkaerell.ibstracker.ui.screens.SymptomsScreen
 import com.tiarkaerell.ibstracker.ui.theme.IBSTrackerTheme
 import com.tiarkaerell.ibstracker.ui.viewmodel.AnalyticsViewModel
+import com.tiarkaerell.ibstracker.ui.viewmodel.BackupViewModel
 import com.tiarkaerell.ibstracker.ui.viewmodel.FoodViewModel
 import com.tiarkaerell.ibstracker.ui.viewmodel.SettingsViewModel
 import com.tiarkaerell.ibstracker.ui.viewmodel.SymptomsViewModel
@@ -67,9 +69,10 @@ class MainActivity : ComponentActivity() {
         val container = (application as IBSTrackerApplication).container
 
         val viewModelFactory = ViewModelFactory(
-            container.dataRepository, 
+            container.dataRepository,
             container.settingsRepository,
             container.analysisRepository,
+            container.backupRepository,
             container.appContext,
             container.appDatabase
         )
@@ -166,7 +169,21 @@ fun MainScreen(viewModelFactory: ViewModelFactory) {
             }
             composable(Screen.Settings.route) {
                 val settingsViewModel: SettingsViewModel = viewModel(factory = viewModelFactory)
-                SettingsScreen(settingsViewModel = settingsViewModel)
+                SettingsScreen(
+                    settingsViewModel = settingsViewModel,
+                    onNavigateToBackupSettings = {
+                        navController.navigate("backup_settings")
+                    }
+                )
+            }
+            composable("backup_settings") {
+                val backupViewModel: BackupViewModel = viewModel(factory = viewModelFactory)
+                BackupSettingsScreen(
+                    viewModel = backupViewModel,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
             }
         }
     }

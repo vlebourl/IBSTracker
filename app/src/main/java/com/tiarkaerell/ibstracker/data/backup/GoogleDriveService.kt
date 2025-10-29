@@ -1,0 +1,238 @@
+package com.tiarkaerell.ibstracker.data.backup
+
+import android.content.Context
+import com.tiarkaerell.ibstracker.data.database.AppDatabase
+import com.tiarkaerell.ibstracker.data.model.backup.BackupFile
+import com.tiarkaerell.ibstracker.data.model.backup.BackupLocation
+import com.tiarkaerell.ibstracker.data.model.backup.BackupResult
+import com.tiarkaerell.ibstracker.data.model.backup.BackupError
+import com.tiarkaerell.ibstracker.data.repository.SettingsRepository
+import com.tiarkaerell.ibstracker.data.sync.GoogleDriveBackup
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import java.io.File
+
+/**
+ * GoogleDriveService - Wrapper for Google Drive backup operations.
+ *
+ * Integrates existing GoogleDriveBackup class with new BackupManager system.
+ * Provides a consistent interface for cloud backup operations that matches
+ * the local backup API.
+ *
+ * Key Responsibilities:
+ * - Upload local backups to Google Drive
+ * - Download cloud backups to local storage
+ * - List available cloud backups
+ * - Delete old cloud backups
+ * - Maintain maximum 30 cloud backups
+ *
+ * Architecture:
+ * - Reuses existing GoogleDriveBackup implementation
+ * - Converts between BackupManager format and GoogleDrive format
+ * - Provides Flow-based reactive API
+ *
+ * @param context Application context
+ * @param database Room database instance
+ * @param settingsRepository Settings for Google auth tokens
+ */
+class GoogleDriveService(
+    private val context: Context,
+    private val database: AppDatabase,
+    private val settingsRepository: SettingsRepository
+) {
+
+    private val googleDriveBackup = GoogleDriveBackup(context, database, settingsRepository)
+
+    companion object {
+        private const val MAX_CLOUD_BACKUPS = 30
+    }
+
+    /**
+     * Uploads a local backup file to Google Drive.
+     *
+     * Uses existing GoogleDriveBackup.createBackup() which:
+     * - Creates JSON backup from current database state
+     * - Optionally encrypts with user password
+     * - Uploads to Google Drive appDataFolder
+     *
+     * @param accessToken Google OAuth access token
+     * @return BackupResult.Success with Drive file ID, or BackupResult.Failure
+     */
+    suspend fun uploadBackupToDrive(accessToken: String?): BackupResult {
+        return try {
+            val result = googleDriveBackup.createBackup(accessToken)
+
+            if (result.isSuccess) {
+                // Create a placeholder BackupFile for cloud uploads
+                val placeholderFile = BackupFile(
+                    id = "cloud-${System.currentTimeMillis()}",
+                    fileName = "cloud_backup",
+                    filePath = "", // No local path for cloud-only backups
+                    location = BackupLocation.CLOUD,
+                    timestamp = System.currentTimeMillis(),
+                    sizeBytes = 0L,
+                    databaseVersion = 10,
+                    checksum = ""
+                )
+
+                BackupResult.Success(
+                    backupFile = placeholderFile,
+                    durationMs = 0L // Not tracked by existing implementation
+                )
+            } else {
+                val error = result.exceptionOrNull()
+                BackupResult.Failure(
+                    error = when {
+                        error?.message?.contains("Not authorized") == true ->
+                            BackupError.AUTHENTICATION_FAILED
+                        error?.message?.contains("network") == true ->
+                            BackupError.NETWORK_UNAVAILABLE
+                        else -> BackupError.UNKNOWN
+                    },
+                    message = error?.message ?: "Failed to upload backup"
+                )
+            }
+        } catch (e: Exception) {
+            BackupResult.Failure(
+                error = BackupError.UNKNOWN,
+                message = e.message ?: "Failed to upload backup"
+            )
+        }
+    }
+
+    /**
+     * Lists all available cloud backups from Google Drive.
+     *
+     * Returns backups sorted by creation time (newest first).
+     * Maps GoogleDriveBackup.DriveFile to our BackupFile format.
+     *
+     * @param accessToken Google OAuth access token
+     * @return Flow emitting list of cloud backup files
+     */
+    fun listCloudBackups(accessToken: String?): Flow<List<BackupFile>> = flow {
+        try {
+            val result = googleDriveBackup.listBackups(accessToken)
+
+            if (result.isSuccess) {
+                val driveFiles = result.getOrNull() ?: emptyList()
+                val backupFiles = driveFiles.map { driveFile ->
+                    BackupFile(
+                        id = driveFile.id,
+                        fileName = driveFile.name,
+                        filePath = driveFile.id, // Use Drive file ID as path for cloud files
+                        location = BackupLocation.CLOUD,
+                        timestamp = driveFile.createdTime,
+                        sizeBytes = driveFile.size,
+                        databaseVersion = extractVersionFromFilename(driveFile.name),
+                        checksum = "" // Not available for cloud files
+                    )
+                }
+                emit(backupFiles)
+            } else {
+                emit(emptyList())
+            }
+        } catch (e: Exception) {
+            emit(emptyList())
+        }
+    }
+
+    /**
+     * Downloads a cloud backup file to local storage.
+     *
+     * Note: Existing GoogleDriveBackup restores directly to database.
+     * This method would need modification to download to file instead.
+     *
+     * @param fileId Google Drive file ID
+     * @param accessToken Google OAuth access token
+     * @return File pointing to downloaded backup, or null on failure
+     */
+    suspend fun downloadBackupFromDrive(
+        fileId: String,
+        accessToken: String?
+    ): File? {
+        // TODO: Modify GoogleDriveBackup to support downloading to file
+        // Currently it only supports direct restore to database
+        // For now, return null - will implement in Phase 6 (US4)
+        return null
+    }
+
+    /**
+     * Deletes a cloud backup from Google Drive.
+     *
+     * Note: Existing GoogleDriveBackup doesn't have delete functionality.
+     * Would need to add Drive API delete call.
+     *
+     * @param fileId Google Drive file ID
+     * @param accessToken Google OAuth access token
+     * @return true if deleted successfully, false otherwise
+     */
+    suspend fun deleteCloudBackup(
+        fileId: String,
+        accessToken: String?
+    ): Boolean {
+        // TODO: Add delete functionality to GoogleDriveBackup
+        // Need Drive service instance to call files().delete(fileId)
+        return false
+    }
+
+    /**
+     * Cleans up old cloud backups, keeping only MAX_CLOUD_BACKUPS most recent.
+     *
+     * Lists all backups, sorts by creation time, deletes oldest ones
+     * that exceed the maximum limit.
+     *
+     * @param accessToken Google OAuth access token
+     * @return Number of backups deleted
+     */
+    suspend fun cleanupOldCloudBackups(accessToken: String?): Int {
+        try {
+            val result = googleDriveBackup.listBackups(accessToken)
+
+            if (result.isSuccess) {
+                val backups = result.getOrNull() ?: emptyList()
+
+                if (backups.size > MAX_CLOUD_BACKUPS) {
+                    val toDelete = backups
+                        .sortedByDescending { it.createdTime }
+                        .drop(MAX_CLOUD_BACKUPS)
+
+                    var deletedCount = 0
+                    toDelete.forEach { backup ->
+                        if (deleteCloudBackup(backup.id, accessToken)) {
+                            deletedCount++
+                        }
+                    }
+                    return deletedCount
+                }
+            }
+        } catch (e: Exception) {
+            // Log error but don't throw
+        }
+
+        return 0
+    }
+
+    /**
+     * Checks if user is authenticated with Google Drive.
+     *
+     * @param accessToken Google OAuth access token
+     * @return true if valid access token provided
+     */
+    fun isAuthenticated(accessToken: String?): Boolean {
+        return !accessToken.isNullOrEmpty()
+    }
+
+    /**
+     * Extracts database version from backup filename.
+     *
+     * Filename format: ibs_tracker_backup_YYYY-MM-DD_HH-mm-ss.json
+     * or ibs_tracker_backup_YYYY-MM-DD_HH-mm-ss.enc
+     *
+     * Default to current version (10) if can't parse.
+     */
+    private fun extractVersionFromFilename(filename: String): Int {
+        // Existing GoogleDriveBackup doesn't include version in filename
+        // Default to current database version
+        return 10
+    }
+}

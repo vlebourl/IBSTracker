@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.tiarkaerell.ibstracker.data.backup.BackupManager
 import com.tiarkaerell.ibstracker.data.database.AppDatabase
 import com.tiarkaerell.ibstracker.data.model.FoodCategory
 import com.tiarkaerell.ibstracker.data.model.FoodItem
@@ -40,11 +41,19 @@ class CustomFoodPersistenceTest {
             AppDatabase::class.java
         ).build()
 
+        // Create BackupManager for DataRepository
+        val backupManager = BackupManager(
+            context,
+            database,
+            10
+        )
+
         repository = DataRepository(
             database.foodItemDao(),
             database.commonFoodDao(),
             database.foodUsageStatsDao(),
-            database.symptomDao()
+            database.symptomDao(),
+            backupManager
         )
     }
 

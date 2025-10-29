@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.tiarkaerell.ibstracker.data.database.AppDatabase
 import com.tiarkaerell.ibstracker.data.repository.AnalysisRepository
+import com.tiarkaerell.ibstracker.data.repository.BackupRepository
 import com.tiarkaerell.ibstracker.data.repository.DataRepository
 import com.tiarkaerell.ibstracker.data.repository.SettingsRepository
 import com.tiarkaerell.ibstracker.data.preferences.FilterPreferencesManager
@@ -13,6 +14,7 @@ class ViewModelFactory(
     private val dataRepository: DataRepository,
     private val settingsRepository: SettingsRepository,
     private val analysisRepository: AnalysisRepository,
+    private val backupRepository: BackupRepository,
     private val context: Context,
     private val database: AppDatabase
 ) : ViewModelProvider.Factory {
@@ -37,6 +39,10 @@ class ViewModelFactory(
         if (modelClass.isAssignableFrom(FoodUsageStatsViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
             return FoodUsageStatsViewModel(dataRepository) as T
+        }
+        if (modelClass.isAssignableFrom(BackupViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return BackupViewModel(backupRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

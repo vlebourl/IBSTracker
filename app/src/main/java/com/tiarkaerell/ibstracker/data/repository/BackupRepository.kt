@@ -1,0 +1,122 @@
+package com.tiarkaerell.ibstracker.data.repository
+
+import com.tiarkaerell.ibstracker.data.model.backup.BackupFile
+import com.tiarkaerell.ibstracker.data.model.backup.BackupResult
+import com.tiarkaerell.ibstracker.data.model.backup.BackupSettings
+import com.tiarkaerell.ibstracker.data.model.backup.RestoreResult
+import kotlinx.coroutines.flow.Flow
+
+/**
+ * Repository interface for backup and restore operations.
+ *
+ * Provides:
+ * - Backup settings management (local/cloud toggles, timestamps)
+ * - Local backup operations (create, list, delete)
+ * - Restore operations from local backups
+ * - Backup compatibility checking
+ *
+ * This abstraction allows for:
+ * - Easy testing with mock implementations
+ * - Future extension for cloud backup providers
+ * - Clean separation between business logic and data layer
+ */
+interface BackupRepository {
+
+    // ==================== SETTINGS ====================
+
+    /**
+     * Observes backup settings as a reactive Flow.
+     *
+     * Emits updates when:
+     * - User toggles local/cloud backups
+     * - Backup or sync timestamps update
+     * - Google account sign-in status changes
+     */
+    fun observeSettings(): Flow<BackupSettings>
+
+    /**
+     * Updates backup settings.
+     *
+     * @param settings New settings to apply
+     */
+    suspend fun updateSettings(settings: BackupSettings)
+
+    /**
+     * Toggles local backups on/off.
+     *
+     * @param enabled true to enable, false to disable
+     */
+    suspend fun toggleLocalBackups(enabled: Boolean)
+
+    /**
+     * Toggles cloud sync on/off.
+     *
+     * @param enabled true to enable, false to disable
+     */
+    suspend fun toggleCloudSync(enabled: Boolean)
+
+    /**
+     * Manually triggers a cloud sync now.
+     *
+     * @return BackupResult indicating success or failure
+     */
+    suspend fun syncToCloud(): BackupResult
+
+    // ==================== LOCAL BACKUPS ====================
+
+    /**
+     * Creates a new local backup.
+     *
+     * @return BackupResult.Success or BackupResult.Failure
+     */
+    suspend fun createLocalBackup(): BackupResult
+
+    /**
+     * Observes local backup files as a reactive Flow.
+     *
+     * Emits sorted list (most recent first) when:
+     * - New backup is created
+     * - Backup is deleted
+     * - Cleanup removes old backups
+     */
+    fun observeLocalBackups(): Flow<List<BackupFile>>
+
+    /**
+     * Deletes a specific local backup.
+     *
+     * @param backupFile The backup to delete
+     * @return true if deleted successfully
+     */
+    suspend fun deleteLocalBackup(backupFile: BackupFile): Boolean
+
+    /**
+     * Deletes all local backups.
+     *
+     * @return Number of backups deleted
+     */
+    suspend fun deleteAllLocalBackups(): Int
+
+    // ==================== RESTORE ====================
+
+    /**
+     * Restores database from a local backup.
+     *
+     * IMPORTANT: This operation:
+     * - Creates a pre-restore safety backup
+     * - Closes the database
+     * - Replaces database file
+     * - App should restart after restore
+     *
+     * @param backupFile The backup to restore from
+     * @return RestoreResult.Success or RestoreResult.Failure
+     */
+    suspend fun restoreFromBackup(backupFile: BackupFile): RestoreResult
+
+    /**
+     * Checks if a backup is compatible with current database version.
+     *
+     * @param backupFile The backup to check
+     * @return true if compatible, false otherwise
+     */
+    fun isBackupCompatible(backupFile: BackupFile): Boolean
+}

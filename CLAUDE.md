@@ -174,6 +174,9 @@ val viewModel: FoodViewModel = viewModel(
 - Room SQLite database (existing AppDatabase with FoodItem and Symptom entities) (001-improve-analysis-insights)
 - Kotlin 1.8.20, Android Gradle Plugin 8.x + Jetpack Compose BOM 2023.08.00, Material Icons Extended, AndroidX Core KTX 1.10.1 (003-fix-deprecation-warnings)
 - N/A (code quality feature, no data storage changes) (003-fix-deprecation-warnings)
+- Room SQLite database (`ibs-tracker-database`, schema v9) (004-fix-custom-food-persistence)
+- Kotlin 1.8.20 / Android SDK 34 (Target SDK 34, Min SDK 26) + Room 2.6.1, WorkManager 2.9+, Google Drive API v3, Google Sign-In, Jetpack Compose, Material3, Kotlin Coroutines (005-auto-backup)
+- Room Database (SQLite) for app data, app-specific storage for local backups, Google Drive app folder for cloud backups (005-auto-backup)
 
 ## Recent Changes
 - 001-improve-analysis-insights: Added Kotlin 1.8.20 / Android SDK 34 + Jetpack Compose, Material3, Room Database, Kotlin Coroutines
