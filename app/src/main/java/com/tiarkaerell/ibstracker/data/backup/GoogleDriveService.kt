@@ -56,11 +56,13 @@ class GoogleDriveService(
      * - Uploads to Google Drive appDataFolder
      *
      * @param accessToken Google OAuth access token
+     * @param isAutoBackup If true, uses fixed filename and overwrites previous auto-backup; if false, uses timestamped filename
      * @return BackupResult.Success with Drive file ID, or BackupResult.Failure
      */
-    suspend fun uploadBackupToDrive(accessToken: String?): BackupResult {
+    suspend fun uploadBackupToDrive(accessToken: String?, isAutoBackup: Boolean = true): BackupResult {
         return try {
-            val result = googleDriveBackup.createBackup(accessToken)
+            android.util.Log.d("GoogleDriveService", "uploadBackupToDrive() called with isAutoBackup=$isAutoBackup")
+            val result = googleDriveBackup.createBackup(accessToken, isAutoBackup)
 
             if (result.isSuccess) {
                 // Create a placeholder BackupFile for cloud uploads
@@ -183,8 +185,8 @@ class GoogleDriveService(
     /**
      * Deletes a cloud backup from Google Drive.
      *
-     * Note: Existing GoogleDriveBackup doesn't have delete functionality.
-     * Would need to add Drive API delete call.
+     * Uses GoogleDriveBackup.deleteBackup() to perform the actual deletion.
+     * Includes comprehensive logging for debugging.
      *
      * @param fileId Google Drive file ID
      * @param accessToken Google OAuth access token
@@ -194,9 +196,29 @@ class GoogleDriveService(
         fileId: String,
         accessToken: String?
     ): Boolean {
-        // TODO: Add delete functionality to GoogleDriveBackup
-        // Need Drive service instance to call files().delete(fileId)
-        return false
+        return try {
+            android.util.Log.d("GoogleDriveService", "deleteCloudBackup() called with fileId=$fileId")
+
+            if (accessToken == null) {
+                android.util.Log.e("GoogleDriveService", "deleteCloudBackup() failed: Access token is null")
+                return false
+            }
+
+            android.util.Log.d("GoogleDriveService", "Access token present, calling GoogleDriveBackup.deleteBackup()")
+            val result = googleDriveBackup.deleteBackup(fileId, accessToken)
+
+            if (result.isSuccess) {
+                android.util.Log.i("GoogleDriveService", "Successfully deleted cloud backup with fileId=$fileId")
+                true
+            } else {
+                val error = result.exceptionOrNull()
+                android.util.Log.e("GoogleDriveService", "deleteCloudBackup() failed: ${error?.message}", error)
+                false
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("GoogleDriveService", "deleteCloudBackup() failed with exception", e)
+            false
+        }
     }
 
     /**

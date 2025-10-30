@@ -59,9 +59,10 @@ interface BackupRepository {
      * Manually triggers a cloud sync now.
      *
      * @param accessToken OAuth access token for Google Drive
+     * @param isAutoBackup If true, uses fixed filename and overwrites previous auto-backup; if false, uses timestamped filename
      * @return BackupResult indicating success or failure
      */
-    suspend fun syncToCloud(accessToken: String?): BackupResult
+    suspend fun syncToCloud(accessToken: String?, isAutoBackup: Boolean = true): BackupResult
 
     // ==================== LOCAL BACKUPS ====================
 

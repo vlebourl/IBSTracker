@@ -55,8 +55,8 @@ android {
         applicationId = "com.tiarkaerell.ibstracker"
         minSdk = 26
         targetSdk = 34
-        versionCode = 17
-        versionName = "1.13.0"
+        versionCode = 19
+        versionName = "1.13.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

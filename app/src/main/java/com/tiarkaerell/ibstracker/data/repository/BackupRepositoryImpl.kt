@@ -71,8 +71,8 @@ class BackupRepositoryImpl(
         backupPreferences.updateCloudSyncEnabled(enabled)
     }
 
-    override suspend fun syncToCloud(accessToken: String?): BackupResult {
-        val result = googleDriveService.uploadBackupToDrive(accessToken)
+    override suspend fun syncToCloud(accessToken: String?, isAutoBackup: Boolean): BackupResult {
+        val result = googleDriveService.uploadBackupToDrive(accessToken, isAutoBackup)
 
         // Record timestamp if successful
         if (result is BackupResult.Success) {

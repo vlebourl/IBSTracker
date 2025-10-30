@@ -156,27 +156,37 @@ class BackupViewModel(
      */
     fun deleteBackup(backupFile: BackupFile, activity: Activity?) {
         viewModelScope.launch {
+            android.util.Log.d("BackupViewModel", "deleteBackup() called for ${backupFile.location} backup: ${backupFile.fileName} (id=${backupFile.id})")
+
             val success = if (backupFile.location == com.tiarkaerell.ibstracker.data.model.backup.BackupLocation.LOCAL) {
+                android.util.Log.d("BackupViewModel", "Deleting LOCAL backup: ${backupFile.filePath}")
                 backupRepository.deleteLocalBackup(backupFile)
             } else {
+                android.util.Log.d("BackupViewModel", "Deleting CLOUD backup, retrieving access token...")
                 // Get access token for cloud backup deletion
                 val accessToken = activity?.let { authorizationManager.getAccessToken(it) }
                 if (accessToken == null) {
+                    android.util.Log.e("BackupViewModel", "Failed to get access token for cloud backup deletion")
                     _uiState.value = BackupUiState.Error("Failed to delete cloud backup: Not authorized")
                     kotlinx.coroutines.delay(2000)
                     _uiState.value = BackupUiState.Idle
                     return@launch
                 }
-                backupRepository.deleteCloudBackup(backupFile, accessToken)
+                android.util.Log.d("BackupViewModel", "Access token retrieved, calling backupRepository.deleteCloudBackup() with fileId=${backupFile.filePath}")
+                val deleteResult = backupRepository.deleteCloudBackup(backupFile, accessToken)
+                android.util.Log.d("BackupViewModel", "deleteCloudBackup() returned: $deleteResult")
+                deleteResult
             }
 
             if (success) {
+                android.util.Log.i("BackupViewModel", "Successfully deleted backup: ${backupFile.fileName}")
                 // Refresh backup lists immediately after deletion
                 refreshLocalBackups()
                 activity?.let { refreshCloudBackups(it) }
                 // No popup needed - file just disappears from list
                 _uiState.value = BackupUiState.Idle
             } else {
+                android.util.Log.e("BackupViewModel", "Failed to delete backup: ${backupFile.fileName}")
                 _uiState.value = BackupUiState.Error("Failed to delete backup")
                 kotlinx.coroutines.delay(2000)
                 _uiState.value = BackupUiState.Idle
@@ -209,6 +219,9 @@ class BackupViewModel(
     /**
      * Manually triggers a cloud sync now (instead of waiting for scheduled 2AM sync).
      *
+     * Manual syncs use timestamped filenames to preserve all manual backups.
+     * Automatic scheduled syncs use fixed filenames to avoid filling cloud storage.
+     *
      * @param activity Activity context required for Google authorization
      */
     fun syncNow(activity: Activity) {
@@ -227,7 +240,8 @@ class BackupViewModel(
                 return@launch
             }
 
-            val result = backupRepository.syncToCloud(accessToken)
+            // Manual sync uses timestamped filename (isAutoBackup = false)
+            val result = backupRepository.syncToCloud(accessToken, isAutoBackup = false)
             _uiState.value = when (result) {
                 is BackupResult.Success -> BackupUiState.CloudSyncCompleted(
                     message = "Cloud sync completed successfully"
