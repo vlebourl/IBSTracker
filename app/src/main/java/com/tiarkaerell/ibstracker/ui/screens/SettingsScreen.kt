@@ -3,10 +3,22 @@ package com.tiarkaerell.ibstracker.ui.screens
 import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material.icons.filled.Backup
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Height
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.MonitorWeight
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -108,136 +120,72 @@ fun SettingsScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp)
     ) {
-        Text(
-            text = stringResource(R.string.settings_title),
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
-
-        // Language Selection
-        Text(
-            text = stringResource(R.string.settings_language),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
+        // Preferences Section
         var languageExpanded by remember { mutableStateOf(false) }
-
-        ExposedDropdownMenuBox(
-            expanded = languageExpanded,
-            onExpandedChange = { languageExpanded = it },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 24.dp)
-        ) {
-            OutlinedTextField(
-                value = stringResource(language.displayNameRes),
-                onValueChange = {},
-                readOnly = true,
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = languageExpanded) },
-                modifier = Modifier
-                    .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
-                    .fillMaxWidth(),
-                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
-            )
-
-            ExposedDropdownMenu(
-                expanded = languageExpanded,
-                onDismissRequest = { languageExpanded = false }
-            ) {
-                Language.entries.forEach { lang ->
-                    DropdownMenuItem(
-                        text = { Text(stringResource(lang.displayNameRes)) },
-                        onClick = {
-                            languageExpanded = false
-                            // Save language and wait for it to complete before recreating activity
-                            coroutineScope.launch {
-                                settingsViewModel.setLanguage(lang)
-                                // Small delay to ensure DataStore write completes
-                                kotlinx.coroutines.delay(100)
-                                // Recreate activity to apply new language
-                                activity?.recreate()
-                            }
-                        },
-                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                    )
-                }
-            }
-        }
-
-        // Units Selection
-        Text(
-            text = stringResource(R.string.settings_units),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
         var unitsExpanded by remember { mutableStateOf(false) }
 
-        ExposedDropdownMenuBox(
-            expanded = unitsExpanded,
-            onExpandedChange = { unitsExpanded = it },
-            modifier = Modifier.fillMaxWidth()
+        SettingsSection(
+            title = stringResource(R.string.settings_title),
+            modifier = Modifier.padding(top = 16.dp)
         ) {
-            OutlinedTextField(
-                value = stringResource(units.displayNameRes),
-                onValueChange = {},
-                readOnly = true,
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = unitsExpanded) },
-                modifier = Modifier
-                    .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
-                    .fillMaxWidth(),
-                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
-            )
-
-            ExposedDropdownMenu(
-                expanded = unitsExpanded,
-                onDismissRequest = { unitsExpanded = false }
-            ) {
-                Units.entries.forEach { unit ->
-                    DropdownMenuItem(
-                        text = { Text(stringResource(unit.displayNameRes)) },
-                        onClick = {
-                            settingsViewModel.setUnits(unit)
-                            unitsExpanded = false
-                        },
-                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                    )
+            SettingDropdownItem(
+                title = stringResource(R.string.settings_language),
+                selectedValue = stringResource(language.displayNameRes),
+                icon = Icons.Default.Language,
+                expanded = languageExpanded,
+                onExpandedChange = { languageExpanded = it },
+                dropdownContent = {
+                    ExposedDropdownMenu(
+                        expanded = languageExpanded,
+                        onDismissRequest = { languageExpanded = false }
+                    ) {
+                        Language.entries.forEach { lang ->
+                            DropdownMenuItem(
+                                text = { Text(stringResource(lang.displayNameRes)) },
+                                onClick = {
+                                    languageExpanded = false
+                                    coroutineScope.launch {
+                                        settingsViewModel.setLanguage(lang)
+                                        kotlinx.coroutines.delay(100)
+                                        activity?.recreate()
+                                    }
+                                },
+                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                            )
+                        }
+                    }
                 }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Current selections info
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
             )
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = stringResource(R.string.settings_current),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = stringResource(R.string.settings_language_current, stringResource(language.displayNameRes)),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Text(
-                    text = stringResource(R.string.settings_units_current, stringResource(units.displayNameRes)),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
+
+            SettingDropdownItem(
+                title = stringResource(R.string.settings_units),
+                selectedValue = stringResource(units.displayNameRes),
+                icon = Icons.Default.Straighten,
+                expanded = unitsExpanded,
+                onExpandedChange = { unitsExpanded = it },
+                dropdownContent = {
+                    ExposedDropdownMenu(
+                        expanded = unitsExpanded,
+                        onDismissRequest = { unitsExpanded = false }
+                    ) {
+                        Units.entries.forEach { unit ->
+                            DropdownMenuItem(
+                                text = { Text(stringResource(unit.displayNameRes)) },
+                                onClick = {
+                                    settingsViewModel.setUnits(unit)
+                                    unitsExpanded = false
+                                },
+                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                            )
+                        }
+                    }
+                }
+            )
         }
-        
-        Spacer(modifier = Modifier.height(32.dp))
-        
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
         // Personal Information Section
         PersonalInfoSection(
             userProfile = userProfile,
@@ -246,33 +194,31 @@ fun SettingsScreen(
                 settingsViewModel.updateUserProfile(updatedProfile)
             }
         )
-        
-        Spacer(modifier = Modifier.height(32.dp))
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
         // Backup & Restore Section
-        // Note: Backup password settings moved to BackupSettingsScreen
-        Text(
-            text = "Backup & Restore",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
+        SettingsSection(title = stringResource(R.string.backup_restore_section_title)) {
+            SettingNavigationItem(
+                title = stringResource(R.string.backup_settings_title),
+                description = stringResource(R.string.backup_settings_description),
+                icon = Icons.Default.Backup,
+                onClick = onNavigateToBackupSettings
+            )
+        }
 
-        BackupRestoreCard(
-            onNavigateToBackupSettings = onNavigateToBackupSettings
-        )
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-        Spacer(modifier = Modifier.height(32.dp))
+        // About Section
+        SettingsSection(title = stringResource(R.string.about_section_title)) {
+            SettingReadOnlyItem(
+                title = stringResource(R.string.version_label),
+                value = context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "Unknown",
+                icon = Icons.Default.Info
+            )
+        }
 
-        // Version footer
-        Text(
-            text = "Version ${context.packageManager.getPackageInfo(context.packageName, 0).versionName}",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-        )
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
@@ -361,70 +307,29 @@ fun PersonalInfoSection(
     var showDatePicker by remember { mutableStateOf(false) }
     var showHeightDialog by remember { mutableStateOf(false) }
     var showWeightDialog by remember { mutableStateOf(false) }
+    var sexExpanded by remember { mutableStateOf(false) }
     val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
-    
-    Text(
-        text = stringResource(R.string.personal_info_title),
-        style = MaterialTheme.typography.headlineMedium,
-        modifier = Modifier.padding(bottom = 16.dp)
-    )
-    
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+
+    SettingsSection(title = stringResource(R.string.personal_info_title)) {
+        Column {
             // Date of Birth
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.date_of_birth_label),
-                    style = MaterialTheme.typography.titleMedium
-                )
-                TextButton(onClick = { showDatePicker = true }) {
-                    Text(
-                        userProfile.dateOfBirth?.let { 
-                            dateFormat.format(Date(it)) 
-                        } ?: stringResource(R.string.not_specified)
-                    )
-                }
-            }
-            
-            HorizontalDivider()
-            
+            SettingDialogItem(
+                title = stringResource(R.string.date_of_birth_label),
+                value = userProfile.dateOfBirth?.let {
+                    dateFormat.format(Date(it))
+                } ?: stringResource(R.string.not_specified),
+                icon = Icons.Default.CalendarToday,
+                onClick = { showDatePicker = true }
+            )
+
             // Sex
-            var sexExpanded by remember { mutableStateOf(false) }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.sex_label),
-                    style = MaterialTheme.typography.titleMedium
-                )
-                
-                ExposedDropdownMenuBox(
-                    expanded = sexExpanded,
-                    onExpandedChange = { sexExpanded = it }
-                ) {
-                    TextButton(
-                        onClick = { sexExpanded = true },
-                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
-                    ) {
-                        Text(stringResource(userProfile.sex.displayNameRes))
-                        Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                    }
-                    
+            SettingDropdownItem(
+                title = stringResource(R.string.sex_label),
+                selectedValue = stringResource(userProfile.sex.displayNameRes),
+                icon = Icons.Default.Person,
+                expanded = sexExpanded,
+                onExpandedChange = { sexExpanded = it },
+                dropdownContent = {
                     ExposedDropdownMenu(
                         expanded = sexExpanded,
                         onDismissRequest = { sexExpanded = false }
@@ -434,69 +339,42 @@ fun PersonalInfoSection(
                                 text = { Text(stringResource(sex.displayNameRes)) },
                                 onClick = {
                                     onUpdateProfile(userProfile.copy(sex = sex))
-                                    sexExpanded = false
-                                }
+                                    sexExpanded = false }
                             )
                         }
                     }
                 }
-            }
-            
-            HorizontalDivider()
-            
+            )
+
             // Height
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.height_label),
-                    style = MaterialTheme.typography.titleMedium
-                )
-                TextButton(onClick = { showHeightDialog = true }) {
-                    Text(
-                        userProfile.heightCm?.let { height ->
-                            if (units == Units.METRIC) {
-                                stringResource(R.string.height_cm_format, height)
-                            } else {
-                                val (feet, inches) = userProfile.getHeightInFeetInches() ?: Pair(0, 0)
-                                stringResource(R.string.height_ft_in_format, feet, inches)
-                            }
-                        } ?: stringResource(R.string.not_specified)
-                    )
-                }
-            }
-            
-            HorizontalDivider()
-            
+            SettingDialogItem(
+                title = stringResource(R.string.height_label),
+                value = userProfile.heightCm?.let { height ->
+                    if (units == Units.METRIC) {
+                        stringResource(R.string.height_cm_format, height)
+                    } else {
+                        val (feet, inches) = userProfile.getHeightInFeetInches() ?: Pair(0, 0)
+                        stringResource(R.string.height_ft_in_format, feet, inches)
+                    }
+                } ?: stringResource(R.string.not_specified),
+                icon = Icons.Default.Height,
+                onClick = { showHeightDialog = true }
+            )
+
             // Weight
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.weight_label),
-                    style = MaterialTheme.typography.titleMedium
-                )
-                TextButton(onClick = { showWeightDialog = true }) {
-                    Text(
-                        userProfile.weightKg?.let { weight ->
-                            if (units == Units.METRIC) {
-                                stringResource(R.string.weight_kg_format, weight)
-                            } else {
-                                val pounds = userProfile.getWeightInPounds() ?: 0
-                                stringResource(R.string.weight_lb_format, pounds)
-                            }
-                        } ?: stringResource(R.string.not_specified)
-                    )
-                }
-            }
+            SettingDialogItem(
+                title = stringResource(R.string.weight_label),
+                value = userProfile.weightKg?.let { weight ->
+                    if (units == Units.METRIC) {
+                        stringResource(R.string.weight_kg_format, weight)
+                    } else {
+                        val pounds = userProfile.getWeightInPounds() ?: 0
+                        stringResource(R.string.weight_lb_format, pounds)
+                    }
+                } ?: stringResource(R.string.not_specified),
+                icon = Icons.Default.MonitorWeight,
+                onClick = { showWeightDialog = true }
+            )
             
             // Show calculated info if we have basic data
             if (userProfile.hasCompleteBasicInfo()) {
@@ -532,7 +410,7 @@ fun PersonalInfoSection(
             }
         }
     }
-    
+
     // Date Picker Dialog
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(
@@ -699,65 +577,224 @@ fun WeightInputDialog(
 }
 
 // BackupPasswordCard moved to BackupSettingsScreen
-
 // LocalFileBackupCard removed - JSON import/export functionality moved to BackupSettingsScreen
+// BackupRestoreCard removed - replaced with SettingNavigationItem in main SettingsScreen
 
+// ==================== NEW MATERIAL DESIGN 3 COMPOSABLES ====================
+
+/**
+ * Reusable section header for grouping related settings.
+ * Follows Material Design 3 typography and spacing guidelines.
+ */
 @Composable
-fun BackupRestoreCard(
-    onNavigateToBackupSettings: () -> Unit
+private fun SettingsSection(
+    title: String,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Local Backup & Restore",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        text = "Manage local backups and restore your data",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Storage,
-                    contentDescription = null,
-                    modifier = Modifier.padding(end = 12.dp)
-                )
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Backup Settings",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Text(
-                        text = "Configure automatic backups and restore options",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                OutlinedButton(onClick = onNavigateToBackupSettings) {
-                    Text("Open")
-                }
-            }
-        }
+        content()
     }
+}
+
+/**
+ * Setting item that navigates to a sub-screen.
+ * Shows chevron icon to indicate navigation.
+ */
+@Composable
+private fun SettingNavigationItem(
+    title: String,
+    description: String? = null,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    onClick: () -> Unit
+) {
+    ListItem(
+        headlineContent = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge
+            )
+        },
+        supportingContent = description?.let {
+            {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        leadingContent = icon?.let {
+            {
+                Icon(
+                    imageVector = it,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        trailingContent = {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = "Navigate",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .fillMaxWidth()
+    )
+}
+
+/**
+ * Read-only setting item for displaying information.
+ * Used for app version and other non-interactive settings.
+ */
+@Composable
+private fun SettingReadOnlyItem(
+    title: String,
+    value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null
+) {
+    ListItem(
+        headlineContent = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge
+            )
+        },
+        leadingContent = icon?.let {
+            {
+                Icon(
+                    imageVector = it,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        trailingContent = {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+/**
+ * Setting item with dropdown selection.
+ * Uses Material Design 3 ExposedDropdownMenuBox within ListItem.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SettingDropdownItem(
+    title: String,
+    selectedValue: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    dropdownContent: @Composable ExposedDropdownMenuBoxScope.() -> Unit
+) {
+    ListItem(
+        headlineContent = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge
+            )
+        },
+        leadingContent = icon?.let {
+            {
+                Icon(
+                    imageVector = it,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        trailingContent = {
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = onExpandedChange
+            ) {
+                Row(
+                    modifier = Modifier
+                        .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
+                        .clickable { onExpandedChange(!expanded) },
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = selectedValue,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                dropdownContent()
+            }
+        },
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+/**
+ * Setting item that opens a dialog for input.
+ * Shows current value and chevron to indicate interaction.
+ */
+@Composable
+private fun SettingDialogItem(
+    title: String,
+    value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    onClick: () -> Unit
+) {
+    ListItem(
+        headlineContent = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge
+            )
+        },
+        leadingContent = icon?.let {
+            {
+                Icon(
+                    imageVector = it,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        trailingContent = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.clickable(onClick = onClick)
+            ) {
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(end = 4.dp)
+                )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "Edit",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .fillMaxWidth()
+    )
 }
