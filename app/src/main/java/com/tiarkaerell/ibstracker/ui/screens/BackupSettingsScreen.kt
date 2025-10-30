@@ -134,37 +134,34 @@ fun BackupSettingsScreen(
 
             // Backup Password Card
             item {
-                Spacer(modifier = Modifier.height(16.dp))
-                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    BackupPasswordCard(
-                        hasPassword = hasBackupPassword,
-                        currentPassword = backupPassword,
-                        onPasswordChange = onPasswordChange
-                    )
-                }
+                Spacer(modifier = Modifier.height(8.dp))
+                BackupPasswordCard(
+                    hasPassword = hasBackupPassword,
+                    currentPassword = backupPassword,
+                    onPasswordChange = onPasswordChange
+                )
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             }
 
             // Settings toggles
             item {
-                SettingsSection(
-                    title = "Settings",
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                ) {
-                    SwitchRow(
+                Spacer(modifier = Modifier.height(8.dp))
+                SettingsSection(title = "Settings") {
+                    SettingSwitchItem(
                         label = "Local Backups",
                         description = "Automatically backup after every change",
                         checked = settings.localBackupsEnabled,
-                        onCheckedChange = { viewModel.toggleLocalBackups(it) }
+                        onCheckedChange = { viewModel.toggleLocalBackups(it) },
+                        icon = Icons.Default.Save
                     )
 
-                    Divider(modifier = Modifier.padding(vertical = 8.dp))
-
-                    SwitchRow(
+                    SettingSwitchItem(
                         label = "Cloud Sync",
                         description = "Daily sync to Google Drive at 2:00 AM",
                         checked = settings.cloudSyncEnabled,
                         onCheckedChange = { viewModel.toggleCloudSync(it) },
-                        enabled = settings.isGoogleSignedIn
+                        enabled = settings.isGoogleSignedIn,
+                        icon = Icons.Default.CloudUpload
                     )
 
                     if (!settings.isGoogleSignedIn && settings.cloudSyncEnabled) {
@@ -172,10 +169,11 @@ fun BackupSettingsScreen(
                             text = "Sign in to Google to enable cloud sync",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(top = 4.dp)
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                         )
                     }
                 }
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             }
 
             // Google Account section
@@ -195,9 +193,9 @@ fun BackupSettingsScreen(
                     },
                     onSyncNowClick = {
                         viewModel.syncNow()
-                    },
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    }
                 )
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             }
 
             // Backups list
@@ -371,58 +369,72 @@ fun BackupSettingsScreen(
     }
 }
 
+/**
+ * Reusable section header for grouping related settings.
+ * Matches the Material Design 3 pattern from main SettingsScreen.
+ */
 @Composable
 private fun SettingsSection(
     title: String,
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            content()
-        }
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+        content()
     }
 }
 
+/**
+ * Setting item with a switch toggle.
+ * Uses Material Design 3 ListItem for consistency.
+ */
 @Composable
-private fun SwitchRow(
+private fun SettingSwitchItem(
     label: String,
     description: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
+    ListItem(
+        headlineContent = {
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyLarge
             )
+        },
+        supportingContent = {
             Text(
                 text = description,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-        }
-
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            enabled = enabled
-        )
-    }
+        },
+        leadingContent = icon?.let {
+            {
+                Icon(
+                    imageVector = it,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        trailingContent = {
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+                enabled = enabled
+            )
+        },
+        modifier = Modifier.fillMaxWidth()
+    )
 }
 
 @Composable
@@ -529,14 +541,11 @@ private fun GoogleAccountSection(
     settings: com.tiarkaerell.ibstracker.data.model.backup.BackupSettings,
     onSignInClick: () -> Unit,
     onSignOutClick: () -> Unit,
-    onSyncNowClick: () -> Unit,
-    modifier: Modifier = Modifier
+    onSyncNowClick: () -> Unit
 ) {
-    SettingsSection(
-        title = "Google Account",
-        modifier = modifier
-    ) {
-        when (authState) {
+    SettingsSection(title = "Google Account") {
+        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+            when (authState) {
             is com.tiarkaerell.ibstracker.data.auth.GoogleAuthManager.AuthState.NotSignedIn -> {
                 // Not signed in - show sign-in button
                 Column {
@@ -601,9 +610,9 @@ private fun GoogleAccountSection(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Divider()
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     // Last sync timestamp
                     if (settings.lastCloudSyncTimestamp != null) {
@@ -680,6 +689,7 @@ private fun GoogleAccountSection(
                     }
                 }
             }
+        }
         }
     }
 }
