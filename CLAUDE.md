@@ -186,26 +186,26 @@ val viewModel: FoodViewModel = viewModel(
 - Device: Medium Phone API 36.1 (AVD)
 - Serial: emulator-5554
 
-**Bottom Navigation Bar (y=2340):**
-The app uses a bottom navigation bar with 5 evenly-spaced icons at y-coordinate 2340.
-Each icon occupies 216px width (1080px ÷ 5).
+**Bottom Navigation Bar (y=2232):**
+The app uses a bottom navigation bar with 5 icons. Clickable areas are larger than icon bounds.
+Extracted from UI hierarchy dump using uiautomator.
 
 Icon positions (x, y coordinates for `adb shell input tap`):
 ```bash
-# Dashboard (leftmost)
-adb shell input tap 108 2340
+# Dashboard (leftmost) - clickable area [0,2127][200,2337]
+adb shell input tap 100 2232
 
-# Food (second from left)
-adb shell input tap 324 2340
+# Food (second) - clickable area [221,2127][420,2337]
+adb shell input tap 320 2232
 
-# Symptoms/Add (center)
-adb shell input tap 540 2340
+# Symptoms/Add (center) - clickable area [441,2127][640,2337]
+adb shell input tap 540 2232
 
-# Analytics (fourth)
-adb shell input tap 756 2340
+# Analytics (fourth) - clickable area [661,2127][860,2337]
+adb shell input tap 760 2232
 
-# Settings (rightmost)
-adb shell input tap 972 2340
+# Settings (rightmost) - clickable area [881,2127][1080,2337]
+adb shell input tap 980 2232
 ```
 
 **Common UI Element Positions:**
