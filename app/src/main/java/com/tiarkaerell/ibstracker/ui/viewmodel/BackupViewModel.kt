@@ -152,19 +152,28 @@ class BackupViewModel(
      * Deletes a backup file (local or cloud).
      *
      * @param backupFile The backup to delete
+     * @param activity Activity context required for cloud backup deletion (to get access token)
      */
-    fun deleteBackup(backupFile: BackupFile) {
+    fun deleteBackup(backupFile: BackupFile, activity: Activity?) {
         viewModelScope.launch {
             val success = if (backupFile.location == com.tiarkaerell.ibstracker.data.model.backup.BackupLocation.LOCAL) {
                 backupRepository.deleteLocalBackup(backupFile)
             } else {
-                // TODO: Get access token from GoogleAuthManager
-                backupRepository.deleteCloudBackup(backupFile, accessToken = null)
+                // Get access token for cloud backup deletion
+                val accessToken = activity?.let { authorizationManager.getAccessToken(it) }
+                if (accessToken == null) {
+                    _uiState.value = BackupUiState.Error("Failed to delete cloud backup: Not authorized")
+                    kotlinx.coroutines.delay(2000)
+                    _uiState.value = BackupUiState.Idle
+                    return@launch
+                }
+                backupRepository.deleteCloudBackup(backupFile, accessToken)
             }
 
             if (success) {
-                // Refresh backup list immediately after deletion
+                // Refresh backup lists immediately after deletion
                 refreshLocalBackups()
+                activity?.let { refreshCloudBackups(it) }
                 // No popup needed - file just disappears from list
                 _uiState.value = BackupUiState.Idle
             } else {

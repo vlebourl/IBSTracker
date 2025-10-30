@@ -278,7 +278,7 @@ fun BackupSettingsScreen(
             DeleteConfirmationDialog(
                 backupFile = backupToDelete!!,
                 onConfirm = {
-                    viewModel.deleteBackup(backupToDelete!!)
+                    viewModel.deleteBackup(backupToDelete!!, activity)
                     backupToDelete = null
                 },
                 onDismiss = { backupToDelete = null }
