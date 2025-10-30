@@ -105,21 +105,24 @@ fun MainScreen(viewModelFactory: ViewModelFactory) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
-            TopAppBar(
-                title = { 
-                    Text(
-                        if (currentScreen != null) {
-                            stringResource(currentScreen.titleRes)
-                        } else {
-                            stringResource(R.string.app_name)
-                        }
+            // Hide topBar for sub-screens that have their own header (like backup_settings)
+            if (currentDestination?.route != "backup_settings") {
+                TopAppBar(
+                    title = {
+                        Text(
+                            if (currentScreen != null) {
+                                stringResource(currentScreen.titleRes)
+                            } else {
+                                stringResource(R.string.app_name)
+                            }
+                        )
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                     )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
-            )
+            }
         },
         bottomBar = {
             NavigationBar {
