@@ -178,5 +178,64 @@ val viewModel: FoodViewModel = viewModel(
 - Kotlin 1.8.20 / Android SDK 34 (Target SDK 34, Min SDK 26) + Room 2.6.1, WorkManager 2.9+, Google Drive API v3, Google Sign-In, Jetpack Compose, Material3, Kotlin Coroutines (005-auto-backup)
 - Room Database (SQLite) for app data, app-specific storage for local backups, Google Drive app folder for cloud backups (005-auto-backup)
 
+## Emulator Screen Dimensions & Touch Coordinates
+
+**Emulator Configuration:**
+- Screen Resolution: 1080x2400 pixels
+- Physical Density: 420 dpi
+- Device: Medium Phone API 36.1 (AVD)
+- Serial: emulator-5554
+
+**Bottom Navigation Bar (y=2340):**
+The app uses a bottom navigation bar with 5 evenly-spaced icons at y-coordinate 2340.
+Each icon occupies 216px width (1080px ÷ 5).
+
+Icon positions (x, y coordinates for `adb shell input tap`):
+```bash
+# Dashboard (leftmost)
+adb shell input tap 108 2340
+
+# Food (second from left)
+adb shell input tap 324 2340
+
+# Symptoms/Add (center)
+adb shell input tap 540 2340
+
+# Analytics (fourth)
+adb shell input tap 756 2340
+
+# Settings (rightmost)
+adb shell input tap 972 2340
+```
+
+**Common UI Element Positions:**
+
+Top Bar:
+- Back button (left): ~80 95
+- Screen center (horizontal): 540
+
+Settings Screen Items (approximate):
+- Language dropdown: ~540 290
+- Units dropdown: ~540 390
+- Date of Birth: ~540 580
+- Sex dropdown: ~540 680
+- Height: ~540 780
+- Weight: ~540 880
+- Backup Settings: ~540 1060
+
+**Testing Commands:**
+```bash
+# Take screenshot
+ANDROID_SERIAL=emulator-5554 adb exec-out screencap -p > /tmp/screenshot.png
+
+# Launch app
+ANDROID_SERIAL=emulator-5554 adb shell am start -n com.tiarkaerell.ibstracker/.MainActivity
+
+# Swipe (for scrolling): start_x start_y end_x end_y duration_ms
+ANDROID_SERIAL=emulator-5554 adb shell input swipe 540 1200 540 400 300
+```
+
+**Important:** Always use these precise coordinates when interacting with the emulator to ensure accurate tapping and navigation.
+
 ## Recent Changes
 - 001-improve-analysis-insights: Added Kotlin 1.8.20 / Android SDK 34 + Jetpack Compose, Material3, Room Database, Kotlin Coroutines
