@@ -71,11 +71,7 @@ class BackupRepositoryImpl(
         backupPreferences.updateCloudSyncEnabled(enabled)
     }
 
-    override suspend fun syncToCloud(): BackupResult {
-        // TODO: Get actual access token from GoogleAuthManager
-        // For now, this will fail with authentication error
-        val accessToken: String? = null
-
+    override suspend fun syncToCloud(accessToken: String?): BackupResult {
         val result = googleDriveService.uploadBackupToDrive(accessToken)
 
         // Record timestamp if successful
@@ -88,8 +84,8 @@ class BackupRepositoryImpl(
 
     // ==================== LOCAL BACKUPS ====================
 
-    override suspend fun createLocalBackup(): BackupResult {
-        val result = backupManager.createLocalBackup()
+    override suspend fun createLocalBackup(isAutoBackup: Boolean): BackupResult {
+        val result = backupManager.createLocalBackup(isAutoBackup)
 
         // Record timestamp if successful
         if (result is BackupResult.Success) {

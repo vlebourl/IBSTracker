@@ -65,7 +65,7 @@ fun BackupSettingsScreen(
     val settings by viewModel.settings.collectAsStateWithLifecycle(
         initialValue = com.tiarkaerell.ibstracker.data.model.backup.BackupSettings()
     )
-    val localBackups by viewModel.localBackups.collectAsStateWithLifecycle(
+    val allBackups by viewModel.allBackups.collectAsStateWithLifecycle(
         initialValue = emptyList()
     )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -75,6 +75,7 @@ fun BackupSettingsScreen(
     val authState by googleAuthManager.authState.collectAsStateWithLifecycle()
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+    val activity = context as? android.app.Activity
 
     // State for restore confirmation dialog
     var backupToRestore by remember { mutableStateOf<BackupFile?>(null) }
@@ -86,6 +87,11 @@ fun BackupSettingsScreen(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
         uri?.let { importedBackupUri = it }
+    }
+
+    // Refresh cloud backups when screen loads
+    LaunchedEffect(Unit) {
+        activity?.let { viewModel.refreshCloudBackups(it) }
     }
 
     Scaffold(
@@ -192,7 +198,7 @@ fun BackupSettingsScreen(
                         }
                     },
                     onSyncNowClick = {
-                        viewModel.syncNow()
+                        activity?.let { viewModel.syncNow(it) }
                     }
                 )
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -209,7 +215,7 @@ fun BackupSettingsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Available Backups (${localBackups.size})",
+                        text = "Available Backups (${allBackups.size})",
                         style = MaterialTheme.typography.titleMedium
                     )
                     FilledTonalIconButton(
@@ -226,7 +232,7 @@ fun BackupSettingsScreen(
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            if (localBackups.isEmpty()) {
+            if (allBackups.isEmpty()) {
                 item {
                     Card(
                         modifier = Modifier
@@ -242,7 +248,7 @@ fun BackupSettingsScreen(
                     }
                 }
             } else {
-                items(localBackups) { backup ->
+                items(allBackups) { backup ->
                     val isCompatible = viewModel.isBackupCompatible(backup)
 
                     BackupListItem(

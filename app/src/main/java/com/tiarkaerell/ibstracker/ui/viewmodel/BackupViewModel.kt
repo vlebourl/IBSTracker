@@ -1,16 +1,21 @@
 package com.tiarkaerell.ibstracker.ui.viewmodel
 
+import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.tiarkaerell.ibstracker.data.auth.AuthorizationManager
 import com.tiarkaerell.ibstracker.data.model.backup.BackupFile
 import com.tiarkaerell.ibstracker.data.model.backup.BackupResult
 import com.tiarkaerell.ibstracker.data.model.backup.BackupSettings
 import com.tiarkaerell.ibstracker.data.model.backup.RestoreResult
 import com.tiarkaerell.ibstracker.data.repository.BackupRepository
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
@@ -24,9 +29,11 @@ import kotlinx.coroutines.launch
  * - UI state (loading, errors, success messages)
  *
  * @param backupRepository Repository for backup operations
+ * @param authorizationManager Manager for Google authorization and access tokens
  */
 class BackupViewModel(
-    private val backupRepository: BackupRepository
+    private val backupRepository: BackupRepository,
+    private val authorizationManager: AuthorizationManager
 ) : ViewModel() {
 
     // ==================== STATE ====================
@@ -36,14 +43,25 @@ class BackupViewModel(
 
     val settings = backupRepository.observeSettings()
 
-    // Local backups - manually refreshable
+    // Local backups
     private val _localBackups = MutableStateFlow<List<BackupFile>>(emptyList())
     val localBackups: StateFlow<List<BackupFile>> = _localBackups.asStateFlow()
 
-    // Cloud backups - requires access token
-    // TODO: Get access token from GoogleAuthManager
+    // Cloud backups
     private val _cloudBackups = MutableStateFlow<List<BackupFile>>(emptyList())
     val cloudBackups: StateFlow<List<BackupFile>> = _cloudBackups.asStateFlow()
+
+    // Combined backups (local + cloud, sorted by timestamp descending)
+    val allBackups: StateFlow<List<BackupFile>> = kotlinx.coroutines.flow.combine(
+        _localBackups,
+        _cloudBackups
+    ) { local, cloud ->
+        (local + cloud).sortedByDescending { it.timestamp }
+    }.stateIn(
+        scope = viewModelScope,
+        started = kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     init {
         // Initialize local backups observation
@@ -52,11 +70,21 @@ class BackupViewModel(
                 _localBackups.value = it
             }
         }
+    }
 
-        // Initialize cloud backups observation
+    /**
+     * Refresh cloud backups list with access token.
+     * Call this when user signs in or navigates to backup screen.
+     *
+     * @param activity Activity context required for authorization
+     */
+    fun refreshCloudBackups(activity: Activity) {
         viewModelScope.launch {
-            backupRepository.observeCloudBackups(null).collect {  // TODO: Pass actual access token
-                _cloudBackups.value = it
+            val accessToken = authorizationManager.getAccessToken(activity)
+            if (accessToken != null) {
+                backupRepository.observeCloudBackups(accessToken).collect {
+                    _cloudBackups.value = it
+                }
             }
         }
     }
@@ -65,12 +93,13 @@ class BackupViewModel(
 
     /**
      * Creates a new local backup.
+     * Manual backups are not overwritten (timestamped filenames).
      */
     fun createLocalBackup() {
         viewModelScope.launch {
             _uiState.value = BackupUiState.CreatingBackup
 
-            val result = backupRepository.createLocalBackup()
+            val result = backupRepository.createLocalBackup(isAutoBackup = false)
             _uiState.value = when (result) {
                 is BackupResult.Success -> BackupUiState.BackupCreated(
                     message = "Backup created in ${result.durationMs}ms"
@@ -170,12 +199,26 @@ class BackupViewModel(
 
     /**
      * Manually triggers a cloud sync now (instead of waiting for scheduled 2AM sync).
+     *
+     * @param activity Activity context required for Google authorization
      */
-    fun syncNow() {
+    fun syncNow(activity: Activity) {
         viewModelScope.launch {
             _uiState.value = BackupUiState.SyncingToCloud
 
-            val result = backupRepository.syncToCloud()
+            // Get access token from AuthorizationManager
+            val accessToken = authorizationManager.getAccessToken(activity)
+
+            if (accessToken == null) {
+                _uiState.value = BackupUiState.Error(
+                    message = "Cloud sync failed: Not authorized. Please sign in to Google Drive."
+                )
+                kotlinx.coroutines.delay(3000)
+                _uiState.value = BackupUiState.Idle
+                return@launch
+            }
+
+            val result = backupRepository.syncToCloud(accessToken)
             _uiState.value = when (result) {
                 is BackupResult.Success -> BackupUiState.CloudSyncCompleted(
                     message = "Cloud sync completed successfully"

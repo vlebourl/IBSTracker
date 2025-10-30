@@ -67,9 +67,10 @@ class BackupManager(
      * 3. Copy database file with checksum calculation (single pass)
      * 4. Cleanup old backups (keep 7 most recent)
      *
+     * @param isAutoBackup If true, uses a fixed filename that overwrites the previous auto-backup
      * @return BackupResult.Success with BackupFile and duration, or BackupResult.Failure
      */
-    suspend fun createLocalBackup(): BackupResult = withContext(Dispatchers.IO) {
+    suspend fun createLocalBackup(isAutoBackup: Boolean = true): BackupResult = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
 
         try {
@@ -96,7 +97,13 @@ class BackupManager(
 
             // Step 3: Copy database file with checksum calculation
             val timestamp = System.currentTimeMillis()
-            val backupFileName = generateBackupFilename(databaseVersion, timestamp)
+            val backupFileName = if (isAutoBackup) {
+                // Fixed filename for auto-backups - overwrites previous auto-backup
+                "auto_backup_v${databaseVersion}.db"
+            } else {
+                // Timestamped filename for manual backups - keeps all manual backups
+                generateBackupFilename(databaseVersion, timestamp)
+            }
             val backupFile = File(backupDirectory, backupFileName)
 
             // Get source database file
@@ -134,8 +141,10 @@ class BackupManager(
                 createdAt = timestamp
             )
 
-            // Step 4: Cleanup old backups
-            cleanupOldBackups()
+            // Step 4: Cleanup old backups (but skip auto-backup file)
+            if (!isAutoBackup) {
+                cleanupOldBackups()
+            }
 
             val durationMs = System.currentTimeMillis() - startTime
             BackupResult.Success(backupFile = backup, durationMs = durationMs)

@@ -74,6 +74,7 @@ class MainActivity : ComponentActivity() {
             container.settingsRepository,
             container.analysisRepository,
             container.backupRepository,
+            container.authorizationManager,
             container.appContext,
             container.appDatabase
         )

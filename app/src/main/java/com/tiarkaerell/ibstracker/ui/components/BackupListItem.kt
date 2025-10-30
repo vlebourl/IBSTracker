@@ -4,8 +4,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.RestorePage
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -92,12 +94,15 @@ fun BackupListItem(
             },
             leadingContent = {
                 Icon(
-                    imageVector = if (metadata.isLatest) Icons.Default.CheckCircle else Icons.Default.RestorePage,
-                    contentDescription = if (metadata.isLatest) "Latest backup" else "Backup",
-                    tint = if (metadata.isLatest)
-                        MaterialTheme.colorScheme.primary
-                    else
-                        MaterialTheme.colorScheme.onSurfaceVariant,
+                    imageVector = when (backupFile.location) {
+                        BackupLocation.LOCAL -> Icons.Default.Save
+                        BackupLocation.CLOUD -> Icons.Default.CloudUpload
+                    },
+                    contentDescription = when (backupFile.location) {
+                        BackupLocation.LOCAL -> "Local backup"
+                        BackupLocation.CLOUD -> "Cloud backup"
+                    },
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(40.dp)
                 )
             },

@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.tiarkaerell.ibstracker.data.analysis.*
+import com.tiarkaerell.ibstracker.data.auth.AuthorizationManager
 import com.tiarkaerell.ibstracker.data.backup.BackupManager
 import com.tiarkaerell.ibstracker.data.backup.GoogleDriveService
 import com.tiarkaerell.ibstracker.data.backup.RestoreManager
@@ -83,6 +84,10 @@ class AppContainer(private val context: Context) {
 
     val backupPreferences: BackupPreferences by lazy {
         BackupPreferences(context)
+    }
+
+    val authorizationManager: AuthorizationManager by lazy {
+        AuthorizationManager(context)
     }
 
     val googleDriveService: GoogleDriveService by lazy {

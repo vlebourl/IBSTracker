@@ -3,6 +3,7 @@ package com.tiarkaerell.ibstracker.ui.viewmodel
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.tiarkaerell.ibstracker.data.auth.AuthorizationManager
 import com.tiarkaerell.ibstracker.data.database.AppDatabase
 import com.tiarkaerell.ibstracker.data.repository.AnalysisRepository
 import com.tiarkaerell.ibstracker.data.repository.BackupRepository
@@ -15,6 +16,7 @@ class ViewModelFactory(
     private val settingsRepository: SettingsRepository,
     private val analysisRepository: AnalysisRepository,
     private val backupRepository: BackupRepository,
+    private val authorizationManager: AuthorizationManager,
     private val context: Context,
     private val database: AppDatabase
 ) : ViewModelProvider.Factory {
@@ -42,7 +44,7 @@ class ViewModelFactory(
         }
         if (modelClass.isAssignableFrom(BackupViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return BackupViewModel(backupRepository) as T
+            return BackupViewModel(backupRepository, authorizationManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
