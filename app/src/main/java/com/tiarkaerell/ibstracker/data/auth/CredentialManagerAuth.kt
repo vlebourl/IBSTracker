@@ -1,10 +1,12 @@
 package com.tiarkaerell.ibstracker.data.auth
 
 import android.content.Context
+import android.util.Log
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetCredentialResponse
+import androidx.credentials.exceptions.GetCredentialException
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
@@ -28,6 +30,10 @@ class CredentialManagerAuth(private val context: Context) {
 
     private val credentialManager = CredentialManager.create(context)
 
+    companion object {
+        private const val TAG = "CredentialManagerAuth"
+    }
+
     /**
      * Sign in with Google using Credential Manager
      *
@@ -40,6 +46,9 @@ class CredentialManagerAuth(private val context: Context) {
         filterByAuthorizedAccounts: Boolean = false
     ): Result<GoogleIdTokenCredential> {
         return try {
+            Log.d(TAG, "Starting sign-in with webClientId: ${webClientId.take(20)}...")
+            Log.d(TAG, "Context type: ${context.javaClass.simpleName}")
+
             // Create Google ID option for Credential Manager
             val googleIdOption = GetGoogleIdOption.Builder()
                 .setServerClientId(webClientId)
@@ -52,16 +61,26 @@ class CredentialManagerAuth(private val context: Context) {
                 .addCredentialOption(googleIdOption)
                 .build()
 
+            Log.d(TAG, "Requesting credential from Credential Manager...")
+
             // Get the credential (shows account picker UI if needed)
             val result = credentialManager.getCredential(
                 request = request,
                 context = context,
             )
 
+            Log.d(TAG, "Credential received successfully")
+
             // Handle the credential response
             handleSignInResult(result)
+        } catch (e: GetCredentialException) {
+            Log.e(TAG, "GetCredentialException: ${e.javaClass.simpleName} - ${e.message}", e)
+            Log.e(TAG, "Error type: ${e.type}")
+            Log.e(TAG, "Error details: ${e.errorMessage}")
+            Result.failure(Exception("Sign-in failed: ${e.errorMessage ?: e.message}"))
         } catch (e: Exception) {
-            Result.failure(e)
+            Log.e(TAG, "Unexpected exception during sign-in: ${e.javaClass.simpleName} - ${e.message}", e)
+            Result.failure(Exception("Sign-in failed: ${e.message}"))
         }
     }
 

@@ -114,13 +114,102 @@ class BackupRepositoryImpl(
     // ==================== RESTORE ====================
 
     override suspend fun restoreFromBackup(backupFile: BackupFile): RestoreResult {
-        // TODO: Get access token from GoogleAuthManager for cloud backups
-        val accessToken: String? = null
-        return restoreManager.restoreFromBackup(backupFile, accessToken)
+        // Check if this is a JSON backup
+        if (backupFile.fileName.endsWith(".json")) {
+            // Read JSON content and restore directly
+            return try {
+                val jsonContent = java.io.File(backupFile.filePath).readText()
+                restoreManager.restoreFromJson(jsonContent)
+            } catch (e: Exception) {
+                RestoreResult.Failure(
+                    error = com.tiarkaerell.ibstracker.data.model.backup.RestoreError.FILE_CORRUPTED,
+                    message = "Failed to read JSON backup: ${e.message}",
+                    cause = e
+                )
+            }
+        } else {
+            // SQLite database backup - use traditional restore
+            val accessToken: String? = null // TODO: Get from GoogleAuthManager for cloud backups
+            return restoreManager.restoreFromBackup(backupFile, accessToken)
+        }
     }
 
     override fun isBackupCompatible(backupFile: BackupFile): Boolean {
         return restoreManager.checkDatabaseVersionCompatibility(backupFile.databaseVersion)
+    }
+
+    override suspend fun importCustomBackup(
+        context: android.content.Context,
+        uri: android.net.Uri
+    ): BackupResult {
+        return try {
+            // Read JSON content from URI
+            val jsonContent = context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                inputStream.bufferedReader().use { it.readText() }
+            } ?: return BackupResult.Failure(
+                error = com.tiarkaerell.ibstracker.data.model.backup.BackupError.COPY_FAILED,
+                message = "Failed to read backup file"
+            )
+
+            // Validate JSON structure using parser
+            if (!com.tiarkaerell.ibstracker.data.backup.JsonBackupParser.isValidBackupStructure(jsonContent)) {
+                return BackupResult.Failure(
+                    error = com.tiarkaerell.ibstracker.data.model.backup.BackupError.COPY_FAILED,
+                    message = "Invalid JSON backup file format"
+                )
+            }
+
+            // Parse to get version for validation
+            val parsed = try {
+                com.tiarkaerell.ibstracker.data.backup.JsonBackupParser.parseBackup(jsonContent, 10)
+            } catch (e: IllegalArgumentException) {
+                return BackupResult.Failure(
+                    error = com.tiarkaerell.ibstracker.data.model.backup.BackupError.COPY_FAILED,
+                    message = "JSON validation failed: ${e.message}"
+                )
+            }
+
+            // Save JSON file to backups directory (with .json extension)
+            val timestamp = System.currentTimeMillis()
+            val backupFileName = "imported_backup_${timestamp}.json"
+            val backupDir = java.io.File(context.filesDir, "backups")
+            if (!backupDir.exists()) {
+                backupDir.mkdirs()
+            }
+            val backupFile = java.io.File(backupDir, backupFileName)
+            backupFile.writeText(jsonContent)
+
+            // Calculate checksum
+            val checksum = com.tiarkaerell.ibstracker.data.backup.BackupFileManager.calculateChecksum(backupFile)
+
+            // Record the import
+            backupPreferences.recordLocalBackup(timestamp)
+
+            // Create BackupFile metadata
+            val importedBackup = com.tiarkaerell.ibstracker.data.model.backup.BackupFile(
+                id = java.util.UUID.randomUUID().toString(),
+                fileName = backupFileName,
+                filePath = backupFile.absolutePath,
+                location = com.tiarkaerell.ibstracker.data.model.backup.BackupLocation.LOCAL,
+                timestamp = timestamp,
+                sizeBytes = backupFile.length(),
+                databaseVersion = parsed.version,
+                checksum = checksum,
+                status = com.tiarkaerell.ibstracker.data.model.backup.BackupStatus.AVAILABLE,
+                createdAt = timestamp
+            )
+
+            BackupResult.Success(
+                backupFile = importedBackup,
+                durationMs = 0 // Instant import
+            )
+        } catch (e: Exception) {
+            BackupResult.Failure(
+                error = com.tiarkaerell.ibstracker.data.model.backup.BackupError.UNKNOWN,
+                message = "Import failed: ${e.message}",
+                cause = e
+            )
+        }
     }
 
     // ==================== CLOUD BACKUPS ====================

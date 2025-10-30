@@ -3,6 +3,7 @@ package com.tiarkaerell.ibstracker.data.backup
 import android.content.Context
 import androidx.room.RoomDatabase
 import com.tiarkaerell.ibstracker.data.backup.BackupFileManager.verifyChecksum
+import com.tiarkaerell.ibstracker.data.database.AppDatabase
 import com.tiarkaerell.ibstracker.data.model.backup.BackupFile
 import com.tiarkaerell.ibstracker.data.model.backup.BackupLocation
 import com.tiarkaerell.ibstracker.data.model.backup.RestoreError
@@ -143,7 +144,8 @@ class RestoreManager(
             RestoreResult.Success(
                 itemsRestored = itemCount,
                 backupFile = backupFile,
-                durationMs = durationMs
+                durationMs = durationMs,
+                requiresRestart = true // SQLite restore requires app restart
             )
 
         } catch (e: Exception) {
@@ -275,5 +277,93 @@ class RestoreManager(
         // For now, we return 0 as a placeholder
         // In production, this would require reopening the database and querying
         0
+    }
+
+    /**
+     * Restores data from a JSON backup file by inserting into the database.
+     *
+     * This method:
+     * - Parses JSON backup content
+     * - Validates version compatibility
+     * - Inserts food items and symptoms into database
+     * - Does NOT require app restart (hot-reload)
+     * - Does NOT overwrite existing data (uses database auto-increment IDs)
+     *
+     * @param jsonContent Raw JSON backup content
+     * @return RestoreResult.Success with count, or RestoreResult.Failure
+     */
+    suspend fun restoreFromJson(jsonContent: String): RestoreResult = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+
+        try {
+            // Parse JSON backup
+            val parsed = try {
+                JsonBackupParser.parseBackup(jsonContent, currentDatabaseVersion)
+            } catch (e: IllegalArgumentException) {
+                return@withContext RestoreResult.Failure(
+                    error = RestoreError.FILE_CORRUPTED,
+                    message = "JSON parsing failed: ${e.message}",
+                    cause = e
+                )
+            }
+
+            // Get database instance (must be AppDatabase)
+            val appDatabase = database as? AppDatabase
+                ?: return@withContext RestoreResult.Failure(
+                    error = RestoreError.UNKNOWN,
+                    message = "Database instance is not AppDatabase"
+                )
+
+            // Insert food items (with ID = 0 to use auto-increment)
+            val foodItemsToInsert = parsed.foodItems.map { it.copy(id = 0) }
+            appDatabase.foodItemDao().insertAll(foodItemsToInsert)
+
+            // Insert symptoms (with ID = 0 to use auto-increment)
+            val symptomsToInsert = parsed.symptoms.map { it.copy(id = 0) }
+            // SymptomDao doesn't have insertAll, so insert one by one
+            symptomsToInsert.forEach { symptom ->
+                appDatabase.symptomDao().insert(symptom)
+            }
+
+            val totalItems = foodItemsToInsert.size + symptomsToInsert.size
+            val durationMs = System.currentTimeMillis() - startTime
+
+            // Create a placeholder BackupFile for the result
+            val placeholderBackupFile = BackupFile(
+                id = "json-restore",
+                fileName = "json_restore.json",
+                filePath = "",
+                location = BackupLocation.LOCAL,
+                timestamp = System.currentTimeMillis(),
+                sizeBytes = 0,
+                databaseVersion = currentDatabaseVersion,
+                checksum = "",
+                status = com.tiarkaerell.ibstracker.data.model.backup.BackupStatus.AVAILABLE,
+                createdAt = System.currentTimeMillis()
+            )
+
+            RestoreResult.Success(
+                itemsRestored = totalItems,
+                backupFile = placeholderBackupFile,
+                durationMs = durationMs,
+                requiresRestart = false // JSON restore works without restart (hot-reload)
+            )
+        } catch (e: Exception) {
+            RestoreResult.Failure(
+                error = RestoreError.UNKNOWN,
+                message = "JSON restore failed: ${e.message}",
+                cause = e
+            )
+        }
+    }
+
+    /**
+     * Gets a preview of JSON backup content.
+     *
+     * @param jsonContent Raw JSON backup content
+     * @return Preview string with counts and first few items
+     */
+    fun getJsonBackupPreview(jsonContent: String): String {
+        return JsonBackupParser.getBackupPreview(jsonContent)
     }
 }

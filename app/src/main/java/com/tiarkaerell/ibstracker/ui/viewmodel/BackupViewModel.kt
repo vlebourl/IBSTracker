@@ -10,6 +10,7 @@ import com.tiarkaerell.ibstracker.data.repository.BackupRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -34,7 +35,10 @@ class BackupViewModel(
     val uiState: StateFlow<BackupUiState> = _uiState.asStateFlow()
 
     val settings = backupRepository.observeSettings()
-    val localBackups = backupRepository.observeLocalBackups()
+
+    // Local backups - manually refreshable
+    private val _localBackups = MutableStateFlow<List<BackupFile>>(emptyList())
+    val localBackups: StateFlow<List<BackupFile>> = _localBackups.asStateFlow()
 
     // Cloud backups - requires access token
     // TODO: Get access token from GoogleAuthManager
@@ -42,6 +46,13 @@ class BackupViewModel(
     val cloudBackups: StateFlow<List<BackupFile>> = _cloudBackups.asStateFlow()
 
     init {
+        // Initialize local backups observation
+        viewModelScope.launch {
+            backupRepository.observeLocalBackups().collect {
+                _localBackups.value = it
+            }
+        }
+
         // Initialize cloud backups observation
         viewModelScope.launch {
             backupRepository.observeCloudBackups(null).collect {  // TODO: Pass actual access token
@@ -78,8 +89,8 @@ class BackupViewModel(
     /**
      * Restores database from a backup file.
      *
-     * IMPORTANT: After successful restore, the app should be restarted
-     * to reload the database with restored data.
+     * For SQLite backups, the app should be restarted to reload the database.
+     * For JSON backups, data is inserted directly and no restart is needed.
      *
      * @param backupFile The backup to restore from
      */
@@ -89,10 +100,18 @@ class BackupViewModel(
 
             val result = backupRepository.restoreFromBackup(backupFile)
             _uiState.value = when (result) {
-                is RestoreResult.Success -> BackupUiState.RestoreCompleted(
-                    message = "Restored ${result.itemsRestored} items in ${result.durationMs}ms. Please restart the app.",
-                    itemsRestored = result.itemsRestored
-                )
+                is RestoreResult.Success -> {
+                    val message = if (result.requiresRestart) {
+                        "Restored ${result.itemsRestored} items in ${result.durationMs}ms. Please restart the app."
+                    } else {
+                        "Restored ${result.itemsRestored} items in ${result.durationMs}ms."
+                    }
+                    BackupUiState.RestoreCompleted(
+                        message = message,
+                        itemsRestored = result.itemsRestored,
+                        requiresRestart = result.requiresRestart
+                    )
+                }
                 is RestoreResult.Failure -> BackupUiState.Error(
                     message = "Restore failed: ${result.message}"
                 )
@@ -115,11 +134,14 @@ class BackupViewModel(
             }
 
             if (success) {
-                _uiState.value = BackupUiState.BackupDeleted
-                kotlinx.coroutines.delay(2000)
+                // Refresh backup list immediately after deletion
+                refreshLocalBackups()
+                // No popup needed - file just disappears from list
                 _uiState.value = BackupUiState.Idle
             } else {
                 _uiState.value = BackupUiState.Error("Failed to delete backup")
+                kotlinx.coroutines.delay(2000)
+                _uiState.value = BackupUiState.Idle
             }
         }
     }
@@ -180,6 +202,56 @@ class BackupViewModel(
     }
 
     /**
+     * Imports a custom JSON backup file and adds it to the backups list.
+     *
+     * @param context Android context for file operations
+     * @param uri Uri of the JSON file to import
+     */
+    fun importCustomBackup(context: android.content.Context, uri: android.net.Uri) {
+        viewModelScope.launch {
+            _uiState.value = BackupUiState.ImportingBackup
+
+            try {
+                val result = backupRepository.importCustomBackup(context, uri)
+                when (result) {
+                    is BackupResult.Success -> {
+                        // Refresh backup list immediately after import
+                        refreshLocalBackups()
+                        // Go directly to idle - no popup needed since file appears in list
+                        _uiState.value = BackupUiState.Idle
+                    }
+                    is BackupResult.Failure -> {
+                        _uiState.value = BackupUiState.Error(
+                            message = "Import failed: ${result.message}"
+                        )
+                        // Reset to idle after 3 seconds for error messages
+                        kotlinx.coroutines.delay(3000)
+                        _uiState.value = BackupUiState.Idle
+                    }
+                }
+            } catch (e: Exception) {
+                _uiState.value = BackupUiState.Error(
+                    message = "Import failed: ${e.message}"
+                )
+                // Reset to idle after 3 seconds for error messages
+                kotlinx.coroutines.delay(3000)
+                _uiState.value = BackupUiState.Idle
+            }
+        }
+    }
+
+    /**
+     * Manually refreshes the local backups list.
+     * Useful after import or delete operations.
+     */
+    private suspend fun refreshLocalBackups() {
+        // Get the latest list and update the state
+        backupRepository.observeLocalBackups().first().let {
+            _localBackups.value = it
+        }
+    }
+
+    /**
      * Dismisses the current UI state message.
      */
     fun dismissMessage() {
@@ -195,9 +267,15 @@ sealed class BackupUiState {
     object CreatingBackup : BackupUiState()
     object RestoringBackup : BackupUiState()
     object SyncingToCloud : BackupUiState()
+    object ImportingBackup : BackupUiState()
     object BackupDeleted : BackupUiState()
     data class BackupCreated(val message: String) : BackupUiState()
-    data class RestoreCompleted(val message: String, val itemsRestored: Int) : BackupUiState()
+    data class BackupImported(val message: String) : BackupUiState()
+    data class RestoreCompleted(
+        val message: String,
+        val itemsRestored: Int,
+        val requiresRestart: Boolean = true
+    ) : BackupUiState()
     data class CloudSyncCompleted(val message: String) : BackupUiState()
     data class Error(val message: String) : BackupUiState()
 }

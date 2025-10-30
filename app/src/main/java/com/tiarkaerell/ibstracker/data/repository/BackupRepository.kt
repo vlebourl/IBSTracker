@@ -120,6 +120,18 @@ interface BackupRepository {
      */
     fun isBackupCompatible(backupFile: BackupFile): Boolean
 
+    /**
+     * Imports a custom JSON backup file and adds it to the backups list.
+     *
+     * This validates the JSON structure, copies it to the backups directory,
+     * and makes it available in the local backups list.
+     *
+     * @param context Android context for content resolver
+     * @param uri Uri of the JSON file to import
+     * @return BackupResult.Success with the imported backup file, or BackupResult.Failure
+     */
+    suspend fun importCustomBackup(context: android.content.Context, uri: android.net.Uri): BackupResult
+
     // ==================== CLOUD BACKUPS ====================
 
     /**

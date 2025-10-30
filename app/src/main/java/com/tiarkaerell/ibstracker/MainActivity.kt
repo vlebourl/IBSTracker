@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -178,10 +179,18 @@ fun MainScreen(viewModelFactory: ViewModelFactory) {
             }
             composable("backup_settings") {
                 val backupViewModel: BackupViewModel = viewModel(factory = viewModelFactory)
+                val settingsViewModel: SettingsViewModel = viewModel(factory = viewModelFactory)
+                val backupPassword by settingsViewModel.backupPassword.collectAsState()
+
                 BackupSettingsScreen(
                     viewModel = backupViewModel,
                     onNavigateBack = {
                         navController.popBackStack()
+                    },
+                    hasBackupPassword = settingsViewModel.hasBackupPassword(),
+                    backupPassword = backupPassword,
+                    onPasswordChange = { password ->
+                        settingsViewModel.setBackupPassword(password)
                     }
                 )
             }

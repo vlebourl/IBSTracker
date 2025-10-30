@@ -1,20 +1,31 @@
 package com.tiarkaerell.ibstracker.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.FileUpload
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Login
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.tiarkaerell.ibstracker.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tiarkaerell.ibstracker.data.auth.rememberGoogleAuthManager
 import com.tiarkaerell.ibstracker.data.model.backup.BackupFile
@@ -46,7 +57,10 @@ import java.util.Locale
 @Composable
 fun BackupSettingsScreen(
     viewModel: BackupViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    hasBackupPassword: Boolean = false,
+    backupPassword: String = "",
+    onPasswordChange: (String) -> Unit = {}
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle(
         initialValue = com.tiarkaerell.ibstracker.data.model.backup.BackupSettings()
@@ -60,10 +74,19 @@ fun BackupSettingsScreen(
     val googleAuthManager = rememberGoogleAuthManager()
     val authState by googleAuthManager.authState.collectAsStateWithLifecycle()
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     // State for restore confirmation dialog
     var backupToRestore by remember { mutableStateOf<BackupFile?>(null) }
     var backupToDelete by remember { mutableStateOf<BackupFile?>(null) }
+    var importedBackupUri by remember { mutableStateOf<Uri?>(null) }
+
+    // Import launcher for JSON files
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let { importedBackupUri = it }
+    }
 
     Scaffold(
         topBar = {
@@ -106,6 +129,18 @@ fun BackupSettingsScreen(
             // Status Card
             item {
                 BackupStatusCard(settings = settings)
+            }
+
+            // Backup Password Card
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    BackupPasswordCard(
+                        hasPassword = hasBackupPassword,
+                        currentPassword = backupPassword,
+                        onPasswordChange = onPasswordChange
+                    )
+                }
             }
 
             // Settings toggles
@@ -167,11 +202,28 @@ fun BackupSettingsScreen(
             // Backups list
             item {
                 Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "Available Backups (${localBackups.size})",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Available Backups (${localBackups.size})",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    FilledTonalIconButton(
+                        onClick = {
+                            importLauncher.launch(arrayOf("application/json"))
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.FileUpload,
+                            contentDescription = "Import backup"
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
@@ -228,6 +280,19 @@ fun BackupSettingsScreen(
             )
         }
 
+        // Import confirmation dialog
+        if (importedBackupUri != null) {
+            ImportConfirmationDialog(
+                onConfirm = {
+                    coroutineScope.launch {
+                        viewModel.importCustomBackup(context, importedBackupUri!!)
+                        importedBackupUri = null
+                    }
+                },
+                onDismiss = { importedBackupUri = null }
+            )
+        }
+
         // Show snackbar for UI state messages
         when (val state = uiState) {
             is BackupUiState.BackupCreated -> {
@@ -235,22 +300,70 @@ fun BackupSettingsScreen(
                     // Snackbar would be shown here in production
                 }
             }
-            is BackupUiState.RestoreCompleted -> {
+            is BackupUiState.BackupImported -> {
                 AlertDialog(
-                    onDismissRequest = { },
-                    title = { Text("Restore Complete") },
-                    text = { Text(state.message) },
+                    onDismissRequest = { viewModel.dismissMessage() },
+                    title = { Text("Backup Imported") },
+                    text = { Text("${state.message}\n\nThe backup has been added to your available backups list. You can restore it whenever you want.") },
                     confirmButton = {
-                        TextButton(onClick = { /* Restart app */ }) {
-                            Text("Restart App")
+                        TextButton(onClick = { viewModel.dismissMessage() }) {
+                            Text("OK")
                         }
                     }
                 )
             }
+            is BackupUiState.RestoreCompleted -> {
+                val context = LocalContext.current
+                AlertDialog(
+                    onDismissRequest = { viewModel.dismissMessage() },
+                    title = { Text("Restore Complete") },
+                    text = {
+                        Text(
+                            "${state.message}\n\nYour data has been restored successfully!" +
+                            if (state.requiresRestart) "\n\nPlease restart the app to see the restored data." else ""
+                        )
+                    },
+                    confirmButton = {
+                        if (state.requiresRestart) {
+                            TextButton(
+                                onClick = {
+                                    // Force restart the app
+                                    val packageManager = context.packageManager
+                                    val intent = packageManager.getLaunchIntentForPackage(context.packageName)
+                                    intent?.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                                    intent?.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    context.startActivity(intent)
+                                    kotlin.system.exitProcess(0)
+                                }
+                            ) {
+                                Text("Restart App")
+                            }
+                        } else {
+                            TextButton(onClick = { viewModel.dismissMessage() }) {
+                                Text("OK")
+                            }
+                        }
+                    },
+                    dismissButton = if (state.requiresRestart) {
+                        {
+                            TextButton(onClick = { viewModel.dismissMessage() }) {
+                                Text("Later")
+                            }
+                        }
+                    } else null
+                )
+            }
             is BackupUiState.Error -> {
-                LaunchedEffect(state) {
-                    // Error snackbar would be shown here
-                }
+                AlertDialog(
+                    onDismissRequest = { viewModel.dismissMessage() },
+                    title = { Text("Error") },
+                    text = { Text(state.message) },
+                    confirmButton = {
+                        TextButton(onClick = { viewModel.dismissMessage() }) {
+                            Text("OK")
+                        }
+                    }
+                )
             }
             else -> { /* No message to show */ }
         }
@@ -317,6 +430,8 @@ private fun RestoreConfirmationDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val isJsonBackup = backupFile.fileName.endsWith(".json")
+
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = {
@@ -328,7 +443,13 @@ private fun RestoreConfirmationDialog(
         title = { Text("Restore from Backup?") },
         text = {
             Column {
-                Text("This will replace all current data with the backup from:")
+                Text(
+                    if (isJsonBackup) {
+                        "This will add all data from the backup to your current data:"
+                    } else {
+                        "This will replace all current data with the backup from:"
+                    }
+                )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = backupFile.toMetadata().humanReadableDate,
@@ -336,13 +457,21 @@ private fun RestoreConfirmationDialog(
                     color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("A safety backup will be created before restoring.")
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "You will need to restart the app after restore.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error
-                )
+                if (!isJsonBackup) {
+                    Text("A safety backup will be created before restoring.")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "You will need to restart the app after restore.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                } else {
+                    Text(
+                        text = "Data will be added immediately without restart.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         },
         confirmButton = {
@@ -552,6 +681,360 @@ private fun GoogleAccountSection(
             }
         }
     }
+}
+
+/**
+ * Import Confirmation Dialog - Confirm import of custom JSON backup.
+ *
+ * @param onConfirm Callback when user confirms import
+ * @param onDismiss Callback when user dismisses dialog
+ */
+@Composable
+private fun ImportConfirmationDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                imageVector = Icons.Default.FileUpload,
+                contentDescription = null
+            )
+        },
+        title = { Text("Import Backup?") },
+        text = {
+            Column {
+                Text("This will import a custom JSON backup file into your backups list.")
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("The file will be validated and added to your available backups.")
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "You can then restore it like any other backup.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("Import")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+fun BackupPasswordCard(
+    hasPassword: Boolean,
+    currentPassword: String,
+    onPasswordChange: (String) -> Unit
+) {
+    var showPasswordDialog by remember { mutableStateOf(false) }
+    var showDisableDialog by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.backup_password_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.backup_password_description),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Switch(
+                    checked = hasPassword,
+                    onCheckedChange = { enabled ->
+                        if (enabled) {
+                            showPasswordDialog = true
+                        } else {
+                            showDisableDialog = true
+                        }
+                    }
+                )
+            }
+
+            if (hasPassword) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = stringResource(R.string.backup_password_enabled),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.backup_password_warning),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+    }
+
+    // Password setup dialog
+    if (showPasswordDialog) {
+        PasswordSetupDialog(
+            onDismiss = { showPasswordDialog = false },
+            onPasswordSet = { newPassword ->
+                onPasswordChange(newPassword)
+                showPasswordDialog = false
+            }
+        )
+    }
+
+    // Disable password verification dialog
+    if (showDisableDialog) {
+        PasswordVerifyDialog(
+            currentPassword = currentPassword,
+            onDismiss = { showDisableDialog = false },
+            onPasswordVerified = {
+                onPasswordChange("")
+                showDisableDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+fun PasswordSetupDialog(
+    onDismiss: () -> Unit,
+    onPasswordSet: (String) -> Unit
+) {
+    var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var showError by remember { mutableStateOf(false) }
+    var passwordVisible by remember { mutableStateOf(false) }
+    var confirmPasswordVisible by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.setup_password_title)) },
+        text = {
+            Column {
+                Text(
+                    text = stringResource(R.string.setup_password_description),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = {
+                        password = it
+                        showError = false
+                    },
+                    label = { Text(stringResource(R.string.password_label)) },
+                    visualTransformation = if (passwordVisible) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Password,
+                        autoCorrectEnabled = false
+                    ),
+                    trailingIcon = {
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                contentDescription = if (passwordVisible) "Hide password" else "Show password"
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = confirmPassword,
+                    onValueChange = {
+                        confirmPassword = it
+                        showError = false
+                    },
+                    label = { Text(stringResource(R.string.confirm_password_label)) },
+                    visualTransformation = if (confirmPasswordVisible) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Password,
+                        autoCorrectEnabled = false
+                    ),
+                    trailingIcon = {
+                        IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
+                            Icon(
+                                imageVector = if (confirmPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                contentDescription = if (confirmPasswordVisible) "Hide password" else "Show password"
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    isError = showError
+                )
+
+                if (showError) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.password_mismatch_error),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Warning message
+                Text(
+                    text = stringResource(R.string.backup_password_warning),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (password.isEmpty()) {
+                        showError = true
+                    } else if (password != confirmPassword) {
+                        showError = true
+                    } else {
+                        onPasswordSet(password)
+                    }
+                }
+            ) {
+                Text(stringResource(R.string.button_enable))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.button_cancel))
+            }
+        }
+    )
+}
+
+@Composable
+fun PasswordVerifyDialog(
+    currentPassword: String,
+    onDismiss: () -> Unit,
+    onPasswordVerified: () -> Unit
+) {
+    var enteredPassword by remember { mutableStateOf("") }
+    var showError by remember { mutableStateOf(false) }
+    var passwordVisible by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.verify_password_title)) },
+        text = {
+            Column {
+                Text(
+                    text = stringResource(R.string.verify_password_description),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = enteredPassword,
+                    onValueChange = {
+                        enteredPassword = it
+                        showError = false
+                    },
+                    label = { Text(stringResource(R.string.password_label)) },
+                    visualTransformation = if (passwordVisible) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Password,
+                        autoCorrectEnabled = false
+                    ),
+                    trailingIcon = {
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                contentDescription = if (passwordVisible) "Hide password" else "Show password"
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    isError = showError
+                )
+
+                if (showError) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.password_incorrect_error),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = stringResource(R.string.disable_password_message),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (enteredPassword == currentPassword) {
+                        onPasswordVerified()
+                    } else {
+                        showError = true
+                    }
+                }
+            ) {
+                Text(stringResource(R.string.button_disable))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.button_cancel))
+            }
+        }
+    )
 }
 
 /**

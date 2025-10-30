@@ -95,4 +95,26 @@ object BackupFileManager {
             null
         }
     }
+
+    /**
+     * Calculates SHA-256 checksum for a file.
+     *
+     * @param file The file to calculate checksum for
+     * @return SHA-256 checksum as a 64-character hex string
+     */
+    fun calculateChecksum(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+
+        file.inputStream().buffered(8192).use { input ->
+            val buffer = ByteArray(8192)
+            var bytesRead = input.read(buffer)
+
+            while (bytesRead >= 0) {
+                digest.update(buffer, 0, bytesRead)
+                bytesRead = input.read(buffer)
+            }
+        }
+
+        return digest.digest().joinToString("") { "%02x".format(it) }
+    }
 }
