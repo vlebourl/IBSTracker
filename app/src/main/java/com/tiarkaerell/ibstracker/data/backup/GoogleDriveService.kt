@@ -227,6 +227,9 @@ class GoogleDriveService(
      * Lists all backups, sorts by creation time, deletes oldest ones
      * that exceed the maximum limit.
      *
+     * NOTE: Auto-backups (auto_cloud_backup_*) are excluded from cleanup
+     * since they are managed by the overwrite mechanism.
+     *
      * @param accessToken Google OAuth access token
      * @return Number of backups deleted
      */
@@ -237,8 +240,11 @@ class GoogleDriveService(
             if (result.isSuccess) {
                 val backups = result.getOrNull() ?: emptyList()
 
-                if (backups.size > MAX_CLOUD_BACKUPS) {
-                    val toDelete = backups
+                // Filter out auto-backups from cleanup (they manage themselves via overwrite)
+                val manualBackups = backups.filter { !it.name.startsWith("auto_cloud_backup") }
+
+                if (manualBackups.size > MAX_CLOUD_BACKUPS) {
+                    val toDelete = manualBackups
                         .sortedByDescending { it.createdTime }
                         .drop(MAX_CLOUD_BACKUPS)
 

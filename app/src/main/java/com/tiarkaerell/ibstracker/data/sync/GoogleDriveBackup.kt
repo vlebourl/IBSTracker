@@ -367,7 +367,7 @@ class GoogleDriveBackup(
             
             val folderId = getAppFolderId(driveService)
             val result = driveService.files().list()
-                .setQ("'$folderId' in parents and name contains 'ibs_tracker_backup'")
+                .setQ("'$folderId' in parents and (name contains 'ibs_tracker_backup' or name contains 'auto_cloud_backup')")
                 .setOrderBy("createdTime desc")
                 .setFields("files(id,name,createdTime,size)")
                 .execute()
