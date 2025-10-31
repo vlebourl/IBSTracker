@@ -1,5 +1,24 @@
 ## Completed ✅
 
+### v1.13.6 - Scheduled Cloud Backups Implementation
+* ~~**Scheduled 2AM cloud backups not working**~~ **[Completed - Released v1.13.6]**
+  - ~~Issue: GoogleDriveBackupWorker.getAccessToken() was a TODO stub returning null~~
+  - ~~Issue: BackupViewModel.toggleCloudSync() only updated preference, never scheduled job~~
+  - ~~Issue: WorkManager job not being scheduled when Cloud Sync toggle changed~~
+  - ~~Solution (v1.13.4): Implemented GoogleAccountCredential for background operations~~
+  - ~~GoogleAccountCredential.usingOAuth2() handles token refresh automatically~~
+  - ~~Added createBackupWithCredential() and getDriveServiceWithCredential()~~
+  - ~~Updated GoogleDriveBackupWorker.doWork() to use SessionManager + GoogleAccountCredential~~
+  - ~~Removed WiFi and charging constraints (NetworkType.CONNECTED only)~~
+  - ~~Solution (v1.13.5): "Sync Now" uploads both auto-backup and timestamped backup~~
+  - ~~BackupRepositoryImpl.syncToCloud() now uploads both file types~~
+  - ~~Auto-backup overwrites previous, timestamped backup preserves snapshots~~
+  - ~~Solution (v1.13.6): Fixed WorkManager job scheduling on toggle~~
+  - ~~BackupViewModel.toggleCloudSync() now calls GoogleDriveBackupWorker.schedule/cancel~~
+  - ~~IBSTrackerApplication conditionally schedules job based on Cloud Sync preference~~
+  - ~~Testing: Manual "Sync Now" verified uploading both files successfully~~
+  - ~~Scheduled 2AM backups now work with proper constraints and token refresh~~
+
 ### v1.13.2 - Cloud Auto-Backup Storage Management
 * ~~**Cloud backups filling up storage**~~ **[Completed - Released v1.13.2]**
   - ~~Issue: Daily scheduled cloud syncs create timestamped files, accumulating indefinitely~~
@@ -111,6 +130,10 @@
   - ✅ Restore functionality from backup files (implemented)
   - TODO: Keep configurable number of manual backups (currently keeps all)
   - TODO: Add automatic cleanup of old manual backups (e.g., keep last 30)
+* **Animated sync icon during cloud backup** - Visual feedback improvement (~30 minutes)
+  - Add rotating sync icon when BackupUiState.SyncingToCloud is active
+  - Replace static icon with animated rotation during "Sync Now" operation
+  - Shows user that backup is in progress (currently no visual feedback during sync)
 * **Category ordering by usage frequency** - UX improvement (~2-3 hours)
   - Sort food categories by usage count (most used first)
   - Use existing FoodUsageStats infrastructure
