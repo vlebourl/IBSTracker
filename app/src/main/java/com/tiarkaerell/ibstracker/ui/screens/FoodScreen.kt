@@ -37,6 +37,7 @@ import com.tiarkaerell.ibstracker.data.model.FoodCategory
 import com.tiarkaerell.ibstracker.data.model.FoodItem
 import com.tiarkaerell.ibstracker.ui.viewmodel.FoodUiState
 import com.tiarkaerell.ibstracker.ui.viewmodel.FoodViewModel
+import com.tiarkaerell.ibstracker.ui.viewmodel.ValidationResult
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -142,6 +143,18 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
             confirmButton = {
                 TextButton(
                     onClick = {
+                        // Validate timestamp before saving
+                        val timestampValidation = foodViewModel.validateTimestamp(quickAddDateTime.time)
+                        if (timestampValidation is ValidationResult.Invalid) {
+                            // Show error via Toast
+                            android.widget.Toast.makeText(
+                                context,
+                                timestampValidation.error,
+                                android.widget.Toast.LENGTH_SHORT
+                            ).show()
+                            return@TextButton
+                        }
+
                         foodViewModel.saveFoodItem(
                             name = quickAddItem!!.first,
                             category = quickAddItem!!.second,

@@ -24,6 +24,7 @@ import com.tiarkaerell.ibstracker.R
 import com.tiarkaerell.ibstracker.data.model.Symptom
 import com.tiarkaerell.ibstracker.ui.viewmodel.SymptomsUiState
 import com.tiarkaerell.ibstracker.ui.viewmodel.SymptomsViewModel
+import com.tiarkaerell.ibstracker.ui.viewmodel.ValidationResult
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.roundToInt
@@ -347,15 +348,37 @@ fun SymptomsScreen(symptomsViewModel: SymptomsViewModel) {
                 }
 
                 if (symptomName != null) {
-                    symptomsViewModel.saveSymptom(
-                        symptomName,
-                        intensity.roundToInt(),
-                        selectedDateTime.time
-                    )
-                    selectedSymptom = null
-                    customSymptom = ""
-                    intensity = 0f
-                    selectedDateTime = Calendar.getInstance()
+                    // Validate before saving
+                    val nameValidation = symptomsViewModel.validateSymptomName(symptomName)
+                    val intensityValidation = symptomsViewModel.validateIntensity(intensity.roundToInt())
+                    val timestampValidation = symptomsViewModel.validateTimestamp(selectedDateTime.time)
+
+                    when {
+                        nameValidation is ValidationResult.Invalid -> {
+                            android.widget.Toast.makeText(context, nameValidation.error, android.widget.Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        intensityValidation is ValidationResult.Invalid -> {
+                            android.widget.Toast.makeText(context, intensityValidation.error, android.widget.Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        timestampValidation is ValidationResult.Invalid -> {
+                            android.widget.Toast.makeText(context, timestampValidation.error, android.widget.Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        else -> {
+                            // All validations passed, save symptom
+                            symptomsViewModel.saveSymptom(
+                                symptomName,
+                                intensity.roundToInt(),
+                                selectedDateTime.time
+                            )
+                            selectedSymptom = null
+                            customSymptom = ""
+                            intensity = 0f
+                            selectedDateTime = Calendar.getInstance()
+                        }
+                    }
                 }
             },
             modifier = Modifier.fillMaxWidth()
