@@ -19,7 +19,9 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.animation.core.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -187,6 +189,7 @@ fun BackupSettingsScreen(
                 GoogleAccountSection(
                     authState = authState,
                     settings = settings,
+                    uiState = uiState,
                     onSignInClick = {
                         coroutineScope.launch {
                             googleAuthManager.signIn()
@@ -545,6 +548,7 @@ private fun DeleteConfirmationDialog(
 private fun GoogleAccountSection(
     authState: com.tiarkaerell.ibstracker.data.auth.GoogleAuthManager.AuthState,
     settings: com.tiarkaerell.ibstracker.data.model.backup.BackupSettings,
+    uiState: BackupUiState,
     onSignInClick: () -> Unit,
     onSignOutClick: () -> Unit,
     onSyncNowClick: () -> Unit
@@ -649,6 +653,18 @@ private fun GoogleAccountSection(
                         Spacer(modifier = Modifier.height(8.dp))
                     }
 
+                    // Infinite rotation animation for sync icon
+                    val infiniteTransition = rememberInfiniteTransition(label = "sync rotation")
+                    val rotation by infiniteTransition.animateFloat(
+                        initialValue = 0f,
+                        targetValue = 360f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(durationMillis = 1000, easing = LinearEasing),
+                            repeatMode = RepeatMode.Restart
+                        ),
+                        label = "rotation"
+                    )
+
                     // Manual sync button
                     Button(
                         onClick = onSyncNowClick,
@@ -658,7 +674,9 @@ private fun GoogleAccountSection(
                         Icon(
                             imageVector = Icons.Default.Sync,
                             contentDescription = null,
-                            modifier = Modifier.padding(end = 8.dp)
+                            modifier = Modifier
+                                .padding(end = 8.dp)
+                                .rotate(if (uiState is BackupUiState.SyncingToCloud) rotation else 0f)
                         )
                         Text("Sync Now")
                     }

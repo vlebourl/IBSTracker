@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -21,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.tiarkaerell.ibstracker.R
 import com.tiarkaerell.ibstracker.data.model.Symptom
+import com.tiarkaerell.ibstracker.ui.viewmodel.SymptomsUiState
 import com.tiarkaerell.ibstracker.ui.viewmodel.SymptomsViewModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -37,8 +39,9 @@ fun SymptomsScreen(symptomsViewModel: SymptomsViewModel) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     var itemToDelete by remember { mutableStateOf<Symptom?>(null) }
     var showEditDialog by remember { mutableStateOf(false) }
-    
+
     val loggedSymptoms by symptomsViewModel.symptoms.collectAsState()
+    val uiState by symptomsViewModel.uiState.collectAsStateWithLifecycle()
     val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault()) }
     val context = LocalContext.current
 
@@ -81,6 +84,23 @@ fun SymptomsScreen(symptomsViewModel: SymptomsViewModel) {
                 }
             }
         )
+    }
+
+    // Error dialog
+    when (val state = uiState) {
+        is SymptomsUiState.Error -> {
+            AlertDialog(
+                onDismissRequest = { symptomsViewModel.dismissMessage() },
+                title = { Text("Error") },
+                text = { Text(state.message) },
+                confirmButton = {
+                    TextButton(onClick = { symptomsViewModel.dismissMessage() }) {
+                        Text("OK")
+                    }
+                }
+            )
+        }
+        else -> {}
     }
 
     // Edit dialog

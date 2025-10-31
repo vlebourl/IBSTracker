@@ -20,6 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,6 +35,7 @@ import com.tiarkaerell.ibstracker.data.model.CommonFood
 import com.tiarkaerell.ibstracker.data.model.CommonFoods
 import com.tiarkaerell.ibstracker.data.model.FoodCategory
 import com.tiarkaerell.ibstracker.data.model.FoodItem
+import com.tiarkaerell.ibstracker.ui.viewmodel.FoodUiState
 import com.tiarkaerell.ibstracker.ui.viewmodel.FoodViewModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -57,6 +59,7 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
     var quickAddDateTime by remember { mutableStateOf(Calendar.getInstance()) }
 
     val foodItems by foodViewModel.foodItems.collectAsState()
+    val uiState by foodViewModel.uiState.collectAsStateWithLifecycle()
     val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault()) }
     val context = LocalContext.current
 
@@ -199,6 +202,23 @@ fun FoodScreen(foodViewModel: FoodViewModel) {
                 }
             }
         )
+    }
+
+    // Error dialog
+    when (val state = uiState) {
+        is FoodUiState.Error -> {
+            AlertDialog(
+                onDismissRequest = { foodViewModel.dismissMessage() },
+                title = { Text("Error") },
+                text = { Text(state.message) },
+                confirmButton = {
+                    TextButton(onClick = { foodViewModel.dismissMessage() }) {
+                        Text("OK")
+                    }
+                }
+            )
+        }
+        else -> {}
     }
 
     // Edit dialog
