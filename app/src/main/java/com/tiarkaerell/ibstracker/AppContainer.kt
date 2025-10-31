@@ -10,6 +10,7 @@ import com.tiarkaerell.ibstracker.data.backup.BackupManager
 import com.tiarkaerell.ibstracker.data.backup.GoogleDriveService
 import com.tiarkaerell.ibstracker.data.backup.RestoreManager
 import com.tiarkaerell.ibstracker.data.database.AppDatabase
+import com.tiarkaerell.ibstracker.data.database.MIGRATION_10_11
 import com.tiarkaerell.ibstracker.data.preferences.BackupPreferences
 import com.tiarkaerell.ibstracker.data.repository.AnalysisRepository
 import com.tiarkaerell.ibstracker.data.repository.AnalysisRepositoryImpl
@@ -28,7 +29,7 @@ import kotlinx.coroutines.launch
  * Dependency injection container for the IBS Tracker app.
  *
  * Provides:
- * - AppDatabase with migrations (v1→v2, v2→v9, v9→v10) and onCreate callback
+ * - AppDatabase with migrations (v1→v2, v2→v9, v9→v10, v10→v11) and onCreate callback
  * - DataRepository with all DAOs
  * - SettingsRepository for app preferences
  * - AnalysisRepository with analysis engine
@@ -44,7 +45,8 @@ class AppContainer(private val context: Context) {
     .addMigrations(
         AppDatabase.MIGRATION_1_2,
         AppDatabase.MIGRATION_2_9,
-        AppDatabase.MIGRATION_9_10
+        AppDatabase.MIGRATION_9_10,
+        MIGRATION_10_11
     )
     .addCallback(DatabaseCallback(applicationScope))
     .build()
@@ -68,7 +70,7 @@ class AppContainer(private val context: Context) {
         BackupManager(
             context = context,
             database = appDatabase,
-            databaseVersion = 10 // AppDatabase current version
+            databaseVersion = 11 // AppDatabase current version
         )
     }
 
@@ -78,7 +80,7 @@ class AppContainer(private val context: Context) {
             database = appDatabase,
             backupManager = backupManager,
             googleDriveService = googleDriveService,
-            currentDatabaseVersion = 10
+            currentDatabaseVersion = 11
         )
     }
 

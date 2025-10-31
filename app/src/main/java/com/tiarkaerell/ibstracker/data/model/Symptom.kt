@@ -1,10 +1,14 @@
 package com.tiarkaerell.ibstracker.data.model
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.util.Date
 
-@Entity(tableName = "symptoms")
+@Entity(
+    tableName = "symptoms",
+    indices = [Index(value = ["date"])]
+)
 data class Symptom(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val name: String,

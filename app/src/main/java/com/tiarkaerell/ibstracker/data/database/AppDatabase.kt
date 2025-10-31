@@ -17,6 +17,9 @@ import com.tiarkaerell.ibstracker.data.model.Symptom
 /**
  * IBS Tracker Room Database.
  *
+ * Version 11: Performance Optimization
+ * - Added index on symptoms.date for improved query performance
+ *
  * Version 10: Backfill FoodUsageStats for Quick-Add Feature
  * - Migrates existing food_items data into food_usage_stats
  * - Ensures quick-add section displays historical food usage
@@ -35,7 +38,7 @@ import com.tiarkaerell.ibstracker.data.model.Symptom
         CommonFood::class,
         FoodUsageStats::class
     ],
-    version = 10,
+    version = 11,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
