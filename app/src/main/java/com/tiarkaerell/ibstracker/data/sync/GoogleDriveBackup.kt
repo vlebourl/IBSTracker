@@ -1,10 +1,12 @@
 package com.tiarkaerell.ibstracker.data.sync
 
 import android.content.Context
+import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.http.HttpRequestInitializer
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.drive.Drive
+import com.google.api.services.drive.DriveScopes
 import com.google.api.services.drive.model.File
 import com.google.auth.http.HttpCredentialsAdapter
 import com.google.auth.oauth2.AccessToken
@@ -101,8 +103,9 @@ class GoogleDriveBackup(
     /**
      * Creates a backup to Google Drive
      * @param accessToken OAuth 2.0 access token from AuthorizationClient
+     * @param isAutoBackup If true, uses fixed filename and overwrites previous auto-backup; if false, uses timestamped filename
      */
-    suspend fun createBackup(accessToken: String?): Result<String> = withContext(Dispatchers.IO) {
+    suspend fun createBackup(accessToken: String?, isAutoBackup: Boolean = true): Result<String> = withContext(Dispatchers.IO) {
         return@withContext try {
             if (accessToken == null) {
                 return@withContext Result.failure(Exception("Not authorized. Please sign in to Google Drive."))
@@ -110,7 +113,7 @@ class GoogleDriveBackup(
 
             val driveService = getDriveService(accessToken)
                 ?: return@withContext Result.failure(Exception("Failed to initialize Drive service"))
-            
+
             // Get data from database
             val foodItems = database.foodItemDao().getAllFoodItems().first()
             val symptoms = database.symptomDao().getAll().first()
@@ -156,39 +159,206 @@ class GoogleDriveBackup(
                 language = currentLanguage.code,
                 units = currentUnits.name
             )
-            
+
             // Convert to JSON
             val jsonContent = json.encodeToString(backupData)
 
             // Check if password encryption is enabled
             val password = settingsRepository.getBackupPassword()
-            val (fileContent, fileName) = if (!password.isNullOrEmpty()) {
-                // Encrypt with password
-                val encryptedContent = encryptionManager.encrypt(jsonContent, password)
-                val content = com.google.api.client.http.ByteArrayContent.fromString("text/plain", encryptedContent)
-                val name = "ibs_tracker_backup_${backupData.timestamp}.enc"
+            val (fileContent, fileName) = if (isAutoBackup) {
+                // Auto-backup: Use fixed filename (overwrites previous auto-backup)
+                val extension = if (!password.isNullOrEmpty()) "enc" else "json"
+                val name = "auto_cloud_backup_v${backupData.version}.$extension"
+
+                val content = if (!password.isNullOrEmpty()) {
+                    val encryptedContent = encryptionManager.encrypt(jsonContent, password)
+                    com.google.api.client.http.ByteArrayContent.fromString("text/plain", encryptedContent)
+                } else {
+                    com.google.api.client.http.ByteArrayContent.fromString("application/json", jsonContent)
+                }
+
                 Pair(content, name)
             } else {
-                // Store as plaintext JSON
-                val content = com.google.api.client.http.ByteArrayContent.fromString("application/json", jsonContent)
-                val name = "ibs_tracker_backup_${backupData.timestamp}.json"
-                Pair(content, name)
+                // Manual backup: Use timestamped filename (keeps all manual backups)
+                if (!password.isNullOrEmpty()) {
+                    val encryptedContent = encryptionManager.encrypt(jsonContent, password)
+                    val content = com.google.api.client.http.ByteArrayContent.fromString("text/plain", encryptedContent)
+                    val name = "ibs_tracker_backup_${backupData.timestamp}.enc"
+                    Pair(content, name)
+                } else {
+                    val content = com.google.api.client.http.ByteArrayContent.fromString("application/json", jsonContent)
+                    val name = "ibs_tracker_backup_${backupData.timestamp}.json"
+                    Pair(content, name)
+                }
+            }
+
+            val folderId = getAppFolderId(driveService)
+
+            // For auto-backups, delete existing file with same name first (to "overwrite")
+            if (isAutoBackup) {
+                android.util.Log.d("GoogleDriveBackup", "Auto-backup: Checking for existing file with name=$fileName")
+                val existingFiles = driveService.files().list()
+                    .setQ("'$folderId' in parents and name='$fileName'")
+                    .setFields("files(id)")
+                    .execute()
+
+                if (existingFiles.files.isNotEmpty()) {
+                    val existingFileId = existingFiles.files[0].id
+                    android.util.Log.d("GoogleDriveBackup", "Auto-backup: Deleting existing file with id=$existingFileId")
+                    driveService.files().delete(existingFileId).execute()
+                    android.util.Log.d("GoogleDriveBackup", "Auto-backup: Successfully deleted existing file")
+                } else {
+                    android.util.Log.d("GoogleDriveBackup", "Auto-backup: No existing file found, creating new one")
+                }
             }
 
             // Create file metadata
             val fileMetadata = File()
                 .setName(fileName)
-                .setParents(listOf(getAppFolderId(driveService)))
+                .setParents(listOf(folderId))
             val uploadedFile = driveService.files().create(fileMetadata, fileContent)
                 .setFields("id")
                 .execute()
-            
+
+            android.util.Log.i("GoogleDriveBackup", "Successfully created ${if (isAutoBackup) "auto-" else ""}backup: ${uploadedFile.id}")
             Result.success("Backup created: ${uploadedFile.id}")
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
-    
+
+    /**
+     * Creates a backup to Google Drive using GoogleAccountCredential (for background operations).
+     *
+     * This method is designed for WorkManager and background tasks where Activity context
+     * is not available. GoogleAccountCredential automatically handles token refresh.
+     *
+     * @param accountEmail User's Google account email address
+     * @param isAutoBackup If true, uses fixed filename and overwrites previous auto-backup; if false, uses timestamped filename
+     */
+    suspend fun createBackupWithCredential(accountEmail: String, isAutoBackup: Boolean = true): Result<String> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            android.util.Log.d("GoogleDriveBackup", "createBackupWithCredential() called with accountEmail=$accountEmail, isAutoBackup=$isAutoBackup")
+
+            val driveService = getDriveServiceWithCredential(accountEmail)
+                ?: return@withContext Result.failure(Exception("Failed to initialize Drive service"))
+
+            android.util.Log.d("GoogleDriveBackup", "Drive service initialized successfully")
+
+            // Get data from database
+            val foodItems = database.foodItemDao().getAllFoodItems().first()
+            val symptoms = database.symptomDao().getAll().first()
+
+            // Get settings
+            val currentLanguage = settingsRepository.languageFlow.first()
+            val currentUnits = settingsRepository.unitsFlow.first()
+            val currentProfile = settingsRepository.userProfileFlow.first()
+
+            // Convert to serializable format
+            val backupData = BackupData(
+                timestamp = dateFormat.format(Date()),
+                foodItems = foodItems.map {
+                    SerializableFoodItem(
+                        id = it.id.toInt(),
+                        name = it.name,
+                        quantity = it.quantity,
+                        category = it.category.name,
+                        timestamp = it.timestamp.time
+                    )
+                },
+                symptoms = symptoms.map {
+                    SerializableSymptom(
+                        id = it.id,
+                        name = it.name,
+                        intensity = it.intensity,
+                        timestamp = it.date.time
+                    )
+                },
+                userProfile = SerializableUserProfile(
+                    dateOfBirth = currentProfile.dateOfBirth,
+                    sex = currentProfile.sex.name,
+                    heightCm = currentProfile.heightCm,
+                    weightKg = currentProfile.weightKg,
+                    activityLevel = currentProfile.activityLevel.name,
+                    ibsDiagnosisDate = currentProfile.ibsDiagnosisDate,
+                    ibsType = currentProfile.ibsType.name,
+                    hasAllergies = currentProfile.hasAllergies,
+                    allergyNotes = currentProfile.allergyNotes,
+                    medicationNotes = currentProfile.medicationNotes,
+                    lastUpdated = currentProfile.lastUpdated
+                ),
+                language = currentLanguage.code,
+                units = currentUnits.name
+            )
+
+            // Convert to JSON
+            val jsonContent = json.encodeToString(backupData)
+
+            // Check if password encryption is enabled
+            val password = settingsRepository.getBackupPassword()
+            val (fileContent, fileName) = if (isAutoBackup) {
+                // Auto-backup: Use fixed filename (overwrites previous auto-backup)
+                val extension = if (!password.isNullOrEmpty()) "enc" else "json"
+                val name = "auto_cloud_backup_v${backupData.version}.$extension"
+
+                val content = if (!password.isNullOrEmpty()) {
+                    val encryptedContent = encryptionManager.encrypt(jsonContent, password)
+                    com.google.api.client.http.ByteArrayContent.fromString("text/plain", encryptedContent)
+                } else {
+                    com.google.api.client.http.ByteArrayContent.fromString("application/json", jsonContent)
+                }
+
+                Pair(content, name)
+            } else {
+                // Manual backup: Use timestamped filename (keeps all manual backups)
+                if (!password.isNullOrEmpty()) {
+                    val encryptedContent = encryptionManager.encrypt(jsonContent, password)
+                    val content = com.google.api.client.http.ByteArrayContent.fromString("text/plain", encryptedContent)
+                    val name = "ibs_tracker_backup_${backupData.timestamp}.enc"
+                    Pair(content, name)
+                } else {
+                    val content = com.google.api.client.http.ByteArrayContent.fromString("application/json", jsonContent)
+                    val name = "ibs_tracker_backup_${backupData.timestamp}.json"
+                    Pair(content, name)
+                }
+            }
+
+            val folderId = getAppFolderId(driveService)
+
+            // For auto-backups, delete existing file with same name first (to "overwrite")
+            if (isAutoBackup) {
+                android.util.Log.d("GoogleDriveBackup", "Auto-backup: Checking for existing file with name=$fileName")
+                val existingFiles = driveService.files().list()
+                    .setQ("'$folderId' in parents and name='$fileName'")
+                    .setFields("files(id)")
+                    .execute()
+
+                if (existingFiles.files.isNotEmpty()) {
+                    val existingFileId = existingFiles.files[0].id
+                    android.util.Log.d("GoogleDriveBackup", "Auto-backup: Deleting existing file with id=$existingFileId")
+                    driveService.files().delete(existingFileId).execute()
+                    android.util.Log.d("GoogleDriveBackup", "Auto-backup: Successfully deleted existing file")
+                } else {
+                    android.util.Log.d("GoogleDriveBackup", "Auto-backup: No existing file found, creating new one")
+                }
+            }
+
+            // Create file metadata
+            val fileMetadata = File()
+                .setName(fileName)
+                .setParents(listOf(folderId))
+            val uploadedFile = driveService.files().create(fileMetadata, fileContent)
+                .setFields("id")
+                .execute()
+
+            android.util.Log.i("GoogleDriveBackup", "Successfully created ${if (isAutoBackup) "auto-" else ""}backup with credential: ${uploadedFile.id}")
+            Result.success("Backup created: ${uploadedFile.id}")
+        } catch (e: Exception) {
+            android.util.Log.e("GoogleDriveBackup", "createBackupWithCredential() failed", e)
+            Result.failure(e)
+        }
+    }
+
     /**
      * Restores a backup from Google Drive (replaces all local data)
      * @param fileId Google Drive file ID
@@ -202,15 +372,15 @@ class GoogleDriveBackup(
 
             val driveService = getDriveService(accessToken)
                 ?: return@withContext Result.failure(Exception("Failed to initialize Drive service"))
-            
+
             // Download file content
             val outputStream = ByteArrayOutputStream()
             driveService.files().get(fileId).executeMediaAndDownloadTo(outputStream)
             val jsonContent = outputStream.toString("UTF-8")
-            
+
             // Parse backup data
             val backupData = json.decodeFromString<BackupData>(jsonContent)
-            
+
             // Clear existing data
             database.foodItemDao().deleteAll()
             database.symptomDao().deleteAllSymptoms()
@@ -226,7 +396,7 @@ class GoogleDriveBackup(
                 )
                 database.foodItemDao().insert(foodItem)
             }
-            
+
             // Restore symptoms
             backupData.symptoms.forEach { item ->
                 val symptom = Symptom(
@@ -237,13 +407,85 @@ class GoogleDriveBackup(
                 )
                 database.symptomDao().insert(symptom)
             }
-            
+
             Result.success("Restored ${backupData.foodItems.size} food items and ${backupData.symptoms.size} symptoms")
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
-    
+
+    /**
+     * Downloads a cloud backup file to a local file.
+     *
+     * This method is used for the new backup/restore system that needs
+     * to download the backup file first before restoring.
+     *
+     * @param fileId Google Drive file ID
+     * @param destinationFile Local file to write the downloaded content
+     * @param accessToken OAuth 2.0 access token
+     * @return Result indicating success or failure
+     */
+    suspend fun downloadBackupToFile(
+        fileId: String,
+        destinationFile: java.io.File,
+        accessToken: String?
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            if (accessToken == null) {
+                return@withContext Result.failure(Exception("Not authorized. Please sign in to Google Drive."))
+            }
+
+            val driveService = getDriveService(accessToken)
+                ?: return@withContext Result.failure(Exception("Failed to initialize Drive service"))
+
+            // Download file content to destination file
+            destinationFile.outputStream().use { outputStream ->
+                driveService.files().get(fileId).executeMediaAndDownloadTo(outputStream)
+            }
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Deletes a backup file from Google Drive.
+     *
+     * @param fileId Google Drive file ID to delete
+     * @param accessToken OAuth 2.0 access token
+     * @return Result indicating success or failure
+     */
+    suspend fun deleteBackup(
+        fileId: String,
+        accessToken: String?
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            android.util.Log.d("GoogleDriveBackup", "deleteBackup() called with fileId=$fileId")
+
+            if (accessToken == null) {
+                android.util.Log.e("GoogleDriveBackup", "deleteBackup() failed: Access token is null")
+                return@withContext Result.failure(Exception("Not authorized. Please sign in to Google Drive."))
+            }
+
+            android.util.Log.d("GoogleDriveBackup", "Access token present, initializing Drive service")
+            val driveService = getDriveService(accessToken)
+            if (driveService == null) {
+                android.util.Log.e("GoogleDriveBackup", "deleteBackup() failed: Could not initialize Drive service")
+                return@withContext Result.failure(Exception("Failed to initialize Drive service"))
+            }
+
+            android.util.Log.d("GoogleDriveBackup", "Drive service initialized, calling files().delete($fileId)")
+            driveService.files().delete(fileId).execute()
+            android.util.Log.i("GoogleDriveBackup", "Successfully deleted backup with fileId=$fileId")
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("GoogleDriveBackup", "deleteBackup() failed with exception", e)
+            Result.failure(e)
+        }
+    }
+
     /**
      * Lists all backups in Google Drive
      * @param accessToken OAuth 2.0 access token from AuthorizationClient
@@ -259,7 +501,7 @@ class GoogleDriveBackup(
             
             val folderId = getAppFolderId(driveService)
             val result = driveService.files().list()
-                .setQ("'$folderId' in parents and name contains 'ibs_tracker_backup'")
+                .setQ("'$folderId' in parents and (name contains 'ibs_tracker_backup' or name contains 'auto_cloud_backup')")
                 .setOrderBy("createdTime desc")
                 .setFields("files(id,name,createdTime,size)")
                 .execute()
@@ -301,6 +543,37 @@ class GoogleDriveBackup(
                 .setApplicationName("IBS Tracker")
                 .build()
         } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * Creates Drive service using GoogleAccountCredential for background operations.
+     *
+     * This method is designed for WorkManager and background tasks where Activity context
+     * is not available. GoogleAccountCredential automatically handles token refresh.
+     *
+     * @param accountEmail User's Google account email address
+     * @return Drive service or null on error
+     */
+    private fun getDriveServiceWithCredential(accountEmail: String): Drive? {
+        return try {
+            // Create GoogleAccountCredential with user's email
+            // This automatically handles token refresh without Activity context!
+            val credential = GoogleAccountCredential.usingOAuth2(
+                context,
+                listOf(DriveScopes.DRIVE_FILE)
+            ).setSelectedAccountName(accountEmail)
+
+            Drive.Builder(
+                NetHttpTransport(),
+                GsonFactory(),
+                credential
+            )
+                .setApplicationName("IBS Tracker")
+                .build()
+        } catch (e: Exception) {
+            android.util.Log.e("GoogleDriveBackup", "Failed to create Drive service with credential", e)
             null
         }
     }

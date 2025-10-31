@@ -376,4 +376,16 @@
     <string name="restore_password_title">Encrypted Backup</string>
     <string name="restore_password_description">This backup is encrypted. Enter the password to restore it.</string>
     <string name="button_restore">Restore</string>
+
+    <!-- Backup & Restore Section -->
+    <string name="backup_restore_section_title">Backup &amp; Restore</string>
+    <string name="local_backup_restore_title">Local Backup &amp; Restore</string>
+    <string name="local_backup_restore_description">Manage local backups and restore your data</string>
+    <string name="backup_settings_title">Backup Settings</string>
+    <string name="backup_settings_description">Configure automatic backups and restore options</string>
+    <string name="button_open">Open</string>
+
+    <!-- About Section -->
+    <string name="about_section_title">About</string>
+    <string name="version_label">Version</string>
 </resources>

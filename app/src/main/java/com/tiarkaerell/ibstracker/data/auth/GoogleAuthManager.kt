@@ -5,9 +5,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.tiarkaerell.ibstracker.data.preferences.BackupPreferences
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 /**
  * Google authentication manager using modern Credential Manager API
@@ -29,6 +34,8 @@ class GoogleAuthManager(private val context: Context) {
 
     private val credentialAuth = CredentialManagerAuth(context)
     private val sessionManager = SessionManager(context)
+    private val backupPreferences = BackupPreferences(context)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.NotSignedIn)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
@@ -44,11 +51,16 @@ class GoogleAuthManager(private val context: Context) {
     /**
      * Restore authentication state from local EncryptedSharedPreferences
      * This is instant (synchronous) and eliminates the "reconnection" flash
+     * Also syncs with BackupPreferences on startup
      */
     private fun restoreFromLocalStorage() {
         val savedEmail = sessionManager.getSignedInEmail()
         if (savedEmail != null) {
             _authState.value = AuthState.SignedIn(savedEmail)
+            // Sync with BackupPreferences on startup
+            scope.launch {
+                backupPreferences.updateGoogleSignIn(savedEmail, isSignedIn = true)
+            }
         } else {
             _authState.value = AuthState.NotSignedIn
         }
@@ -77,6 +89,11 @@ class GoogleAuthManager(private val context: Context) {
             // Save session locally for instant restoration on app restart
             sessionManager.saveSignedInEmail(email)
 
+            // Update BackupPreferences to enable Cloud Sync toggle
+            scope.launch {
+                backupPreferences.updateGoogleSignIn(email, isSignedIn = true)
+            }
+
             _authState.value = AuthState.SignedIn(email)
             Result.success(email)
         } catch (e: Exception) {
@@ -97,6 +114,11 @@ class GoogleAuthManager(private val context: Context) {
 
             // Clear local session storage
             sessionManager.clearSession()
+
+            // Update BackupPreferences to disable Cloud Sync toggle
+            scope.launch {
+                backupPreferences.updateGoogleSignIn(null, isSignedIn = false)
+            }
 
             _authState.value = AuthState.NotSignedIn
         } catch (e: Exception) {

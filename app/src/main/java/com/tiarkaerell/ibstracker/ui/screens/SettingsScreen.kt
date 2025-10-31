@@ -3,10 +3,22 @@ package com.tiarkaerell.ibstracker.ui.screens
 import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material.icons.filled.Backup
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Height
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.MonitorWeight
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -34,7 +46,10 @@ import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(settingsViewModel: SettingsViewModel) {
+fun SettingsScreen(
+    settingsViewModel: SettingsViewModel,
+    onNavigateToBackupSettings: () -> Unit = {}
+) {
     val language by settingsViewModel.language.collectAsState()
     val units by settingsViewModel.units.collectAsState()
     val userProfile by settingsViewModel.userProfile.collectAsState()
@@ -105,136 +120,72 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel) {
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp)
     ) {
-        Text(
-            text = stringResource(R.string.settings_title),
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
-
-        // Language Selection
-        Text(
-            text = stringResource(R.string.settings_language),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
+        // Preferences Section
         var languageExpanded by remember { mutableStateOf(false) }
-
-        ExposedDropdownMenuBox(
-            expanded = languageExpanded,
-            onExpandedChange = { languageExpanded = it },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 24.dp)
-        ) {
-            OutlinedTextField(
-                value = stringResource(language.displayNameRes),
-                onValueChange = {},
-                readOnly = true,
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = languageExpanded) },
-                modifier = Modifier
-                    .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
-                    .fillMaxWidth(),
-                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
-            )
-
-            ExposedDropdownMenu(
-                expanded = languageExpanded,
-                onDismissRequest = { languageExpanded = false }
-            ) {
-                Language.entries.forEach { lang ->
-                    DropdownMenuItem(
-                        text = { Text(stringResource(lang.displayNameRes)) },
-                        onClick = {
-                            languageExpanded = false
-                            // Save language and wait for it to complete before recreating activity
-                            coroutineScope.launch {
-                                settingsViewModel.setLanguage(lang)
-                                // Small delay to ensure DataStore write completes
-                                kotlinx.coroutines.delay(100)
-                                // Recreate activity to apply new language
-                                activity?.recreate()
-                            }
-                        },
-                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                    )
-                }
-            }
-        }
-
-        // Units Selection
-        Text(
-            text = stringResource(R.string.settings_units),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
         var unitsExpanded by remember { mutableStateOf(false) }
 
-        ExposedDropdownMenuBox(
-            expanded = unitsExpanded,
-            onExpandedChange = { unitsExpanded = it },
-            modifier = Modifier.fillMaxWidth()
+        SettingsSection(
+            title = stringResource(R.string.settings_title),
+            modifier = Modifier.padding(top = 16.dp)
         ) {
-            OutlinedTextField(
-                value = stringResource(units.displayNameRes),
-                onValueChange = {},
-                readOnly = true,
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = unitsExpanded) },
-                modifier = Modifier
-                    .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
-                    .fillMaxWidth(),
-                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
-            )
-
-            ExposedDropdownMenu(
-                expanded = unitsExpanded,
-                onDismissRequest = { unitsExpanded = false }
-            ) {
-                Units.entries.forEach { unit ->
-                    DropdownMenuItem(
-                        text = { Text(stringResource(unit.displayNameRes)) },
-                        onClick = {
-                            settingsViewModel.setUnits(unit)
-                            unitsExpanded = false
-                        },
-                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                    )
+            SettingDropdownItem(
+                title = stringResource(R.string.settings_language),
+                selectedValue = stringResource(language.displayNameRes),
+                icon = Icons.Default.Language,
+                expanded = languageExpanded,
+                onExpandedChange = { languageExpanded = it },
+                dropdownContent = {
+                    ExposedDropdownMenu(
+                        expanded = languageExpanded,
+                        onDismissRequest = { languageExpanded = false }
+                    ) {
+                        Language.entries.forEach { lang ->
+                            DropdownMenuItem(
+                                text = { Text(stringResource(lang.displayNameRes)) },
+                                onClick = {
+                                    languageExpanded = false
+                                    coroutineScope.launch {
+                                        settingsViewModel.setLanguage(lang)
+                                        kotlinx.coroutines.delay(100)
+                                        activity?.recreate()
+                                    }
+                                },
+                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                            )
+                        }
+                    }
                 }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Current selections info
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
             )
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = stringResource(R.string.settings_current),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = stringResource(R.string.settings_language_current, stringResource(language.displayNameRes)),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Text(
-                    text = stringResource(R.string.settings_units_current, stringResource(units.displayNameRes)),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
+
+            SettingDropdownItem(
+                title = stringResource(R.string.settings_units),
+                selectedValue = stringResource(units.displayNameRes),
+                icon = Icons.Default.Straighten,
+                expanded = unitsExpanded,
+                onExpandedChange = { unitsExpanded = it },
+                dropdownContent = {
+                    ExposedDropdownMenu(
+                        expanded = unitsExpanded,
+                        onDismissRequest = { unitsExpanded = false }
+                    ) {
+                        Units.entries.forEach { unit ->
+                            DropdownMenuItem(
+                                text = { Text(stringResource(unit.displayNameRes)) },
+                                onClick = {
+                                    settingsViewModel.setUnits(unit)
+                                    unitsExpanded = false
+                                },
+                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                            )
+                        }
+                    }
+                }
+            )
         }
-        
-        Spacer(modifier = Modifier.height(32.dp))
-        
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
         // Personal Information Section
         PersonalInfoSection(
             userProfile = userProfile,
@@ -243,348 +194,31 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel) {
                 settingsViewModel.updateUserProfile(updatedProfile)
             }
         )
-        
-        Spacer(modifier = Modifier.height(32.dp))
-        
-        // Google Services Section
-        Text(
-            text = stringResource(R.string.google_services_title),
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-        
-        // Google Sign-In
-        GoogleSignInCard(
-            authState = authState,
-            onSignIn = {
-                coroutineScope.launch {
-                    googleAuthManager.signIn()
-                }
-            },
-            onSignOut = {
-                coroutineScope.launch {
-                    googleAuthManager.signOut()
-                }
-            }
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        // Google Drive Backup
-        val backupState by settingsViewModel.backupState.collectAsState()
-        GoogleDriveBackupCard(
-            isSignedIn = authState is GoogleAuthManager.AuthState.SignedIn,
-            backupState = backupState,
-            onCreateBackup = {
-                settingsViewModel.createBackup()
-            },
-            onRestoreBackup = {
-                settingsViewModel.getBackupList()
-            },
-            onRestoreWithStrategy = { fileId, strategy ->
-                settingsViewModel.restoreBackup(fileId, strategy)
-            },
-            onRestoreWithPassword = { fileId, strategy, password ->
-                settingsViewModel.restoreBackup(fileId, strategy, password)
-            },
-            onClearState = {
-                settingsViewModel.clearBackupState()
-            }
-        )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-        // Local File Backup Card
-        LocalFileBackupCard(
-            settingsViewModel = settingsViewModel
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Backup Password Card
-        val backupPassword by settingsViewModel.backupPassword.collectAsState()
-        BackupPasswordCard(
-            hasPassword = settingsViewModel.hasBackupPassword(),
-            currentPassword = backupPassword,
-            onPasswordChange = { password ->
-                settingsViewModel.setBackupPassword(password)
-            }
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Version footer
-        Text(
-            text = "Version ${context.packageManager.getPackageInfo(context.packageName, 0).versionName}",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-        )
-    }
-}
-
-@Composable
-fun GoogleSignInCard(
-    authState: GoogleAuthManager.AuthState,
-    onSignIn: () -> Unit,
-    onSignOut: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.google_sign_in),
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        text = stringResource(R.string.google_sign_in_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                
-                when (authState) {
-                    is GoogleAuthManager.AuthState.NotSignedIn -> {
-                        Button(onClick = onSignIn) {
-                            Text(stringResource(R.string.sign_in_button))
-                        }
-                    }
-                    is GoogleAuthManager.AuthState.Loading -> {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                    }
-                    is GoogleAuthManager.AuthState.SignedIn -> {
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                text = stringResource(R.string.signed_in_as, authState.email),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            TextButton(onClick = onSignOut) {
-                                Text(stringResource(R.string.sign_out_button))
-                            }
-                        }
-                    }
-                    is GoogleAuthManager.AuthState.Error -> {
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                text = authState.message,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                            Button(onClick = onSignIn) {
-                                Text(stringResource(R.string.sign_in_button))
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun GoogleDriveBackupCard(
-    isSignedIn: Boolean,
-    backupState: SettingsViewModel.BackupState,
-    onCreateBackup: () -> Unit,
-    onRestoreBackup: () -> Unit,
-    onRestoreWithStrategy: (String, com.tiarkaerell.ibstracker.data.sync.GoogleDriveBackup.MergeStrategy) -> Unit,
-    onRestoreWithPassword: (String, com.tiarkaerell.ibstracker.data.sync.GoogleDriveBackup.MergeStrategy, String) -> Unit,
-    onClearState: () -> Unit
-) {
-    var showBackupListDialog by remember { mutableStateOf(false) }
-    var selectedBackupId by remember { mutableStateOf<String?>(null) }
-    var showMergeStrategyDialog by remember { mutableStateOf(false) }
-    var showRestorePasswordDialog by remember { mutableStateOf(false) }
-    var restoreFileId by remember { mutableStateOf<String?>(null) }
-    var restoreMergeStrategy by remember { mutableStateOf<com.tiarkaerell.ibstracker.data.sync.GoogleDriveBackup.MergeStrategy?>(null) }
-    var passwordError by remember { mutableStateOf(false) }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = stringResource(R.string.backup_sync_title),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 8.dp)
+        // Backup & Restore Section
+        SettingsSection(title = stringResource(R.string.backup_restore_section_title)) {
+            SettingNavigationItem(
+                title = stringResource(R.string.backup_settings_title),
+                description = stringResource(R.string.backup_settings_description),
+                icon = Icons.Default.Backup,
+                onClick = onNavigateToBackupSettings
             )
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.CloudUpload,
-                    contentDescription = null,
-                    modifier = Modifier.padding(end = 12.dp)
-                )
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.google_drive_backup),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Text(
-                        text = stringResource(R.string.google_drive_backup_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedButton(
-                    onClick = onCreateBackup,
-                    enabled = isSignedIn && backupState !is SettingsViewModel.BackupState.Loading,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    if (backupState is SettingsViewModel.BackupState.Loading) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp))
-                    } else {
-                        Text(stringResource(R.string.create_backup))
-                    }
-                }
-                OutlinedButton(
-                    onClick = onRestoreBackup,
-                    enabled = isSignedIn && backupState !is SettingsViewModel.BackupState.Loading,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(stringResource(R.string.restore_backup))
-                }
-            }
-            
-            // Display backup state messages
-            when (backupState) {
-                is SettingsViewModel.BackupState.Success -> {
-                    Text(
-                        text = backupState.message,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                    LaunchedEffect(backupState) {
-                        kotlinx.coroutines.delay(3000)
-                        onClearState()
-                    }
-                }
-                is SettingsViewModel.BackupState.Error -> {
-                    Text(
-                        text = backupState.message,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                    LaunchedEffect(backupState) {
-                        kotlinx.coroutines.delay(5000)
-                        onClearState()
-                    }
-                }
-                is SettingsViewModel.BackupState.BackupsLoaded -> {
-                    LaunchedEffect(backupState) {
-                        showBackupListDialog = true
-                    }
-                }
-                is SettingsViewModel.BackupState.PasswordRequired -> {
-                    LaunchedEffect(backupState) {
-                        restoreFileId = backupState.fileId
-                        restoreMergeStrategy = backupState.mergeStrategy
-                        passwordError = false
-                        showRestorePasswordDialog = true
-                    }
-                }
-                is SettingsViewModel.BackupState.PasswordIncorrect -> {
-                    LaunchedEffect(backupState) {
-                        restoreFileId = backupState.fileId
-                        restoreMergeStrategy = backupState.mergeStrategy
-                        passwordError = true
-                        showRestorePasswordDialog = true
-                    }
-                }
-                else -> {
-                    if (!isSignedIn) {
-                        Text(
-                            text = stringResource(R.string.sign_in_required),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
-                    }
-                }
-            }
         }
-    }
 
-    // Backup List Dialog
-    if (showBackupListDialog && backupState is SettingsViewModel.BackupState.BackupsLoaded) {
-        BackupListDialog(
-            backups = backupState.backups,
-            onBackupSelected = { backupId ->
-                selectedBackupId = backupId
-                showBackupListDialog = false
-                showMergeStrategyDialog = true
-            },
-            onDismiss = {
-                showBackupListDialog = false
-                onClearState()
-            }
-        )
-    }
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-    // Merge Strategy Dialog
-    if (showMergeStrategyDialog && selectedBackupId != null) {
-        MergeStrategyDialog(
-            onStrategySelected = { strategy ->
-                showMergeStrategyDialog = false
-                onRestoreWithStrategy(selectedBackupId!!, strategy)
-                selectedBackupId = null
-            },
-            onDismiss = {
-                showMergeStrategyDialog = false
-                selectedBackupId = null
-            }
-        )
-    }
+        // About Section
+        SettingsSection(title = stringResource(R.string.about_section_title)) {
+            SettingReadOnlyItem(
+                title = stringResource(R.string.version_label),
+                value = context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "Unknown",
+                icon = Icons.Default.Info
+            )
+        }
 
-    // Restore Password Dialog
-    if (showRestorePasswordDialog && restoreFileId != null && restoreMergeStrategy != null) {
-        RestorePasswordDialog(
-            hasError = passwordError,
-            onPasswordProvided = { password ->
-                showRestorePasswordDialog = false
-                onRestoreWithPassword(restoreFileId!!, restoreMergeStrategy!!, password)
-                restoreFileId = null
-                restoreMergeStrategy = null
-                passwordError = false
-            },
-            onDismiss = {
-                showRestorePasswordDialog = false
-                restoreFileId = null
-                restoreMergeStrategy = null
-                passwordError = false
-                onClearState()
-            }
-        )
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
@@ -673,70 +307,29 @@ fun PersonalInfoSection(
     var showDatePicker by remember { mutableStateOf(false) }
     var showHeightDialog by remember { mutableStateOf(false) }
     var showWeightDialog by remember { mutableStateOf(false) }
+    var sexExpanded by remember { mutableStateOf(false) }
     val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
-    
-    Text(
-        text = stringResource(R.string.personal_info_title),
-        style = MaterialTheme.typography.headlineMedium,
-        modifier = Modifier.padding(bottom = 16.dp)
-    )
-    
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+
+    SettingsSection(title = stringResource(R.string.personal_info_title)) {
+        Column {
             // Date of Birth
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.date_of_birth_label),
-                    style = MaterialTheme.typography.titleMedium
-                )
-                TextButton(onClick = { showDatePicker = true }) {
-                    Text(
-                        userProfile.dateOfBirth?.let { 
-                            dateFormat.format(Date(it)) 
-                        } ?: stringResource(R.string.not_specified)
-                    )
-                }
-            }
-            
-            HorizontalDivider()
-            
+            SettingDialogItem(
+                title = stringResource(R.string.date_of_birth_label),
+                value = userProfile.dateOfBirth?.let {
+                    dateFormat.format(Date(it))
+                } ?: stringResource(R.string.not_specified),
+                icon = Icons.Default.CalendarToday,
+                onClick = { showDatePicker = true }
+            )
+
             // Sex
-            var sexExpanded by remember { mutableStateOf(false) }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.sex_label),
-                    style = MaterialTheme.typography.titleMedium
-                )
-                
-                ExposedDropdownMenuBox(
-                    expanded = sexExpanded,
-                    onExpandedChange = { sexExpanded = it }
-                ) {
-                    TextButton(
-                        onClick = { sexExpanded = true },
-                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
-                    ) {
-                        Text(stringResource(userProfile.sex.displayNameRes))
-                        Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                    }
-                    
+            SettingDropdownItem(
+                title = stringResource(R.string.sex_label),
+                selectedValue = stringResource(userProfile.sex.displayNameRes),
+                icon = Icons.Default.Person,
+                expanded = sexExpanded,
+                onExpandedChange = { sexExpanded = it },
+                dropdownContent = {
                     ExposedDropdownMenu(
                         expanded = sexExpanded,
                         onDismissRequest = { sexExpanded = false }
@@ -746,69 +339,42 @@ fun PersonalInfoSection(
                                 text = { Text(stringResource(sex.displayNameRes)) },
                                 onClick = {
                                     onUpdateProfile(userProfile.copy(sex = sex))
-                                    sexExpanded = false
-                                }
+                                    sexExpanded = false }
                             )
                         }
                     }
                 }
-            }
-            
-            HorizontalDivider()
-            
+            )
+
             // Height
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.height_label),
-                    style = MaterialTheme.typography.titleMedium
-                )
-                TextButton(onClick = { showHeightDialog = true }) {
-                    Text(
-                        userProfile.heightCm?.let { height ->
-                            if (units == Units.METRIC) {
-                                stringResource(R.string.height_cm_format, height)
-                            } else {
-                                val (feet, inches) = userProfile.getHeightInFeetInches() ?: Pair(0, 0)
-                                stringResource(R.string.height_ft_in_format, feet, inches)
-                            }
-                        } ?: stringResource(R.string.not_specified)
-                    )
-                }
-            }
-            
-            HorizontalDivider()
-            
+            SettingDialogItem(
+                title = stringResource(R.string.height_label),
+                value = userProfile.heightCm?.let { height ->
+                    if (units == Units.METRIC) {
+                        stringResource(R.string.height_cm_format, height)
+                    } else {
+                        val (feet, inches) = userProfile.getHeightInFeetInches() ?: Pair(0, 0)
+                        stringResource(R.string.height_ft_in_format, feet, inches)
+                    }
+                } ?: stringResource(R.string.not_specified),
+                icon = Icons.Default.Height,
+                onClick = { showHeightDialog = true }
+            )
+
             // Weight
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.weight_label),
-                    style = MaterialTheme.typography.titleMedium
-                )
-                TextButton(onClick = { showWeightDialog = true }) {
-                    Text(
-                        userProfile.weightKg?.let { weight ->
-                            if (units == Units.METRIC) {
-                                stringResource(R.string.weight_kg_format, weight)
-                            } else {
-                                val pounds = userProfile.getWeightInPounds() ?: 0
-                                stringResource(R.string.weight_lb_format, pounds)
-                            }
-                        } ?: stringResource(R.string.not_specified)
-                    )
-                }
-            }
+            SettingDialogItem(
+                title = stringResource(R.string.weight_label),
+                value = userProfile.weightKg?.let { weight ->
+                    if (units == Units.METRIC) {
+                        stringResource(R.string.weight_kg_format, weight)
+                    } else {
+                        val pounds = userProfile.getWeightInPounds() ?: 0
+                        stringResource(R.string.weight_lb_format, pounds)
+                    }
+                } ?: stringResource(R.string.not_specified),
+                icon = Icons.Default.MonitorWeight,
+                onClick = { showWeightDialog = true }
+            )
             
             // Show calculated info if we have basic data
             if (userProfile.hasCompleteBasicInfo()) {
@@ -844,7 +410,7 @@ fun PersonalInfoSection(
             }
         }
     }
-    
+
     // Date Picker Dialog
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(
@@ -1010,832 +576,225 @@ fun WeightInputDialog(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun BackupListDialog(
-    backups: List<com.tiarkaerell.ibstracker.data.sync.GoogleDriveBackup.DriveFile>,
-    onBackupSelected: (String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(text = stringResource(R.string.select_backup))
-        },
-        text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-            ) {
-                if (backups.isEmpty()) {
-                    Text(
-                        text = stringResource(R.string.no_backups_found),
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                } else {
-                    backups.forEach { backup ->
-                        val dateFormat = SimpleDateFormat("MMM dd, yyyy 'at' HH:mm", Locale.getDefault())
-                        val backupDate = dateFormat.format(Date(backup.createdTime))
-                        
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            onClick = { onBackupSelected(backup.id) }
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text(
-                                    text = backup.name,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = backupDate,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = stringResource(R.string.backup_size_kb, backup.size / 1024),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.button_cancel))
-            }
-        }
-    )
-}
+// BackupPasswordCard moved to BackupSettingsScreen
+// LocalFileBackupCard removed - JSON import/export functionality moved to BackupSettingsScreen
+// BackupRestoreCard removed - replaced with SettingNavigationItem in main SettingsScreen
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun MergeStrategyDialog(
-    onStrategySelected: (com.tiarkaerell.ibstracker.data.sync.GoogleDriveBackup.MergeStrategy) -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(text = stringResource(R.string.restore_strategy_title))
-        },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.restore_strategy_description),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = { 
-                        onStrategySelected(com.tiarkaerell.ibstracker.data.sync.GoogleDriveBackup.MergeStrategy.KEEP_LOCAL)
-                        onDismiss()
-                    }
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = stringResource(R.string.merge_keep_local),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
-                        )
-                        Text(
-                            text = stringResource(R.string.merge_keep_local_desc),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-                
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = { 
-                        onStrategySelected(com.tiarkaerell.ibstracker.data.sync.GoogleDriveBackup.MergeStrategy.KEEP_BACKUP)
-                        onDismiss()
-                    }
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = stringResource(R.string.merge_keep_backup),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
-                        )
-                        Text(
-                            text = stringResource(R.string.merge_keep_backup_desc),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-                
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = { 
-                        onStrategySelected(com.tiarkaerell.ibstracker.data.sync.GoogleDriveBackup.MergeStrategy.KEEP_BOTH)
-                        onDismiss()
-                    }
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = stringResource(R.string.merge_keep_both),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
-                        )
-                        Text(
-                            text = stringResource(R.string.merge_keep_both_desc),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.button_cancel))
-            }
-        }
-    )
-}
+// ==================== NEW MATERIAL DESIGN 3 COMPOSABLES ====================
 
+/**
+ * Reusable section header for grouping related settings.
+ * Follows Material Design 3 typography and spacing guidelines.
+ */
 @Composable
-fun BackupPasswordCard(
-    hasPassword: Boolean,
-    currentPassword: String,
-    onPasswordChange: (String) -> Unit
+private fun SettingsSection(
+    title: String,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
 ) {
-    var showPasswordDialog by remember { mutableStateOf(false) }
-    var showDisableDialog by remember { mutableStateOf(false) }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.backup_password_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = stringResource(R.string.backup_password_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+        content()
+    }
+}
 
-                Switch(
-                    checked = hasPassword,
-                    onCheckedChange = { enabled ->
-                        if (enabled) {
-                            showPasswordDialog = true
-                        } else {
-                            showDisableDialog = true
-                        }
-                    }
+/**
+ * Setting item that navigates to a sub-screen.
+ * Shows chevron icon to indicate navigation.
+ */
+@Composable
+private fun SettingNavigationItem(
+    title: String,
+    description: String? = null,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    onClick: () -> Unit
+) {
+    ListItem(
+        headlineContent = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge
+            )
+        },
+        supportingContent = description?.let {
+            {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+        },
+        leadingContent = icon?.let {
+            {
+                Icon(
+                    imageVector = it,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        trailingContent = {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = "Navigate",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .fillMaxWidth()
+    )
+}
 
-            if (hasPassword) {
-                Spacer(modifier = Modifier.height(12.dp))
+/**
+ * Read-only setting item for displaying information.
+ * Used for app version and other non-interactive settings.
+ */
+@Composable
+private fun SettingReadOnlyItem(
+    title: String,
+    value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null
+) {
+    ListItem(
+        headlineContent = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge
+            )
+        },
+        leadingContent = icon?.let {
+            {
+                Icon(
+                    imageVector = it,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        trailingContent = {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+/**
+ * Setting item with dropdown selection.
+ * Uses Material Design 3 ExposedDropdownMenuBox within ListItem.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SettingDropdownItem(
+    title: String,
+    selectedValue: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    dropdownContent: @Composable ExposedDropdownMenuBoxScope.() -> Unit
+) {
+    ListItem(
+        headlineContent = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge
+            )
+        },
+        leadingContent = icon?.let {
+            {
+                Icon(
+                    imageVector = it,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        trailingContent = {
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = onExpandedChange
+            ) {
                 Row(
-                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                    modifier = Modifier
+                        .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
+                        .clickable { onExpandedChange(!expanded) },
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = stringResource(R.string.backup_password_enabled),
-                        style = MaterialTheme.typography.bodySmall,
+                        text = selectedValue,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = stringResource(R.string.backup_password_warning),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-        }
-    }
-
-    // Password setup dialog
-    if (showPasswordDialog) {
-        PasswordSetupDialog(
-            onDismiss = { showPasswordDialog = false },
-            onPasswordSet = { newPassword ->
-                onPasswordChange(newPassword)
-                showPasswordDialog = false
-            }
-        )
-    }
-
-    // Disable password verification dialog
-    if (showDisableDialog) {
-        PasswordVerifyDialog(
-            currentPassword = currentPassword,
-            onDismiss = { showDisableDialog = false },
-            onPasswordVerified = {
-                onPasswordChange("")
-                showDisableDialog = false
-            }
-        )
-    }
-}
-
-@Composable
-fun PasswordSetupDialog(
-    onDismiss: () -> Unit,
-    onPasswordSet: (String) -> Unit
-) {
-    var password by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
-    var showError by remember { mutableStateOf(false) }
-    var passwordVisible by remember { mutableStateOf(false) }
-    var confirmPasswordVisible by remember { mutableStateOf(false) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.setup_password_title)) },
-        text = {
-            Column {
-                Text(
-                    text = stringResource(R.string.setup_password_description),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = {
-                        password = it
-                        showError = false
-                    },
-                    label = { Text(stringResource(R.string.password_label)) },
-                    visualTransformation = if (passwordVisible) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation(),
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Password,
-                        autoCorrectEnabled = false
-                    ),
-                    trailingIcon = {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(
-                                imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                contentDescription = if (passwordVisible) "Hide password" else "Show password"
-                            )
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextField(
-                    value = confirmPassword,
-                    onValueChange = {
-                        confirmPassword = it
-                        showError = false
-                    },
-                    label = { Text(stringResource(R.string.confirm_password_label)) },
-                    visualTransformation = if (confirmPasswordVisible) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation(),
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Password,
-                        autoCorrectEnabled = false
-                    ),
-                    trailingIcon = {
-                        IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
-                            Icon(
-                                imageVector = if (confirmPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                contentDescription = if (confirmPasswordVisible) "Hide password" else "Show password"
-                            )
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    isError = showError
-                )
-
-                if (showError) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = stringResource(R.string.password_mismatch_error),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Warning message
-                Text(
-                    text = stringResource(R.string.backup_password_warning),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error
-                )
+                dropdownContent()
             }
         },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    if (password.isEmpty()) {
-                        showError = true
-                    } else if (password != confirmPassword) {
-                        showError = true
-                    } else {
-                        onPasswordSet(password)
-                    }
-                }
-            ) {
-                Text(stringResource(R.string.button_enable))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.button_cancel))
-            }
-        }
+        modifier = Modifier.fillMaxWidth()
     )
 }
 
+/**
+ * Setting item that opens a dialog for input.
+ * Shows current value and chevron to indicate interaction.
+ */
 @Composable
-fun PasswordVerifyDialog(
-    currentPassword: String,
-    onDismiss: () -> Unit,
-    onPasswordVerified: () -> Unit
+private fun SettingDialogItem(
+    title: String,
+    value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    onClick: () -> Unit
 ) {
-    var enteredPassword by remember { mutableStateOf("") }
-    var showError by remember { mutableStateOf(false) }
-    var passwordVisible by remember { mutableStateOf(false) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.verify_password_title)) },
-        text = {
-            Column {
-                Text(
-                    text = stringResource(R.string.verify_password_description),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = enteredPassword,
-                    onValueChange = {
-                        enteredPassword = it
-                        showError = false
-                    },
-                    label = { Text(stringResource(R.string.password_label)) },
-                    visualTransformation = if (passwordVisible) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation(),
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Password,
-                        autoCorrectEnabled = false
-                    ),
-                    trailingIcon = {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(
-                                imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                contentDescription = if (passwordVisible) "Hide password" else "Show password"
-                            )
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    isError = showError
-                )
-
-                if (showError) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = stringResource(R.string.password_incorrect_error),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = stringResource(R.string.disable_password_message),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    if (enteredPassword == currentPassword) {
-                        onPasswordVerified()
-                    } else {
-                        showError = true
-                    }
-                }
-            ) {
-                Text(stringResource(R.string.button_disable))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.button_cancel))
-            }
-        }
-    )
-}
-
-@Composable
-fun RestorePasswordDialog(
-    hasError: Boolean,
-    onPasswordProvided: (String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.restore_password_title)) },
-        text = {
-            Column {
-                Text(
-                    text = stringResource(R.string.restore_password_description),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = { Text(stringResource(R.string.password_label)) },
-                    visualTransformation = if (passwordVisible) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation(),
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Password,
-                        autoCorrectEnabled = false
-                    ),
-                    trailingIcon = {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(
-                                imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                contentDescription = if (passwordVisible) "Hide password" else "Show password"
-                            )
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    isError = hasError
-                )
-
-                if (hasError) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = stringResource(R.string.password_incorrect_error),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    if (password.isNotEmpty()) {
-                        onPasswordProvided(password)
-                    }
-                }
-            ) {
-                Text(stringResource(R.string.button_restore))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.button_cancel))
-            }
-        }
-    )
-}
-
-@Composable
-fun LocalFileBackupCard(
-    settingsViewModel: SettingsViewModel
-) {
-    val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
-    var exportMessage by remember { mutableStateOf<String?>(null) }
-    var importMessage by remember { mutableStateOf<String?>(null) }
-    var isExporting by remember { mutableStateOf(false) }
-    var isImporting by remember { mutableStateOf(false) }
-    var showClearDataDialog by remember { mutableStateOf(false) }
-    var selectedFileUri by remember { mutableStateOf<android.net.Uri?>(null) }
-
-    // Export launcher - saves JSON file to user-selected location
-    val exportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/json")
-    ) { uri ->
-        uri?.let {
-            coroutineScope.launch {
-                isExporting = true
-                try {
-                    val file = settingsViewModel.exportToLocalFile()
-                    // Copy file to selected location
-                    context.contentResolver.openOutputStream(it)?.use { outputStream ->
-                        file.inputStream().copyTo(outputStream)
-                    }
-                    exportMessage = "Backup exported successfully"
-                } catch (e: Exception) {
-                    exportMessage = "Export failed: ${e.message}"
-                } finally {
-                    isExporting = false
-                }
-            }
-        }
-    }
-
-    // Import launcher - reads JSON file from user-selected location
-    val importLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        uri?.let {
-            selectedFileUri = it
-            showClearDataDialog = true
-        }
-    }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
-        )
-    ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            // Header with icon
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Save,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(32.dp)
-                        .padding(end = 16.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Local File Backup",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "Import/Export JSON",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Description
+    ListItem(
+        headlineContent = {
             Text(
-                text = "Backup and restore your data using local JSON files. Perfect for manual backups and data transfers.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineHeight = 20.sp
+                text = title,
+                style = MaterialTheme.typography.bodyLarge
             )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
+        },
+        leadingContent = icon?.let {
+            {
+                Icon(
+                    imageVector = it,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        trailingContent = {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.clickable(onClick = onClick)
             ) {
-                FilledTonalButton(
-                    onClick = {
-                        val dateFormat = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
-                        val filename = "ibs_tracker_backup_${dateFormat.format(Date())}.json"
-                        exportLauncher.launch(filename)
-                    },
-                    enabled = !isExporting && !isImporting,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
-                ) {
-                    if (isExporting) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.Upload,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Export", style = MaterialTheme.typography.labelLarge)
-                    }
-                }
-                FilledTonalButton(
-                    onClick = {
-                        importLauncher.launch(arrayOf("application/json"))
-                    },
-                    enabled = !isExporting && !isImporting,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
-                ) {
-                    if (isImporting) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.Download,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Import", style = MaterialTheme.typography.labelLarge)
-                    }
-                }
-            }
-
-            // Display export/import messages
-            exportMessage?.let { message ->
                 Text(
-                    text = message,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (message.contains("failed", ignoreCase = true)) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    },
-                    modifier = Modifier.padding(top = 8.dp)
+                    text = value,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(end = 4.dp)
                 )
-                LaunchedEffect(message) {
-                    kotlinx.coroutines.delay(3000)
-                    exportMessage = null
-                }
-            }
-
-            importMessage?.let { message ->
-                Text(
-                    text = message,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (message.contains("failed", ignoreCase = true)) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    },
-                    modifier = Modifier.padding(top = 8.dp)
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "Edit",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                LaunchedEffect(message) {
-                    kotlinx.coroutines.delay(5000)
-                    importMessage = null
-                }
             }
-        }
-    }
-
-    // Clear data dialog before import
-    if (showClearDataDialog && selectedFileUri != null) {
-        AlertDialog(
-            onDismissRequest = {
-                showClearDataDialog = false
-                selectedFileUri = null
-            },
-            title = { Text("Clear Existing Data?") },
-            text = {
-                Column {
-                    Text(
-                        text = "Do you want to clear existing data before importing?",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "• Clear: Replace all data with backup\n• Keep: Merge backup with existing data",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        coroutineScope.launch {
-                            isImporting = true
-                            try {
-                                context.contentResolver.openInputStream(selectedFileUri!!)?.use { inputStream ->
-                                    val file = java.io.File(context.cacheDir, "temp_import.json")
-                                    file.outputStream().use { outputStream ->
-                                        inputStream.copyTo(outputStream)
-                                    }
-                                    val result = settingsViewModel.importFromLocalFile(file, clearExisting = true)
-                                    importMessage = result.fold(
-                                        onSuccess = { "Import successful! Go to Analytics, select 'All Time' date range, and tap Refresh." },
-                                        onFailure = { e -> "Import failed: ${e.message}" }
-                                    )
-                                }
-                            } catch (e: Exception) {
-                                importMessage = "Import failed: ${e.message}"
-                            } finally {
-                                isImporting = false
-                                showClearDataDialog = false
-                                selectedFileUri = null
-                            }
-                        }
-                    }
-                ) {
-                    Text("Clear & Import")
-                }
-            },
-            dismissButton = {
-                Row {
-                    TextButton(
-                        onClick = {
-                            coroutineScope.launch {
-                                isImporting = true
-                                try {
-                                    context.contentResolver.openInputStream(selectedFileUri!!)?.use { inputStream ->
-                                        val file = java.io.File(context.cacheDir, "temp_import.json")
-                                        file.outputStream().use { outputStream ->
-                                            inputStream.copyTo(outputStream)
-                                        }
-                                        val result = settingsViewModel.importFromLocalFile(file, clearExisting = false)
-                                        importMessage = result.fold(
-                                            onSuccess = { "Import successful! Go to Analytics and tap Refresh to see updated analysis." },
-                                            onFailure = { e -> "Import failed: ${e.message}" }
-                                        )
-                                    }
-                                } catch (e: Exception) {
-                                    importMessage = "Import failed: ${e.message}"
-                                } finally {
-                                    isImporting = false
-                                    showClearDataDialog = false
-                                    selectedFileUri = null
-                                }
-                            }
-                        }
-                    ) {
-                        Text("Keep & Merge")
-                    }
-                    TextButton(
-                        onClick = {
-                            showClearDataDialog = false
-                            selectedFileUri = null
-                        }
-                    ) {
-                        Text("Cancel")
-                    }
-                }
-            }
-        )
-    }
+        },
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .fillMaxWidth()
+    )
 }

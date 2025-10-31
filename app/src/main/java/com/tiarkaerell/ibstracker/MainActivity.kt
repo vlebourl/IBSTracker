@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -25,12 +26,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.tiarkaerell.ibstracker.ui.screens.AnalysisScreen
+import com.tiarkaerell.ibstracker.ui.screens.BackupSettingsScreen
 import com.tiarkaerell.ibstracker.ui.screens.DashboardScreen
 import com.tiarkaerell.ibstracker.ui.screens.FoodScreen
 import com.tiarkaerell.ibstracker.ui.screens.SettingsScreen
 import com.tiarkaerell.ibstracker.ui.screens.SymptomsScreen
 import com.tiarkaerell.ibstracker.ui.theme.IBSTrackerTheme
 import com.tiarkaerell.ibstracker.ui.viewmodel.AnalyticsViewModel
+import com.tiarkaerell.ibstracker.ui.viewmodel.BackupViewModel
 import com.tiarkaerell.ibstracker.ui.viewmodel.FoodViewModel
 import com.tiarkaerell.ibstracker.ui.viewmodel.SettingsViewModel
 import com.tiarkaerell.ibstracker.ui.viewmodel.SymptomsViewModel
@@ -67,9 +70,11 @@ class MainActivity : ComponentActivity() {
         val container = (application as IBSTrackerApplication).container
 
         val viewModelFactory = ViewModelFactory(
-            container.dataRepository, 
+            container.dataRepository,
             container.settingsRepository,
             container.analysisRepository,
+            container.backupRepository,
+            container.authorizationManager,
             container.appContext,
             container.appDatabase
         )
@@ -101,21 +106,24 @@ fun MainScreen(viewModelFactory: ViewModelFactory) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
-            TopAppBar(
-                title = { 
-                    Text(
-                        if (currentScreen != null) {
-                            stringResource(currentScreen.titleRes)
-                        } else {
-                            stringResource(R.string.app_name)
-                        }
+            // Hide topBar for sub-screens that have their own header (like backup_settings)
+            if (currentDestination?.route != "backup_settings") {
+                TopAppBar(
+                    title = {
+                        Text(
+                            if (currentScreen != null) {
+                                stringResource(currentScreen.titleRes)
+                            } else {
+                                stringResource(R.string.app_name)
+                            }
+                        )
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                     )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
-            )
+            }
         },
         bottomBar = {
             NavigationBar {
@@ -166,7 +174,29 @@ fun MainScreen(viewModelFactory: ViewModelFactory) {
             }
             composable(Screen.Settings.route) {
                 val settingsViewModel: SettingsViewModel = viewModel(factory = viewModelFactory)
-                SettingsScreen(settingsViewModel = settingsViewModel)
+                SettingsScreen(
+                    settingsViewModel = settingsViewModel,
+                    onNavigateToBackupSettings = {
+                        navController.navigate("backup_settings")
+                    }
+                )
+            }
+            composable("backup_settings") {
+                val backupViewModel: BackupViewModel = viewModel(factory = viewModelFactory)
+                val settingsViewModel: SettingsViewModel = viewModel(factory = viewModelFactory)
+                val backupPassword by settingsViewModel.backupPassword.collectAsState()
+
+                BackupSettingsScreen(
+                    viewModel = backupViewModel,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    hasBackupPassword = settingsViewModel.hasBackupPassword(),
+                    backupPassword = backupPassword,
+                    onPasswordChange = { password ->
+                        settingsViewModel.setBackupPassword(password)
+                    }
+                )
             }
         }
     }

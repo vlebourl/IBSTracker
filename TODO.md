@@ -1,5 +1,50 @@
 ## Completed ✅
 
+### v1.13.6 - Scheduled Cloud Backups Implementation
+* ~~**Scheduled 2AM cloud backups not working**~~ **[Completed - Released v1.13.6]**
+  - ~~Issue: GoogleDriveBackupWorker.getAccessToken() was a TODO stub returning null~~
+  - ~~Issue: BackupViewModel.toggleCloudSync() only updated preference, never scheduled job~~
+  - ~~Issue: WorkManager job not being scheduled when Cloud Sync toggle changed~~
+  - ~~Solution (v1.13.4): Implemented GoogleAccountCredential for background operations~~
+  - ~~GoogleAccountCredential.usingOAuth2() handles token refresh automatically~~
+  - ~~Added createBackupWithCredential() and getDriveServiceWithCredential()~~
+  - ~~Updated GoogleDriveBackupWorker.doWork() to use SessionManager + GoogleAccountCredential~~
+  - ~~Removed WiFi and charging constraints (NetworkType.CONNECTED only)~~
+  - ~~Solution (v1.13.5): "Sync Now" uploads both auto-backup and timestamped backup~~
+  - ~~BackupRepositoryImpl.syncToCloud() now uploads both file types~~
+  - ~~Auto-backup overwrites previous, timestamped backup preserves snapshots~~
+  - ~~Solution (v1.13.6): Fixed WorkManager job scheduling on toggle~~
+  - ~~BackupViewModel.toggleCloudSync() now calls GoogleDriveBackupWorker.schedule/cancel~~
+  - ~~IBSTrackerApplication conditionally schedules job based on Cloud Sync preference~~
+  - ~~Testing: Manual "Sync Now" verified uploading both files successfully~~
+  - ~~Scheduled 2AM backups now work with proper constraints and token refresh~~
+
+### v1.13.2 - Cloud Auto-Backup Storage Management
+* ~~**Cloud backups filling up storage**~~ **[Completed - Released v1.13.2]**
+  - ~~Issue: Daily scheduled cloud syncs create timestamped files, accumulating indefinitely~~
+  - ~~Solution: Auto-backups now use fixed filenames that overwrite previous versions~~
+  - ~~Auto cloud backups: "auto_cloud_backup_v2.json" (overwrites daily)~~
+  - ~~Manual cloud backups: Timestamped filenames (preserves all user-initiated backups)~~
+  - ~~Matches local backup behavior for consistency~~
+  - ~~Added isAutoBackup parameter throughout backup chain~~
+  - ~~GoogleDriveBackup.createBackup() deletes existing auto-backup before upload~~
+  - ~~Manual "Sync Now" button uses timestamped names (isAutoBackup=false)~~
+  - ~~Scheduled WorkManager sync uses fixed names (isAutoBackup=true default)~~
+  - ~~Comprehensive logging for auto-backup file detection and deletion~~
+  - ~~Prevents cloud storage bloat while preserving important manual backups~~
+
+### v1.13.1 - Cloud Backup Deletion
+* ~~**Cloud backup deletion not working**~~ **[Completed - Released v1.13.1]**
+  - ~~Issue: GoogleDriveService.deleteCloudBackup() returned false (stub implementation)~~
+  - ~~Solution: Implemented Drive API deletion using files().delete(fileId)~~
+  - ~~Added GoogleDriveBackup.deleteBackup() method with Drive API integration~~
+  - ~~Updated BackupViewModel to retrieve and pass access token for cloud deletion~~
+  - ~~Comprehensive logging throughout deletion flow for debugging~~
+  - ~~BackupViewModel logs: backup type, access token retrieval, results~~
+  - ~~GoogleDriveService logs: API call execution~~
+  - ~~GoogleDriveBackup logs: Drive service initialization, deletion success/failure~~
+  - ~~Cloud backup deletion now fully functional with proper error handling~~
+
 ### v1.12.0 - Custom Food Persistence Fix
 * ~~**Food not appearing after adding to a category**~~ **[Completed - Released v1.12.0]**
   - ~~Issue: Adding "Soja" to Other category doesn't show in category after save~~
@@ -69,20 +114,26 @@
   - Validate symptom intensity (1-10 range)
   - Validate timestamps (not in future)
   - Show validation errors before save attempt
-* **Sync status indicator** - Show Google Drive backup state (~2-3 hours)
-  - Add sync status to settings/dashboard
-  - Show last successful backup timestamp
-  - Indicate pending/failed backups with retry option
-  - Visual feedback during backup operations
+* **Enhanced sync status indicator** - Improve Google Drive backup state visibility (~1-2 hours)
+  - ✅ Last successful backup timestamp already shown in settings
+  - ✅ Visual feedback during backup operations implemented
+  - TODO: Indicate pending/failed backups with retry option
+  - TODO: Add sync status badge to dashboard
+  - TODO: Show detailed sync history (last 5 syncs with success/failure status)
 
 ### ⚡ Quick Wins
 **Priority**: High-value, low-effort improvements (< 1 day each)
-* **Auto daily backup** - Critical data protection (~2-3 hours)
-  - Use WorkManager for daily backup scheduling
-  - Copy Room database to app-specific backup directory
-  - Keep last 7 days of backups (rolling deletion)
-  - Add restore functionality from backup file
-  - Settings toggle to enable/disable
+* **Auto daily backup enhancements** - Additional backup features (~1-2 hours)
+  - ✅ WorkManager for daily backup scheduling (implemented)
+  - ✅ Local and cloud backup with auto-overwrite (implemented)
+  - ✅ Settings toggles for local/cloud backups (implemented)
+  - ✅ Restore functionality from backup files (implemented)
+  - TODO: Keep configurable number of manual backups (currently keeps all)
+  - TODO: Add automatic cleanup of old manual backups (e.g., keep last 30)
+* **Animated sync icon during cloud backup** - Visual feedback improvement (~30 minutes)
+  - Add rotating sync icon when BackupUiState.SyncingToCloud is active
+  - Replace static icon with animated rotation during "Sync Now" operation
+  - Shows user that backup is in progress (currently no visual feedback during sync)
 * **Category ordering by usage frequency** - UX improvement (~2-3 hours)
   - Sort food categories by usage count (most used first)
   - Use existing FoodUsageStats infrastructure
@@ -279,12 +330,21 @@
 ✅ No database migration required
 ✅ Backward compatible
 
-### 🎯 Next Release Options (v1.13.0)
+### ✅ Cloud Backup Improvements (v1.13.1-v1.13.2) - COMPLETED
+✅ Implemented cloud backup deletion with Drive API (v1.13.1)
+✅ Comprehensive logging throughout deletion flow for debugging
+✅ Fixed auto-backup storage bloat issue (v1.13.2)
+✅ Auto-backups use fixed filenames that overwrite previous versions
+✅ Manual backups use timestamped filenames (preserves all)
+✅ Consistent behavior between local and cloud backups
+✅ Prevents cloud storage accumulation from daily scheduled syncs
+
+### 🎯 Next Release Options (v1.14.0)
 
 **Option A: Remaining Critical Bugs** - 1-2 days (RECOMMENDED)
 - Add error handling in ViewModels (UiState pattern)
 - Implement input validation
-- Add sync status indicator
+- Enhance sync status indicator (last backup time, pending/failed states)
 
 **Option B: Analytics Phase 2 (Statistical Enhancements)** - 3-5 days
 - Build on Phase 1 foundation
@@ -305,7 +365,7 @@
 - Implement swipe gestures
 - Category ordering by frequency
 
-### Future Releases (v1.14.0+)
+### Future Releases (v1.15.0+)
 - Analytics Phase 3: Advanced Pattern Recognition
 - Analytics Phase 4: Personalization & Recommendations
 - Body weight history tracking

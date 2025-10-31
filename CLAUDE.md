@@ -174,6 +174,68 @@ val viewModel: FoodViewModel = viewModel(
 - Room SQLite database (existing AppDatabase with FoodItem and Symptom entities) (001-improve-analysis-insights)
 - Kotlin 1.8.20, Android Gradle Plugin 8.x + Jetpack Compose BOM 2023.08.00, Material Icons Extended, AndroidX Core KTX 1.10.1 (003-fix-deprecation-warnings)
 - N/A (code quality feature, no data storage changes) (003-fix-deprecation-warnings)
+- Room SQLite database (`ibs-tracker-database`, schema v9) (004-fix-custom-food-persistence)
+- Kotlin 1.8.20 / Android SDK 34 (Target SDK 34, Min SDK 26) + Room 2.6.1, WorkManager 2.9+, Google Drive API v3, Google Sign-In, Jetpack Compose, Material3, Kotlin Coroutines (005-auto-backup)
+- Room Database (SQLite) for app data, app-specific storage for local backups, Google Drive app folder for cloud backups (005-auto-backup)
+
+## Emulator Screen Dimensions & Touch Coordinates
+
+**Emulator Configuration:**
+- Screen Resolution: 1080x2400 pixels
+- Physical Density: 420 dpi
+- Device: Medium Phone API 36.1 (AVD)
+- Serial: emulator-5554
+
+**Bottom Navigation Bar (y=2232):**
+The app uses a bottom navigation bar with 5 icons. Clickable areas are larger than icon bounds.
+Extracted from UI hierarchy dump using uiautomator.
+
+Icon positions (x, y coordinates for `adb shell input tap`):
+```bash
+# Dashboard (leftmost) - clickable area [0,2127][200,2337]
+adb shell input tap 100 2232
+
+# Food (second) - clickable area [221,2127][420,2337]
+adb shell input tap 320 2232
+
+# Symptoms/Add (center) - clickable area [441,2127][640,2337]
+adb shell input tap 540 2232
+
+# Analytics (fourth) - clickable area [661,2127][860,2337]
+adb shell input tap 760 2232
+
+# Settings (rightmost) - clickable area [881,2127][1080,2337]
+adb shell input tap 980 2232
+```
+
+**Common UI Element Positions:**
+
+Top Bar:
+- Back button (left): ~80 95
+- Screen center (horizontal): 540
+
+Settings Screen Items (approximate):
+- Language dropdown: ~540 290
+- Units dropdown: ~540 390
+- Date of Birth: ~540 580
+- Sex dropdown: ~540 680
+- Height: ~540 780
+- Weight: ~540 880
+- Backup Settings: ~540 1060
+
+**Testing Commands:**
+```bash
+# Take screenshot
+ANDROID_SERIAL=emulator-5554 adb exec-out screencap -p > /tmp/screenshot.png
+
+# Launch app
+ANDROID_SERIAL=emulator-5554 adb shell am start -n com.tiarkaerell.ibstracker/.MainActivity
+
+# Swipe (for scrolling): start_x start_y end_x end_y duration_ms
+ANDROID_SERIAL=emulator-5554 adb shell input swipe 540 1200 540 400 300
+```
+
+**Important:** Always use these precise coordinates when interacting with the emulator to ensure accurate tapping and navigation.
 
 ## Recent Changes
 - 001-improve-analysis-insights: Added Kotlin 1.8.20 / Android SDK 34 + Jetpack Compose, Material3, Room Database, Kotlin Coroutines

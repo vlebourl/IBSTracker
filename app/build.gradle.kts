@@ -55,8 +55,8 @@ android {
         applicationId = "com.tiarkaerell.ibstracker"
         minSdk = 26
         targetSdk = 34
-        versionCode = 16
-        versionName = "1.12.0"
+        versionCode = 23
+        versionName = "1.13.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -133,9 +133,15 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
+    // WorkManager for scheduled backups
+    implementation(libs.androidx.work.runtime.ktx)
+
     // Room testing - for migration tests
     androidTestImplementation("androidx.room:room-testing:2.6.1")
     androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
+
+    // WorkManager testing
+    androidTestImplementation("androidx.work:work-testing:2.9.0")
 
     // Security - Encrypted SharedPreferences
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
