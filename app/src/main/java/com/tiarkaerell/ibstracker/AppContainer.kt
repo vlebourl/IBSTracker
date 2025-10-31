@@ -90,6 +90,14 @@ class AppContainer(private val context: Context) {
         AuthorizationManager(context)
     }
 
+    val googleDriveBackup: com.tiarkaerell.ibstracker.data.sync.GoogleDriveBackup by lazy {
+        com.tiarkaerell.ibstracker.data.sync.GoogleDriveBackup(
+            context = context,
+            database = appDatabase,
+            settingsRepository = settingsRepository
+        )
+    }
+
     val googleDriveService: GoogleDriveService by lazy {
         GoogleDriveService(
             context = context,

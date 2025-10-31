@@ -1,9 +1,11 @@
 package com.tiarkaerell.ibstracker.ui.viewmodel
 
 import android.app.Activity
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tiarkaerell.ibstracker.data.auth.AuthorizationManager
+import com.tiarkaerell.ibstracker.data.backup.GoogleDriveBackupWorker
 import com.tiarkaerell.ibstracker.data.model.backup.BackupFile
 import com.tiarkaerell.ibstracker.data.model.backup.BackupResult
 import com.tiarkaerell.ibstracker.data.model.backup.BackupSettings
@@ -208,11 +210,26 @@ class BackupViewModel(
     /**
      * Toggles cloud sync on/off.
      *
+     * This also schedules/cancels the WorkManager job for daily 2AM cloud backups:
+     * - If enabled: Schedules GoogleDriveBackupWorker to run daily at 2AM
+     * - If disabled: Cancels the scheduled job
+     *
      * @param enabled true to enable, false to disable
+     * @param context Android context required to schedule/cancel WorkManager job
      */
-    fun toggleCloudSync(enabled: Boolean) {
+    fun toggleCloudSync(enabled: Boolean, context: Context) {
         viewModelScope.launch {
+            // Update preference
             backupRepository.toggleCloudSync(enabled)
+
+            // Schedule or cancel WorkManager job
+            if (enabled) {
+                android.util.Log.d("BackupViewModel", "Cloud sync enabled - scheduling WorkManager job")
+                GoogleDriveBackupWorker.schedule(context)
+            } else {
+                android.util.Log.d("BackupViewModel", "Cloud sync disabled - cancelling WorkManager job")
+                GoogleDriveBackupWorker.cancel(context)
+            }
         }
     }
 

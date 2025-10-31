@@ -72,14 +72,28 @@ class BackupRepositoryImpl(
     }
 
     override suspend fun syncToCloud(accessToken: String?, isAutoBackup: Boolean): BackupResult {
-        val result = googleDriveService.uploadBackupToDrive(accessToken, isAutoBackup)
+        // When user clicks "Sync Now", upload BOTH:
+        // 1. Auto-backup (fixed filename) - keeps scheduled 2AM backup up-to-date
+        // 2. Timestamped backup (manual snapshot) - preserves this specific sync
 
-        // Record timestamp if successful
-        if (result is BackupResult.Success) {
+        // Upload auto-backup first (overwrites previous auto-backup)
+        val autoBackupResult = googleDriveService.uploadBackupToDrive(accessToken, isAutoBackup = true)
+
+        // If auto-backup failed, return immediately
+        if (autoBackupResult is BackupResult.Failure) {
+            return autoBackupResult
+        }
+
+        // Upload timestamped backup (creates new snapshot)
+        val timestampedResult = googleDriveService.uploadBackupToDrive(accessToken, isAutoBackup = false)
+
+        // Record timestamp if either succeeded
+        if (autoBackupResult is BackupResult.Success || timestampedResult is BackupResult.Success) {
             backupPreferences.recordCloudSync(System.currentTimeMillis())
         }
 
-        return result
+        // Return the timestamped result (user sees this in the UI)
+        return timestampedResult
     }
 
     // ==================== LOCAL BACKUPS ====================

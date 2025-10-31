@@ -18,20 +18,27 @@ import java.util.concurrent.TimeUnit
  * GoogleDriveBackupWorker - WorkManager worker for scheduled cloud backups.
  *
  * Automatically uploads database backups to Google Drive once daily at 2:00 AM
- * when device is charging and connected to WiFi.
+ * using GoogleAccountCredential for automatic token refresh.
  *
  * Features:
  * - Scheduled daily sync at 2:00 AM
- * - WiFi and charging constraints
+ * - Minimal constraints (any network connection)
  * - Respects cloudSyncEnabled toggle
- * - Requires Google authentication
+ * - Uses GoogleAccountCredential (no Activity context needed!)
+ * - Automatic OAuth token refresh
  * - Exponential backoff retry on failure
  *
  * WorkManager Configuration:
  * - Repeat interval: 24 hours
  * - Flex interval: 1 hour (allows sync between 2:00-3:00 AM)
- * - Constraints: UNMETERED network + charging
+ * - Constraints: Any network connection (WiFi or cellular)
  * - Backoff policy: EXPONENTIAL (30s initial, max 1 hour)
+ *
+ * Technical Implementation:
+ * - Retrieves user's Google account email from SessionManager
+ * - Uses GoogleAccountCredential.usingOAuth2() for Drive API authentication
+ * - GoogleAccountCredential handles token refresh automatically in background
+ * - No Activity context required (works in WorkManager background context)
  *
  * @param context Application context
  * @param params Worker parameters from WorkManager
@@ -52,12 +59,14 @@ class GoogleDriveBackupWorker(
          * Called from IBSTrackerApplication.onCreate() to register
          * the daily 2:00 AM backup job.
          *
+         * Constraints: Only requires any network connection (cellular OK, WiFi OK)
+         * No charging requirement since backups are very small (<1MB typically)
+         *
          * @param context Application context
          */
         fun schedule(context: Context) {
             val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.UNMETERED) // WiFi only
-                .setRequiresCharging(true)                       // Charging only
+                .setRequiredNetworkType(NetworkType.CONNECTED) // Any network (WiFi or cellular)
                 .build()
 
             val workRequest = PeriodicWorkRequestBuilder<GoogleDriveBackupWorker>(
@@ -88,12 +97,11 @@ class GoogleDriveBackupWorker(
         /**
          * Gets constraints for this worker (used in tests).
          *
-         * @return Constraints requiring WiFi and charging
+         * @return Constraints requiring any network connection
          */
         fun getConstraints(): Constraints {
             return Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.UNMETERED)
-                .setRequiresCharging(true)
+                .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
         }
     }
@@ -103,51 +111,61 @@ class GoogleDriveBackupWorker(
      *
      * Workflow:
      * 1. Check if cloud sync is enabled in settings
-     * 2. Check if user is authenticated with Google
-     * 3. Create local backup (reuses BackupManager)
-     * 4. Upload to Google Drive using GoogleDriveService
-     * 5. Update last sync timestamp in preferences
+     * 2. Get user's Google account email from SessionManager
+     * 3. Upload backup to Google Drive using GoogleAccountCredential (auto token refresh!)
+     * 4. Update last sync timestamp in preferences
+     *
+     * GoogleAccountCredential automatically handles token refresh without Activity context.
+     * This is the proper solution for background WorkManager operations.
      *
      * @return Result.success() if backup completed, Result.retry() on network error,
      *         Result.failure() on authentication error
      */
     override suspend fun doWork(): Result {
         try {
+            android.util.Log.d("GoogleDriveBackupWorker", "doWork() started")
+
             val app = applicationContext as IBSTrackerApplication
             val backupPreferences = app.container.backupPreferences
-            val googleDriveService = app.container.googleDriveService
+            val googleDriveBackup = app.container.googleDriveBackup
 
             // Check if cloud sync is enabled
             val settings = backupPreferences.settingsFlow.first()
             if (!settings.cloudSyncEnabled) {
-                // User disabled sync - return success (no-op)
+                android.util.Log.d("GoogleDriveBackupWorker", "Cloud sync disabled, skipping")
                 return Result.success()
             }
 
-            // Get Google access token from settings
-            val settingsRepository = app.container.settingsRepository
-            val accessToken = getAccessToken(settingsRepository)
+            // Get user's Google account email from SessionManager
+            val sessionManager = com.tiarkaerell.ibstracker.data.auth.SessionManager(applicationContext)
+            val accountEmail = sessionManager.getSignedInEmail()
 
-            if (accessToken == null) {
-                // Not authenticated - fail without retry
+            if (accountEmail == null) {
+                android.util.Log.e("GoogleDriveBackupWorker", "No signed-in account found, failing")
                 updateSyncStatus(backupPreferences, failed = true)
                 return Result.failure()
             }
 
-            // Upload backup to Drive
-            val result = googleDriveService.uploadBackupToDrive(accessToken)
+            android.util.Log.d("GoogleDriveBackupWorker", "Account email found: $accountEmail, creating backup...")
 
-            return when (result) {
-                is BackupResult.Success -> {
+            // Upload backup to Drive using GoogleAccountCredential (auto token refresh!)
+            val result = googleDriveBackup.createBackupWithCredential(accountEmail, isAutoBackup = true)
+
+            return when {
+                result.isSuccess -> {
+                    android.util.Log.i("GoogleDriveBackupWorker", "Backup completed successfully")
                     // Update last sync timestamp
                     backupPreferences.recordCloudSync(System.currentTimeMillis())
                     updateSyncStatus(backupPreferences, failed = false)
                     Result.success()
                 }
-                is BackupResult.Failure -> {
-                    // Network error - retry with backoff
+                else -> {
+                    val error = result.exceptionOrNull()
+                    android.util.Log.e("GoogleDriveBackupWorker", "Backup failed: ${error?.message}", error)
                     updateSyncStatus(backupPreferences, failed = true)
-                    if (result.error == BackupError.NETWORK_UNAVAILABLE) {
+                    // Network errors should retry with backoff
+                    if (error?.message?.contains("network", ignoreCase = true) == true ||
+                        error?.message?.contains("timeout", ignoreCase = true) == true) {
                         Result.retry()
                     } else {
                         Result.failure()
@@ -155,26 +173,9 @@ class GoogleDriveBackupWorker(
                 }
             }
         } catch (e: Exception) {
-            // Unexpected error - retry
+            android.util.Log.e("GoogleDriveBackupWorker", "Unexpected error in doWork()", e)
             return Result.retry()
         }
-    }
-
-    /**
-     * Gets Google OAuth access token from settings.
-     *
-     * TODO: Implement proper token storage in SettingsRepository.
-     * For now, this is a placeholder that returns null.
-     *
-     * @param settingsRepository Settings repository
-     * @return Access token or null if not authenticated
-     */
-    private suspend fun getAccessToken(
-        settingsRepository: com.tiarkaerell.ibstracker.data.repository.SettingsRepository
-    ): String? {
-        // TODO: Add access token storage to SettingsRepository
-        // This requires integrating with GoogleAuthManager or CredentialManager
-        return null
     }
 
     /**

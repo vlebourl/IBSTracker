@@ -165,7 +165,7 @@ fun BackupSettingsScreen(
                         label = "Cloud Sync",
                         description = "Daily sync to Google Drive at 2:00 AM",
                         checked = settings.cloudSyncEnabled,
-                        onCheckedChange = { viewModel.toggleCloudSync(it) },
+                        onCheckedChange = { viewModel.toggleCloudSync(it, context) },
                         enabled = settings.isGoogleSignedIn,
                         icon = Icons.Default.CloudUpload
                     )
